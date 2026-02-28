@@ -1,0 +1,43 @@
+name: Update Bank Holidays
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # runs daily at midnight UTC
+  workflow_dispatch: # allows manual trigger
+
+jobs:
+  update:
+    name: Fetch & commit bank holidays
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch England & Wales bank holidays from gov.uk
+        run: |
+          curl -fsSL "https://www.gov.uk/bank-holidays.json" \
+            | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          events = data.get('england-and-wales', {}).get('events', [])
+          if not events:
+              print('ERROR: no events found in response', file=sys.stderr)
+              sys.exit(1)
+          dates = [e['date'] for e in events]
+          print(json.dumps(dates, indent=2))
+          " > data/bank-holidays.json
+
+      - name: Commit updated bank holidays (if changed)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/bank-holidays.json
+          if git diff --cached --quiet; then
+            echo "No changes to bank-holidays.json"
+          else
+            git commit -m "chore: update bank holidays data"
+            git push
+          fi
