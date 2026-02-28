@@ -2,12 +2,9 @@
 import type { ReactNode } from "react";
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  primary:
-    "bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50",
-  secondary:
-    "border border-gray-300 text-gray-600 bg-white hover:bg-gray-50",
-  danger:
-    "bg-red-600 text-white hover:bg-red-700 disabled:opacity-50",
+  primary: "bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50",
+  secondary: "border border-gray-300 text-gray-600 bg-white hover:bg-gray-50",
+  danger: "bg-red-600 text-white hover:bg-red-700 disabled:opacity-50",
 };
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {

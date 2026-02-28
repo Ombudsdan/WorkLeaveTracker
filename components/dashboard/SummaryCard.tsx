@@ -11,15 +11,9 @@ interface SummaryCardProps {
   isOwnProfile: boolean;
 }
 
-export default function SummaryCard({
-  user,
-  bankHolidays,
-  isOwnProfile,
-}: SummaryCardProps) {
+export default function SummaryCard({ user, bankHolidays, isOwnProfile }: SummaryCardProps) {
   const summary = calcLeaveSummary(user, bankHolidays);
-  const { start: hyStart, end: hyEnd } = getHolidayYearBounds(
-    user.profile.holidayStartMonth
-  );
+  const { start: hyStart, end: hyEnd } = getHolidayYearBounds(user.profile.holidayStartMonth);
 
   const statusRows: { label: string; status: LeaveStatus; count: number }[] = [
     { label: "Approved", status: LeaveStatus.Approved, count: summary.approved },

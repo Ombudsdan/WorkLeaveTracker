@@ -34,8 +34,7 @@ export function countWorkingDays(
  */
 export function getHolidayYearBounds(holidayStartMonth: number): { start: Date; end: Date } {
   const now = new Date();
-  const year =
-    now.getMonth() + 1 >= holidayStartMonth ? now.getFullYear() : now.getFullYear() - 1;
+  const year = now.getMonth() + 1 >= holidayStartMonth ? now.getFullYear() : now.getFullYear() - 1;
   const start = new Date(year, holidayStartMonth - 1, 1);
   const end = new Date(start);
   end.setFullYear(end.getFullYear() + 1);
@@ -54,10 +53,7 @@ export function getFirstDayOfMonth(year: number, month: number): number {
 }
 
 /** Find a leave entry that covers the given ISO date string */
-export function getEntryForDate(
-  date: string,
-  entries: LeaveEntry[]
-): LeaveEntry | undefined {
+export function getEntryForDate(date: string, entries: LeaveEntry[]): LeaveEntry | undefined {
   return entries.find((e) => {
     const s = new Date(e.startDate);
     const en = new Date(e.endDate);

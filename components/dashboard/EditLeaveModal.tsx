@@ -7,11 +7,7 @@ import FormField from "@/components/FormField";
 import FormSelect from "@/components/FormSelect";
 import Button from "@/components/Button";
 
-export default function EditLeaveModal({
-  entry,
-  onClose,
-  onSave,
-}: EditLeaveModalProps) {
+export default function EditLeaveModal({ entry, onClose, onSave }: EditLeaveModalProps) {
   const [startDate, setStartDate] = useState(entry.startDate);
   const [endDate, setEndDate] = useState(entry.endDate);
   const [status, setStatus] = useState<LeaveStatus>(entry.status);

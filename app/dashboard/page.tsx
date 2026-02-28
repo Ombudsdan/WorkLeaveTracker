@@ -46,25 +46,24 @@ export default function DashboardPage() {
       }
     }
     initDashboard();
-    return () => { cancelled = true; };
-  // applyUserData uses session which is already in the dep array
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => {
+      cancelled = true;
+    };
+    // applyUserData uses session which is already in the dep array
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, session]);
 
   if (status === "loading" || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
-        Loading…
-      </div>
+      <div className="min-h-screen flex items-center justify-center text-gray-500">Loading…</div>
     );
   }
 
   if (!currentUser) return null;
 
-  const displayedUser =
-    viewingUserId
-      ? allUsers.find((user) => user.id === viewingUserId) ?? currentUser
-      : currentUser;
+  const displayedUser = viewingUserId
+    ? (allUsers.find((user) => user.id === viewingUserId) ?? currentUser)
+    : currentUser;
 
   const isOwnProfile = !viewingUserId || viewingUserId === currentUser.id;
 
@@ -105,10 +104,7 @@ export default function DashboardPage() {
       </main>
 
       {showAddModal && (
-        <AddLeaveModal
-          onClose={() => setShowAddModal(false)}
-          onSave={handleAddEntry}
-        />
+        <AddLeaveModal onClose={() => setShowAddModal(false)} onSave={handleAddEntry} />
       )}
 
       {editingEntry && (
@@ -157,4 +153,3 @@ export default function DashboardPage() {
     await refreshData();
   }
 }
-

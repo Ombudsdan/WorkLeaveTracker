@@ -21,10 +21,7 @@ export default function FormErrorOutlet() {
   }
 
   return (
-    <div
-      role="alert"
-      className="bg-red-50 border border-red-200 rounded-lg p-4"
-    >
+    <div role="alert" className="bg-red-50 border border-red-200 rounded-lg p-4">
       <h4 className="font-semibold text-red-700 text-sm mb-2">
         Please fix the following before saving:
       </h4>

@@ -6,10 +6,7 @@ export const usersController = {
     return res.json();
   },
 
-  async updateProfile(
-    profile: UserProfile,
-    allowance: UserAllowance
-  ): Promise<boolean> {
+  async updateProfile(profile: UserProfile, allowance: UserAllowance): Promise<boolean> {
     const res = await fetch("/api/users", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },

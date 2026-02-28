@@ -28,8 +28,4 @@ export const LEAVE_TYPE_LABELS: Record<LeaveType, string> = {
  * Explicit display order for LeaveType.
  * Use this to iterate instead of Object.entries to maintain consistent ordering.
  */
-export const LEAVE_TYPE_ORDER: LeaveType[] = [
-  LeaveType.Holiday,
-  LeaveType.Sick,
-  LeaveType.Other,
-];
+export const LEAVE_TYPE_ORDER: LeaveType[] = [LeaveType.Holiday, LeaveType.Sick, LeaveType.Other];

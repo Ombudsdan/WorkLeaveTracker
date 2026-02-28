@@ -5,10 +5,7 @@ import { updateEntry, deleteEntry, findUserById } from "@/lib/db";
 import type { LeaveEntry } from "@/types";
 
 /** PATCH /api/entries/[id] - update an entry */
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -26,10 +23,7 @@ export async function PATCH(
 }
 
 /** DELETE /api/entries/[id] - delete an entry */
-export async function DELETE(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

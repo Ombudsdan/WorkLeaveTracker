@@ -28,7 +28,7 @@ export async function POST(request: Request) {
   const userId = (session.user as { id?: string }).id;
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await request.json() as Omit<LeaveEntry, "id">;
+  const body = (await request.json()) as Omit<LeaveEntry, "id">;
   const entry: LeaveEntry = {
     id: uuidv4(),
     startDate: body.startDate,

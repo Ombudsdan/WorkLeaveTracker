@@ -24,8 +24,8 @@ export default function FormField({
 
   useEffect(() => {
     return registerValidator(id, () => validateRef.current());
-  // registerValidator is stable (useCallback with no deps), id changes are intentional
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // registerValidator is stable (useCallback with no deps), id changes are intentional
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   return (
@@ -46,9 +46,7 @@ export default function FormField({
           ${readOnly ? "bg-gray-50 text-gray-400" : ""}
           ${error ? "border-red-400" : "border-gray-300"}`}
       />
-      {error && (
-        <p className="text-red-500 text-xs mt-1">{error}</p>
-      )}
+      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
     </div>
   );
 

@@ -43,11 +43,7 @@ export default function ProfilePage() {
   }, [status, session]);
 
   if (status === "loading") {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading…
-      </div>
-    );
+    return <div className="min-h-screen flex items-center justify-center">Loading…</div>;
   }
 
   return (
@@ -91,13 +87,7 @@ export default function ProfilePage() {
                 onChange={(v) => setCompany(v)}
                 required
               />
-              <FormField
-                id="email"
-                label="Email"
-                type="email"
-                value={email}
-                readOnly
-              />
+              <FormField id="email" label="Email" type="email" value={email} readOnly />
             </div>
           </section>
 
@@ -122,9 +112,7 @@ export default function ProfilePage() {
                 </button>
               ))}
             </div>
-            <p className="text-xs text-gray-400 mt-1">
-              Red = non-working, Green = working
-            </p>
+            <p className="text-xs text-gray-400 mt-1">Red = non-working, Green = working</p>
           </section>
 
           {/* Holiday period */}
@@ -189,14 +177,11 @@ export default function ProfilePage() {
               />
             </div>
             <p className="text-sm text-gray-500 mt-2">
-              Total allowance:{" "}
-              <strong>{core + bought + carried}</strong> days
+              Total allowance: <strong>{core + bought + carried}</strong> days
             </p>
           </section>
 
-          {submitError && (
-            <p className="text-red-500 text-sm">{submitError}</p>
-          )}
+          {submitError && <p className="text-red-500 text-sm">{submitError}</p>}
           {saved && (
             <p className="flex items-center gap-1.5 text-green-600 text-sm">
               <CheckCircle size={16} />
@@ -258,4 +243,3 @@ export default function ProfilePage() {
     setCarried(me.allowance.carried);
   }
 }
-

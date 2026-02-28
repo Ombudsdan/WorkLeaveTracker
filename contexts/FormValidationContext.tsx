@@ -1,12 +1,5 @@
 "use client";
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
 
 interface FormValidationContextValue {
   /** All current field errors keyed by field id */
@@ -54,10 +47,7 @@ export function FormValidationProvider({ children }: { children: ReactNode }) {
 
   const clearAllErrors = useCallback(() => setErrors({}), []);
 
-  const getError = useCallback(
-    (id: string) => errors[id],
-    [errors]
-  );
+  const getError = useCallback((id: string) => errors[id], [errors]);
 
   const registerValidator = useCallback((id: string, fn: () => boolean) => {
     validators.current.set(id, fn);

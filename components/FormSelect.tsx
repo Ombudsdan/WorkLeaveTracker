@@ -18,7 +18,7 @@ export default function FormSelect<T extends string>({
 
   useEffect(() => {
     return registerValidator(id, () => validateRef.current());
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   return (
@@ -39,9 +39,7 @@ export default function FormSelect<T extends string>({
           </option>
         ))}
       </select>
-      {error && (
-        <p className="text-red-500 text-xs mt-1">{error}</p>
-      )}
+      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
     </div>
   );
 

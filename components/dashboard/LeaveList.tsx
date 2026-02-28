@@ -28,17 +28,11 @@ export default function LeaveList({
   onEdit,
   onDelete,
 }: LeaveListProps) {
-  const sorted = [...user.entries].sort((a, b) =>
-    a.startDate.localeCompare(b.startDate)
-  );
+  const sorted = [...user.entries].sort((a, b) => a.startDate.localeCompare(b.startDate));
 
-  const title = isOwnProfile
-    ? "My Leave"
-    : `${user.profile.firstName}\u2019s Leave`;
+  const title = isOwnProfile ? "My Leave" : `${user.profile.firstName}\u2019s Leave`;
 
-  const emptyMessage = isOwnProfile
-    ? "No leave entries yet."
-    : "No leave entries.";
+  const emptyMessage = isOwnProfile ? "No leave entries yet." : "No leave entries.";
 
   return (
     <div className="bg-white rounded-2xl shadow p-5">
@@ -80,24 +74,16 @@ export default function LeaveList({
                   <span className="capitalize">{entry.status}</span>
                   {isOwnProfile && (
                     <div className="flex gap-1">
-                      <button
-                        onClick={() => onEdit(entry)}
-                        className="underline"
-                      >
+                      <button onClick={() => onEdit(entry)} className="underline">
                         Edit
                       </button>
-                      <button
-                        onClick={() => onDelete(entry.id)}
-                        className="underline text-red-600"
-                      >
+                      <button onClick={() => onDelete(entry.id)} className="underline text-red-600">
                         Del
                       </button>
                     </div>
                   )}
                 </div>
-                {entry.notes && (
-                  <p className="mt-0.5 text-gray-500">{entry.notes}</p>
-                )}
+                {entry.notes && <p className="mt-0.5 text-gray-500">{entry.notes}</p>}
               </div>
             );
           })}

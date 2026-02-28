@@ -4,10 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { findUserById } from "@/lib/db";
 
 /** GET /api/users/[id] - get a specific user's profile (read-only for global view) */
-export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

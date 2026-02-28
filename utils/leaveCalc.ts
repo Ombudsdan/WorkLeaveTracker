@@ -15,21 +15,14 @@ export interface LeaveSummary {
  * Calculate the leave summary for a user within their current holiday year.
  * Only holiday-type entries are counted; bank holidays on working days are excluded.
  */
-export function calcLeaveSummary(
-  user: PublicUser,
-  bankHolidays: string[]
-): LeaveSummary {
+export function calcLeaveSummary(user: PublicUser, bankHolidays: string[]): LeaveSummary {
   const total = user.allowance.core + user.allowance.bought + user.allowance.carried;
   const { start, end } = getHolidayYearBounds(user.profile.holidayStartMonth);
 
   // Bank holidays that fall within this holiday year on working days
   const relevantBankHolidays = bankHolidays.filter((d) => {
     const date = new Date(d);
-    return (
-      date >= start &&
-      date <= end &&
-      !user.profile.nonWorkingDays.includes(date.getDay())
-    );
+    return date >= start && date <= end && !user.profile.nonWorkingDays.includes(date.getDay());
   });
 
   let approved = 0;

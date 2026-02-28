@@ -41,10 +41,7 @@ export interface LeaveSummary {
 }
 
 /** Bank holidays that fall on the user's working days within the holiday year */
-export function getBankHolidaysForUser(
-  user: AppUser,
-  bankHolidayDates: string[]
-): string[] {
+export function getBankHolidaysForUser(user: AppUser, bankHolidayDates: string[]): string[] {
   const { holidayStartMonth, nonWorkingDays } = user.profile;
   const yearStart = getHolidayYearStart(holidayStartMonth);
   const yearEnd = new Date(yearStart);
@@ -61,10 +58,7 @@ export function getBankHolidaysForUser(
 
 export function getHolidayYearStart(holidayStartMonth: number): Date {
   const now = new Date();
-  const year =
-    now.getMonth() + 1 >= holidayStartMonth
-      ? now.getFullYear()
-      : now.getFullYear() - 1;
+  const year = now.getMonth() + 1 >= holidayStartMonth ? now.getFullYear() : now.getFullYear() - 1;
   return new Date(year, holidayStartMonth - 1, 1);
 }
 
@@ -76,12 +70,8 @@ export function getHolidayYearEnd(holidayStartMonth: number): Date {
   return end;
 }
 
-export function calculateLeaveSummary(
-  user: AppUser,
-  bankHolidayDates: string[]
-): LeaveSummary {
-  const totalAllowance =
-    user.allowance.core + user.allowance.bought + user.allowance.carried;
+export function calculateLeaveSummary(user: AppUser, bankHolidayDates: string[]): LeaveSummary {
+  const totalAllowance = user.allowance.core + user.allowance.bought + user.allowance.carried;
 
   const bhForUser = getBankHolidaysForUser(user, bankHolidayDates);
 
