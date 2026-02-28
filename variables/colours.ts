@@ -20,3 +20,12 @@ export const CALENDAR_COLORS: Record<LeaveStatus, string> = {
   [LeaveStatus.Requested]: "bg-blue-200 text-blue-800",
   [LeaveStatus.Approved]: "bg-green-200 text-green-800",
 };
+
+/** Calendar cell class for UK bank holidays */
+export const CALENDAR_CELL_BANK_HOLIDAY = "bg-purple-100 text-purple-700";
+
+/** Calendar cell class for the user's non-working days */
+export const CALENDAR_CELL_NON_WORKING = "bg-gray-100 text-gray-400";
+
+/** Calendar cell class for a standard working day with no leave */
+export const CALENDAR_CELL_DEFAULT = "hover:bg-gray-50 text-gray-700";

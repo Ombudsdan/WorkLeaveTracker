@@ -1,23 +1,7 @@
 "use client";
+import { useEffect, useRef } from "react";
 import { useFormValidation } from "@/contexts/FormValidationContext";
 
-interface FormFieldProps {
-  /** Must match the id used with setError/clearError in the validation hook */
-  id: string;
-  label: string;
-  type?: "text" | "email" | "number" | "password";
-  value: string | number;
-  onChange?: (value: string) => void;
-  readOnly?: boolean;
-  placeholder?: string;
-  min?: number;
-  max?: number;
-}
-
-/**
- * A labelled form input that reads its own error state from FormValidationContext
- * and displays the error message beneath the field.
- */
 export default function FormField({
   id,
   label,
@@ -28,9 +12,21 @@ export default function FormField({
   placeholder,
   min,
   max,
+  required,
 }: FormFieldProps) {
-  const { getError } = useFormValidation();
+  const { getError, setError, clearError, registerValidator } = useFormValidation();
   const error = getError(id);
+
+  // Keep validateRef in sync with the latest props so triggerAllValidations
+  // always uses the current value and rules without re-registering each render.
+  const validateRef = useRef<() => boolean>(() => true);
+  validateRef.current = () => validate(String(value ?? ""));
+
+  useEffect(() => {
+    return registerValidator(id, () => validateRef.current());
+  // registerValidator is stable (useCallback with no deps), id changes are intentional
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   return (
     <div>
@@ -41,7 +37,7 @@ export default function FormField({
         id={id}
         type={type}
         value={value}
-        onChange={onChange ? (e) => onChange(e.target.value) : undefined}
+        onChange={onChange ? (e) => handleChange(e.target.value) : undefined}
         readOnly={readOnly}
         placeholder={placeholder}
         min={min}
@@ -55,4 +51,57 @@ export default function FormField({
       )}
     </div>
   );
+
+  function handleChange(rawValue: string) {
+    onChange?.(rawValue);
+    validate(rawValue);
+  }
+
+  function validate(rawValue: string): boolean {
+    const trimmed = rawValue.trim();
+
+    if (required && trimmed === "") {
+      const message = typeof required === "string" ? required : `${label} is required`;
+      setError(id, message);
+      return false;
+    }
+
+    if (type === "number" && trimmed !== "") {
+      const num = Number(rawValue);
+      if (isNaN(num)) {
+        setError(id, `${label} must be a valid number`);
+        return false;
+      }
+      if (min !== undefined && num < min) {
+        setError(id, `${label} must be at least ${min}`);
+        return false;
+      }
+      if (max !== undefined && num > max) {
+        setError(id, `${label} must be no more than ${max}`);
+        return false;
+      }
+    }
+
+    clearError(id);
+    return true;
+  }
+}
+
+interface FormFieldProps {
+  /** Must match the id used with setError/clearError in the validation hook */
+  id: string;
+  label: string;
+  type?: "text" | "email" | "number" | "password" | "date";
+  value: string | number;
+  onChange?: (value: string) => void;
+  readOnly?: boolean;
+  placeholder?: string;
+  min?: number;
+  max?: number;
+  /**
+   * Built-in required validation.
+   * Pass `true` to use the default "{label} is required" message,
+   * or a custom string to override it.
+   */
+  required?: boolean | string;
 }

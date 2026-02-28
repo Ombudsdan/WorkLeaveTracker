@@ -11,6 +11,9 @@ import LeaveList from "@/components/dashboard/LeaveList";
 import CalendarView from "@/components/dashboard/CalendarView";
 import AddLeaveModal from "@/components/dashboard/AddLeaveModal";
 import EditLeaveModal from "@/components/dashboard/EditLeaveModal";
+import { usersController } from "@/controllers/usersController";
+import { holidaysController } from "@/controllers/holidaysController";
+import { entriesController } from "@/controllers/entriesController";
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -31,69 +34,22 @@ export default function DashboardPage() {
   useEffect(() => {
     if (status !== "authenticated") return;
     let cancelled = false;
-    async function fetchData() {
+    async function initDashboard() {
       setLoading(true);
-      const [usersRes, holidaysRes] = await Promise.all([
-        fetch("/api/users"),
-        fetch("/api/holidays"),
+      const [users, holidays] = await Promise.all([
+        usersController.fetchAll(),
+        holidaysController.fetchBankHolidays(),
       ]);
-      const users: PublicUser[] = await usersRes.json();
-      const holidays: string[] = await holidaysRes.json();
       if (!cancelled) {
-        setBankHolidays(holidays);
-        setAllUsers(users);
-        const me = users.find((u) => u.profile.email === session?.user?.email);
-        if (me) setCurrentUser(me);
+        applyUserData(users, holidays);
         setLoading(false);
       }
     }
-    fetchData();
-    return () => {
-      cancelled = true;
-    };
+    initDashboard();
+    return () => { cancelled = true; };
+  // applyUserData uses session which is already in the dep array
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, session]);
-
-  async function refreshData() {
-    const [usersRes, holidaysRes] = await Promise.all([
-      fetch("/api/users"),
-      fetch("/api/holidays"),
-    ]);
-    const users: PublicUser[] = await usersRes.json();
-    const holidays: string[] = await holidaysRes.json();
-    setBankHolidays(holidays);
-    setAllUsers(users);
-    const me = users.find((u) => u.profile.email === session?.user?.email);
-    if (me) setCurrentUser(me);
-  }
-
-  async function handleAddEntry(entry: Omit<LeaveEntry, "id">) {
-    const res = await fetch("/api/entries", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(entry),
-    });
-    if (res.ok) {
-      setShowAddModal(false);
-      await refreshData();
-    }
-  }
-
-  async function handleUpdateEntry(entry: LeaveEntry) {
-    const res = await fetch(`/api/entries/${entry.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(entry),
-    });
-    if (res.ok) {
-      setEditingEntry(null);
-      await refreshData();
-    }
-  }
-
-  async function handleDeleteEntry(id: string) {
-    await fetch(`/api/entries/${id}`, { method: "DELETE" });
-    await refreshData();
-  }
 
   if (status === "loading" || loading) {
     return (
@@ -107,7 +63,7 @@ export default function DashboardPage() {
 
   const displayedUser =
     viewingUserId
-      ? allUsers.find((u) => u.id === viewingUserId) ?? currentUser
+      ? allUsers.find((user) => user.id === viewingUserId) ?? currentUser
       : currentUser;
 
   const isOwnProfile = !viewingUserId || viewingUserId === currentUser.id;
@@ -164,5 +120,41 @@ export default function DashboardPage() {
       )}
     </div>
   );
+
+  async function refreshData() {
+    const [users, holidays] = await Promise.all([
+      usersController.fetchAll(),
+      holidaysController.fetchBankHolidays(),
+    ]);
+    applyUserData(users, holidays);
+  }
+
+  function applyUserData(users: PublicUser[], holidays: string[]) {
+    setBankHolidays(holidays);
+    setAllUsers(users);
+    const me = users.find((user) => user.profile.email === session?.user?.email);
+    if (me) setCurrentUser(me);
+  }
+
+  async function handleAddEntry(entry: Omit<LeaveEntry, "id">) {
+    const ok = await entriesController.create(entry);
+    if (ok) {
+      setShowAddModal(false);
+      await refreshData();
+    }
+  }
+
+  async function handleUpdateEntry(entry: LeaveEntry) {
+    const ok = await entriesController.update(entry);
+    if (ok) {
+      setEditingEntry(null);
+      await refreshData();
+    }
+  }
+
+  async function handleDeleteEntry(id: string) {
+    await entriesController.remove(id);
+    await refreshData();
+  }
 }
 

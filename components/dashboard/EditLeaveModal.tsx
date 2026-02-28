@@ -2,12 +2,10 @@
 import { useState } from "react";
 import { LeaveStatus } from "@/types";
 import type { LeaveEntry } from "@/types";
-
-interface EditLeaveModalProps {
-  entry: LeaveEntry;
-  onClose: () => void;
-  onSave: (entry: LeaveEntry) => void;
-}
+import { LEAVE_STATUS_ORDER, LEAVE_STATUS_LABELS } from "@/variables/leaveConfig";
+import FormField from "@/components/FormField";
+import FormSelect from "@/components/FormSelect";
+import Button from "@/components/Button";
 
 export default function EditLeaveModal({
   entry,
@@ -19,9 +17,10 @@ export default function EditLeaveModal({
   const [status, setStatus] = useState<LeaveStatus>(entry.status);
   const [notes, setNotes] = useState(entry.notes ?? "");
 
-  function handleSave() {
-    onSave({ ...entry, startDate, endDate, status, notes });
-  }
+  const statusOptions = LEAVE_STATUS_ORDER.map((leaveStatus) => ({
+    value: leaveStatus,
+    label: LEAVE_STATUS_LABELS[leaveStatus],
+  }));
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
@@ -29,70 +28,57 @@ export default function EditLeaveModal({
         <h3 className="font-bold text-gray-800 mb-4">Edit Leave</h3>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Start Date
-              </label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full border rounded-lg px-2 py-1.5 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                End Date
-              </label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full border rounded-lg px-2 py-1.5 text-sm"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              Status
-            </label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value as LeaveStatus)}
-              className="w-full border rounded-lg px-2 py-1.5 text-sm"
-            >
-              <option value={LeaveStatus.Planned}>Planned (Draft)</option>
-              <option value={LeaveStatus.Requested}>Requested (Pending)</option>
-              <option value={LeaveStatus.Approved}>Approved (Confirmed)</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              Notes (optional)
-            </label>
-            <input
-              type="text"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="w-full border rounded-lg px-2 py-1.5 text-sm"
+            <FormField
+              id="edit-startDate"
+              label="Start Date"
+              type="date"
+              value={startDate}
+              onChange={(v) => setStartDate(v)}
+              required
+            />
+            <FormField
+              id="edit-endDate"
+              label="End Date"
+              type="date"
+              value={endDate}
+              onChange={(v) => setEndDate(v)}
+              required
             />
           </div>
+          <FormSelect
+            id="edit-status"
+            label="Status"
+            value={status}
+            onChange={(v) => setStatus(v)}
+            options={statusOptions}
+          />
+          <FormField
+            id="edit-notes"
+            label="Notes (optional)"
+            value={notes}
+            onChange={(v) => setNotes(v)}
+            placeholder="e.g. Beach holiday"
+          />
         </div>
         <div className="flex gap-2 mt-5">
-          <button
-            onClick={handleSave}
-            className="flex-1 bg-indigo-600 text-white rounded-lg py-2 text-sm font-semibold hover:bg-indigo-700 transition"
-          >
+          <Button variant="primary" fullWidth onClick={handleSave}>
             Save Changes
-          </button>
-          <button
-            onClick={onClose}
-            className="flex-1 border rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50 transition"
-          >
+          </Button>
+          <Button variant="secondary" fullWidth onClick={onClose}>
             Cancel
-          </button>
+          </Button>
         </div>
       </div>
     </div>
   );
+
+  function handleSave() {
+    onSave({ ...entry, startDate, endDate, status, notes });
+  }
+}
+
+interface EditLeaveModalProps {
+  entry: LeaveEntry;
+  onClose: () => void;
+  onSave: (entry: LeaveEntry) => void;
 }

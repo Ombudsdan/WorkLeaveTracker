@@ -3,6 +3,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -20,12 +21,24 @@ interface FormValidationContextValue {
   getError: (id: string) => string | undefined;
   /** True when any error is present */
   hasErrors: boolean;
+  /**
+   * Register a validator function for a field.
+   * The registered function is called by triggerAllValidations.
+   * Returns an unsubscribe callback to remove the validator.
+   */
+  registerValidator: (id: string, fn: () => boolean) => () => void;
+  /**
+   * Run every registered field validator.
+   * Returns true if all fields are valid.
+   */
+  triggerAllValidations: () => boolean;
 }
 
 const FormValidationContext = createContext<FormValidationContextValue | null>(null);
 
 export function FormValidationProvider({ children }: { children: ReactNode }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const validators = useRef<Map<string, () => boolean>>(new Map());
 
   const setError = useCallback((id: string, message: string) => {
     setErrors((prev) => ({ ...prev, [id]: message }));
@@ -46,11 +59,33 @@ export function FormValidationProvider({ children }: { children: ReactNode }) {
     [errors]
   );
 
+  const registerValidator = useCallback((id: string, fn: () => boolean) => {
+    validators.current.set(id, fn);
+    return () => validators.current.delete(id);
+  }, []);
+
+  const triggerAllValidations = useCallback(() => {
+    let allValid = true;
+    for (const validate of validators.current.values()) {
+      if (!validate()) allValid = false;
+    }
+    return allValid;
+  }, []);
+
   const hasErrors = Object.keys(errors).length > 0;
 
   return (
     <FormValidationContext.Provider
-      value={{ errors, setError, clearError, clearAllErrors, getError, hasErrors }}
+      value={{
+        errors,
+        setError,
+        clearError,
+        clearAllErrors,
+        getError,
+        hasErrors,
+        registerValidator,
+        triggerAllValidations,
+      }}
     >
       {children}
     </FormValidationContext.Provider>

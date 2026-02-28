@@ -2,11 +2,15 @@
 import { useState } from "react";
 import { LeaveStatus, LeaveType } from "@/types";
 import type { LeaveEntry } from "@/types";
-
-interface AddLeaveModalProps {
-  onClose: () => void;
-  onSave: (entry: Omit<LeaveEntry, "id">) => void;
-}
+import {
+  LEAVE_STATUS_ORDER,
+  LEAVE_STATUS_LABELS,
+  LEAVE_TYPE_ORDER,
+  LEAVE_TYPE_LABELS,
+} from "@/variables/leaveConfig";
+import FormField from "@/components/FormField";
+import FormSelect from "@/components/FormSelect";
+import Button from "@/components/Button";
 
 export default function AddLeaveModal({ onClose, onSave }: AddLeaveModalProps) {
   const [startDate, setStartDate] = useState("");
@@ -15,9 +19,15 @@ export default function AddLeaveModal({ onClose, onSave }: AddLeaveModalProps) {
   const [type, setType] = useState<LeaveType>(LeaveType.Holiday);
   const [notes, setNotes] = useState("");
 
-  function handleSave() {
-    onSave({ startDate, endDate, status, type, notes });
-  }
+  const statusOptions = LEAVE_STATUS_ORDER.map((leaveStatus) => ({
+    value: leaveStatus,
+    label: LEAVE_STATUS_LABELS[leaveStatus],
+  }));
+
+  const typeOptions = LEAVE_TYPE_ORDER.map((leaveType) => ({
+    value: leaveType,
+    label: LEAVE_TYPE_LABELS[leaveType],
+  }));
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
@@ -25,86 +35,68 @@ export default function AddLeaveModal({ onClose, onSave }: AddLeaveModalProps) {
         <h3 className="font-bold text-gray-800 mb-4">Add Leave</h3>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Start Date
-              </label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full border rounded-lg px-2 py-1.5 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                End Date
-              </label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full border rounded-lg px-2 py-1.5 text-sm"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              Status
-            </label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value as LeaveStatus)}
-              className="w-full border rounded-lg px-2 py-1.5 text-sm"
-            >
-              <option value={LeaveStatus.Planned}>Planned (Draft)</option>
-              <option value={LeaveStatus.Requested}>Requested (Pending)</option>
-              <option value={LeaveStatus.Approved}>Approved (Confirmed)</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              Type
-            </label>
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value as LeaveType)}
-              className="w-full border rounded-lg px-2 py-1.5 text-sm"
-            >
-              <option value={LeaveType.Holiday}>Holiday</option>
-              <option value={LeaveType.Sick}>Sick</option>
-              <option value={LeaveType.Other}>Other</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              Notes (optional)
-            </label>
-            <input
-              type="text"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="w-full border rounded-lg px-2 py-1.5 text-sm"
-              placeholder="e.g. Beach holiday"
+            <FormField
+              id="add-startDate"
+              label="Start Date"
+              type="date"
+              value={startDate}
+              onChange={(v) => setStartDate(v)}
+              required
+            />
+            <FormField
+              id="add-endDate"
+              label="End Date"
+              type="date"
+              value={endDate}
+              onChange={(v) => setEndDate(v)}
+              required
             />
           </div>
+          <FormSelect
+            id="add-status"
+            label="Status"
+            value={status}
+            onChange={(v) => setStatus(v)}
+            options={statusOptions}
+          />
+          <FormSelect
+            id="add-type"
+            label="Type"
+            value={type}
+            onChange={(v) => setType(v)}
+            options={typeOptions}
+          />
+          <FormField
+            id="add-notes"
+            label="Notes (optional)"
+            value={notes}
+            onChange={(v) => setNotes(v)}
+            placeholder="e.g. Beach holiday"
+          />
         </div>
         <div className="flex gap-2 mt-5">
-          <button
+          <Button
+            variant="primary"
+            fullWidth
             onClick={handleSave}
             disabled={!startDate || !endDate}
-            className="flex-1 bg-indigo-600 text-white rounded-lg py-2 text-sm font-semibold hover:bg-indigo-700 transition disabled:opacity-50"
           >
             Add Leave
-          </button>
-          <button
-            onClick={onClose}
-            className="flex-1 border rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50 transition"
-          >
+          </Button>
+          <Button variant="secondary" fullWidth onClick={onClose}>
             Cancel
-          </button>
+          </Button>
         </div>
       </div>
     </div>
   );
+
+  function handleSave() {
+    onSave({ startDate, endDate, status, type, notes });
+  }
+}
+
+interface AddLeaveModalProps {
+  onClose: () => void;
+  onSave: (entry: Omit<LeaveEntry, "id">) => void;
 }

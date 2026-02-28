@@ -1,3 +1,9 @@
+export enum ValidationRule {
+  Required = "required",
+  Min = "min",
+  Max = "max",
+}
+
 export enum LeaveStatus {
   Planned = "planned",
   Requested = "requested",
