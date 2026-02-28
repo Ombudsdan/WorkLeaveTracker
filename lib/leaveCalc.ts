@@ -1,3 +1,4 @@
+import { LeaveStatus, LeaveType } from "@/types";
 import type { AppUser } from "@/types";
 
 /**
@@ -89,16 +90,16 @@ export function calculateLeaveSummary(
   let planned = 0;
 
   for (const entry of user.entries) {
-    if (entry.type !== "holiday") continue;
+    if (entry.type !== LeaveType.Holiday) continue;
     const days = countWorkingDays(
       entry.startDate,
       entry.endDate,
       user.profile.nonWorkingDays,
       bhForUser
     );
-    if (entry.status === "approved") approved += days;
-    else if (entry.status === "requested") requested += days;
-    else if (entry.status === "planned") planned += days;
+    if (entry.status === LeaveStatus.Approved) approved += days;
+    else if (entry.status === LeaveStatus.Requested) requested += days;
+    else if (entry.status === LeaveStatus.Planned) planned += days;
   }
 
   const usedTotal = approved + requested + planned;

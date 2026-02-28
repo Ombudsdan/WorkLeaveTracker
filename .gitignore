@@ -34,6 +34,10 @@ yarn-error.log*
 .env*
 !.env.example
 
+# Runtime data file — copy data/data.example.json to data/data.json on first run.
+# lib/db.ts auto-creates this from data.example.json if it is missing.
+data/data.json
+
 # vercel
 .vercel
 

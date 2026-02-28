@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { addEntry, findUserById } from "@/lib/db";
 import { v4 as uuidv4 } from "uuid";
+import { LeaveStatus, LeaveType } from "@/types";
 import type { LeaveEntry } from "@/types";
 
 /** GET /api/entries - get current user's entries */
@@ -32,8 +33,8 @@ export async function POST(request: Request) {
     id: uuidv4(),
     startDate: body.startDate,
     endDate: body.endDate,
-    status: body.status ?? "planned",
-    type: body.type ?? "holiday",
+    status: body.status ?? LeaveStatus.Planned,
+    type: body.type ?? LeaveType.Holiday,
     notes: body.notes,
   };
 

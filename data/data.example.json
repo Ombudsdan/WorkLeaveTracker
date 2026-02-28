@@ -8,10 +8,7 @@
         "lastName": "Smith",
         "company": "Acme Ltd",
         "email": "alice@example.com",
-        "nonWorkingDays": [
-          0,
-          6
-        ],
+        "nonWorkingDays": [0, 6],
         "holidayStartMonth": 1
       },
       "allowance": {
@@ -29,10 +26,7 @@
         "lastName": "Jones",
         "company": "Acme Ltd",
         "email": "bob@example.com",
-        "nonWorkingDays": [
-          0,
-          6
-        ],
+        "nonWorkingDays": [0, 6],
         "holidayStartMonth": 4
       },
       "allowance": {

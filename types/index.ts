@@ -1,5 +1,14 @@
-export type LeaveStatus = "planned" | "requested" | "approved";
-export type LeaveType = "holiday" | "sick" | "other";
+export enum LeaveStatus {
+  Planned = "planned",
+  Requested = "requested",
+  Approved = "approved",
+}
+
+export enum LeaveType {
+  Holiday = "holiday",
+  Sick = "sick",
+  Other = "other",
+}
 
 export interface LeaveEntry {
   id: string;
@@ -34,6 +43,9 @@ export interface AppUser {
   allowance: UserAllowance;
   entries: LeaveEntry[];
 }
+
+/** AppUser without the password field — safe to return from API routes */
+export type PublicUser = Omit<AppUser, "password">;
 
 export interface Database {
   users: AppUser[];

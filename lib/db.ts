@@ -3,8 +3,25 @@ import path from "path";
 import type { Database, AppUser, LeaveEntry } from "@/types";
 
 const DB_PATH = path.join(process.cwd(), "data", "data.json");
+const EXAMPLE_PATH = path.join(process.cwd(), "data", "data.example.json");
+
+/**
+ * Ensures data.json exists on first run by copying data.example.json.
+ * This allows data.json to be gitignored while still providing a working
+ * default state when the repo is freshly cloned.
+ */
+function ensureDbExists(): void {
+  if (!fs.existsSync(DB_PATH)) {
+    if (fs.existsSync(EXAMPLE_PATH)) {
+      fs.copyFileSync(EXAMPLE_PATH, DB_PATH);
+    } else {
+      fs.writeFileSync(DB_PATH, JSON.stringify({ users: [] }, null, 2), "utf-8");
+    }
+  }
+}
 
 export function readDb(): Database {
+  ensureDbExists();
   const raw = fs.readFileSync(DB_PATH, "utf-8");
   return JSON.parse(raw) as Database;
 }
