@@ -1,0 +1,130 @@
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import React from "react";
+import { FormValidationProvider } from "@/contexts/FormValidationContext";
+import EditLeaveModal from "@/components/dashboard/EditLeaveModal";
+import { LeaveStatus, LeaveType } from "@/types";
+import type { LeaveEntry } from "@/types";
+
+const entry: LeaveEntry = {
+  id: "e1",
+  startDate: "2026-03-09",
+  endDate: "2026-03-13",
+  status: LeaveStatus.Planned,
+  type: LeaveType.Holiday,
+  notes: "Skiing",
+};
+
+function renderInProvider(ui: React.ReactElement) {
+  return render(<FormValidationProvider>{ui}</FormValidationProvider>);
+}
+
+describe("EditLeaveModal — rendering", () => {
+  it("renders the modal heading", () => {
+    renderInProvider(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={jest.fn()} />);
+    expect(screen.getByRole("heading", { name: "Edit Leave" })).toBeInTheDocument();
+  });
+
+  it("pre-fills Start Date with the entry's start date", () => {
+    renderInProvider(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={jest.fn()} />);
+    expect(screen.getByLabelText("Start Date")).toHaveValue("2026-03-09");
+  });
+
+  it("pre-fills End Date with the entry's end date", () => {
+    renderInProvider(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={jest.fn()} />);
+    expect(screen.getByLabelText("End Date")).toHaveValue("2026-03-13");
+  });
+
+  it("pre-fills Status with the entry's status", () => {
+    renderInProvider(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={jest.fn()} />);
+    expect(screen.getByLabelText("Status")).toHaveValue(LeaveStatus.Planned);
+  });
+
+  it("pre-fills Notes with the entry's notes", () => {
+    renderInProvider(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={jest.fn()} />);
+    expect(screen.getByLabelText("Notes (optional)")).toHaveValue("Skiing");
+  });
+
+  it("handles missing notes gracefully (defaults to empty string)", () => {
+    const entryNoNotes = { ...entry, notes: undefined };
+    renderInProvider(
+      <EditLeaveModal entry={entryNoNotes} onClose={jest.fn()} onSave={jest.fn()} />
+    );
+    expect(screen.getByLabelText("Notes (optional)")).toHaveValue("");
+  });
+
+  it("renders all status options in the Status select", () => {
+    renderInProvider(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={jest.fn()} />);
+    expect(screen.getByRole("option", { name: /Planned/i })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /Requested/i })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /Approved/i })).toBeInTheDocument();
+  });
+});
+
+describe("EditLeaveModal — onSave", () => {
+  it("calls onSave with the original entry data when Save Changes is clicked immediately", async () => {
+    const onSave = jest.fn();
+    renderInProvider(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={onSave} />);
+    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "e1",
+        startDate: "2026-03-09",
+        endDate: "2026-03-13",
+        status: LeaveStatus.Planned,
+        notes: "Skiing",
+      })
+    );
+  });
+
+  it("calls onSave with updated status when the user changes Status", async () => {
+    const onSave = jest.fn();
+    renderInProvider(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={onSave} />);
+    await userEvent.selectOptions(screen.getByLabelText("Status"), LeaveStatus.Approved);
+    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ status: LeaveStatus.Approved }));
+  });
+
+  it("preserves the original entry id in the saved result", async () => {
+    const onSave = jest.fn();
+    renderInProvider(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={onSave} />);
+    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ id: "e1" }));
+  });
+});
+
+describe("EditLeaveModal — notes update", () => {
+  it("calls onSave with updated notes when the notes field is changed", async () => {
+    const onSave = jest.fn();
+    renderInProvider(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={onSave} />);
+    const notesField = screen.getByLabelText("Notes (optional)");
+    await userEvent.clear(notesField);
+    await userEvent.type(notesField, "Updated note");
+    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ notes: "Updated note" }));
+  });
+
+  it("calls onSave with updated dates when the date fields are changed", async () => {
+    const onSave = jest.fn();
+    renderInProvider(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={onSave} />);
+    const startField = screen.getByLabelText("Start Date");
+    const endField = screen.getByLabelText("End Date");
+    await userEvent.clear(startField);
+    await userEvent.type(startField, "2026-04-07");
+    await userEvent.clear(endField);
+    await userEvent.type(endField, "2026-04-07");
+    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ startDate: "2026-04-07", endDate: "2026-04-07" })
+    );
+  });
+});
+
+describe("EditLeaveModal — onClose", () => {
+  it("calls onClose when the Cancel button is clicked", async () => {
+    const onClose = jest.fn();
+    renderInProvider(<EditLeaveModal entry={entry} onClose={onClose} onSave={jest.fn()} />);
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});

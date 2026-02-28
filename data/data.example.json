@@ -1,0 +1,40 @@
+{
+  "users": [
+    {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "password": "$2b$10$KqTy1UJZGzXDAJNo/7HtGe71b/1es.KOmSLC/d0D9/5.gGdrWd3VS",
+      "profile": {
+        "firstName": "Alice",
+        "lastName": "Smith",
+        "company": "Acme Ltd",
+        "email": "alice@example.com",
+        "nonWorkingDays": [0, 6],
+        "holidayStartMonth": 1
+      },
+      "allowance": {
+        "core": 25,
+        "bought": 0,
+        "carried": 0
+      },
+      "entries": []
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000000002",
+      "password": "$2b$10$KqTy1UJZGzXDAJNo/7HtGe71b/1es.KOmSLC/d0D9/5.gGdrWd3VS",
+      "profile": {
+        "firstName": "Bob",
+        "lastName": "Jones",
+        "company": "Acme Ltd",
+        "email": "bob@example.com",
+        "nonWorkingDays": [0, 6],
+        "holidayStartMonth": 4
+      },
+      "allowance": {
+        "core": 28,
+        "bought": 2,
+        "carried": 3
+      },
+      "entries": []
+    }
+  ]
+}
