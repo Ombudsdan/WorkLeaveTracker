@@ -145,7 +145,12 @@ describe("UserSelector", () => {
     const charlie: typeof bob = {
       ...bob,
       id: "u3",
-      profile: { ...bob.profile, firstName: "Charlie", lastName: "Brown", email: "charlie@example.com" },
+      profile: {
+        ...bob.profile,
+        firstName: "Charlie",
+        lastName: "Brown",
+        email: "charlie@example.com",
+      },
     };
     // alice only pins u2 (bob), not u3 (charlie)
     render(

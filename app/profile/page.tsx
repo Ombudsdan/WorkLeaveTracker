@@ -319,9 +319,7 @@ export default function ProfilePage() {
   }
 
   function toggleWorkingDay(day: number) {
-    setWorkingDays((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
-    );
+    setWorkingDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
   }
 
   function togglePinnedUser(id: string) {

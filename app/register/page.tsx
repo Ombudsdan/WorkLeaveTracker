@@ -30,7 +30,13 @@ export default function RegisterPage() {
     }
 
     setLoading(true);
-    const result = await usersController.register({ firstName, lastName, email, password, company });
+    const result = await usersController.register({
+      firstName,
+      lastName,
+      email,
+      password,
+      company,
+    });
     setLoading(false);
 
     if (!result.ok) {

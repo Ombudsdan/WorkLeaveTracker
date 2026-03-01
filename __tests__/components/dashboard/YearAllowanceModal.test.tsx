@@ -64,7 +64,9 @@ describe("YearAllowanceModal — rendering", () => {
   });
 
   it("uses initialYear when provided and no existing", () => {
-    renderInProvider(<YearAllowanceModal initialYear={2027} onClose={jest.fn()} onSave={jest.fn()} />);
+    renderInProvider(
+      <YearAllowanceModal initialYear={2027} onClose={jest.fn()} onSave={jest.fn()} />
+    );
     expect(screen.getByDisplayValue("2027")).toBeInTheDocument();
   });
 });
@@ -111,13 +113,7 @@ describe("YearAllowanceModal — interactions", () => {
   it("calls onSave with updated values after editing fields", async () => {
     const user = setup();
     const onSave = jest.fn();
-    renderInProvider(
-      <YearAllowanceModal
-        initialYear={2027}
-        onClose={jest.fn()}
-        onSave={onSave}
-      />
-    );
+    renderInProvider(<YearAllowanceModal initialYear={2027} onClose={jest.fn()} onSave={onSave} />);
     const boughtInput = screen.getByLabelText("Days Bought");
     await user.clear(boughtInput);
     await user.type(boughtInput, "5");
@@ -131,13 +127,7 @@ describe("YearAllowanceModal — interactions", () => {
   it("calls onSave with updated year when year field is changed", async () => {
     const user = setup();
     const onSave = jest.fn();
-    renderInProvider(
-      <YearAllowanceModal
-        initialYear={2026}
-        onClose={jest.fn()}
-        onSave={onSave}
-      />
-    );
+    renderInProvider(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={onSave} />);
     const yearInput = screen.getByLabelText("Holiday Year");
     await user.clear(yearInput);
     await user.type(yearInput, "2028");

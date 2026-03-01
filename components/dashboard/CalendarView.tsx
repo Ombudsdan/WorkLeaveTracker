@@ -17,7 +17,12 @@ import {
 } from "@/utils/dateHelpers";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 
-export default function CalendarView({ user, bankHolidays, isOwnProfile, onAdd }: CalendarViewProps) {
+export default function CalendarView({
+  user,
+  bankHolidays,
+  isOwnProfile,
+  onAdd,
+}: CalendarViewProps) {
   const today = new Date();
   const [calendarYear, setCalendarYear] = useState(today.getFullYear());
   const [calendarMonth, setCalendarMonth] = useState(today.getMonth());

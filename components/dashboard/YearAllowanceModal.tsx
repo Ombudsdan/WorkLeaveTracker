@@ -18,9 +18,7 @@ export default function YearAllowanceModal({
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm">
-        <h3 className="font-bold text-gray-800 mb-4">
-          {existing ? "Edit" : "Add"} Year Allowance
-        </h3>
+        <h3 className="font-bold text-gray-800 mb-4">{existing ? "Edit" : "Add"} Year Allowance</h3>
         <div className="space-y-3">
           <FormField
             id="ya-year"
