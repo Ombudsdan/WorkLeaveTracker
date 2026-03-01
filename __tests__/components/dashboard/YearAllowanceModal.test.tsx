@@ -64,9 +64,7 @@ describe("YearAllowanceModal — rendering", () => {
   });
 
   it("uses initialYear when provided and no existing", () => {
-    renderModal(
-      <YearAllowanceModal initialYear={2027} onClose={jest.fn()} onSave={jest.fn()} />
-    );
+    renderModal(<YearAllowanceModal initialYear={2027} onClose={jest.fn()} onSave={jest.fn()} />);
     expect(screen.getByDisplayValue("2027")).toBeInTheDocument();
   });
 });

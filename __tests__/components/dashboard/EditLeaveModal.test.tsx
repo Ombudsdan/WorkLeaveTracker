@@ -49,9 +49,7 @@ describe("EditLeaveModal — rendering", () => {
 
   it("handles missing notes gracefully (defaults to empty string)", () => {
     const entryNoNotes = { ...entry, notes: undefined };
-    renderModal(
-      <EditLeaveModal entry={entryNoNotes} onClose={jest.fn()} onSave={jest.fn()} />
-    );
+    renderModal(<EditLeaveModal entry={entryNoNotes} onClose={jest.fn()} onSave={jest.fn()} />);
     expect(screen.getByLabelText("Notes (optional)")).toHaveValue("");
   });
 
