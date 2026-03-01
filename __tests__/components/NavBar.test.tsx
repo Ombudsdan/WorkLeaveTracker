@@ -9,25 +9,6 @@ jest.mock("next-auth/react", () => ({
   signOut: jest.fn(),
 }));
 
-// Mock next/link to avoid router issues in test environment
-jest.mock("next/link", () => {
-  const MockLink = ({
-    href,
-    children,
-    className,
-  }: {
-    href: string;
-    children: React.ReactNode;
-    className?: string;
-  }) => (
-    <a href={href} className={className}>
-      {children}
-    </a>
-  );
-  MockLink.displayName = "Link";
-  return MockLink;
-});
-
 import { useSession } from "next-auth/react";
 import React from "react";
 
