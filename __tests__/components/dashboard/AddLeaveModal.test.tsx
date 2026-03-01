@@ -66,9 +66,9 @@ describe("AddLeaveModal — rendering", () => {
     expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
   });
 
-  it("renders the optional Notes field", () => {
+  it("renders the optional Reason field", () => {
     renderModal(<AddLeaveModal onClose={jest.fn()} onSave={jest.fn()} />);
-    expect(screen.getByLabelText("Notes (optional)")).toBeInTheDocument();
+    expect(screen.getByLabelText("Reason (optional)")).toBeInTheDocument();
   });
 
   it("no type is pre-selected by default", () => {
@@ -130,6 +130,24 @@ describe("AddLeaveModal — validation on save", () => {
   });
 });
 
+describe("AddLeaveModal — top error banner", () => {
+  it("shows top-level error banner when Save is clicked with invalid fields", async () => {
+    const user = setup();
+    renderModal(<AddLeaveModal onClose={jest.fn()} onSave={jest.fn()} />);
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(
+      screen.getByText("Please fix the highlighted fields before saving.")
+    ).toBeInTheDocument();
+  });
+
+  it("does not show top-level error banner before Save is clicked", () => {
+    renderModal(<AddLeaveModal onClose={jest.fn()} onSave={jest.fn()} />);
+    expect(
+      screen.queryByText("Please fix the highlighted fields before saving.")
+    ).not.toBeInTheDocument();
+  });
+});
+
 describe("AddLeaveModal — onSave", () => {
   it("calls onSave with the correct entry data when all fields are filled", async () => {
     const user = setup();
@@ -142,8 +160,8 @@ describe("AddLeaveModal — onSave", () => {
     await user.click(screen.getByRole("button", { name: "Holiday" }));
     // Select status
     await user.click(screen.getByRole("button", { name: /Planned/i }));
-    // Add notes
-    await user.type(screen.getByLabelText("Notes (optional)"), "Beach trip");
+    // Add reason
+    await user.type(screen.getByLabelText("Reason (optional)"), "Beach trip");
     await user.click(screen.getByRole("button", { name: "Save" }));
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({

@@ -74,12 +74,19 @@ export async function PATCH(request: Request) {
   const userId = (session.user as { id?: string }).id;
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // Fall back to email lookup in case the session ID is stale
+  let resolvedUser = readDb().users.find((u) => u.id === userId);
+  if (!resolvedUser && session.user?.email) {
+    resolvedUser = findUserByEmail(session.user.email);
+  }
+  if (!resolvedUser) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
   const body = (await request.json()) as Partial<AppUser>;
   // Never allow updating password or id via this endpoint
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { password: _p, id: _i, entries: _e, ...safe } = body;
 
-  const updated = updateUser(userId, safe);
+  const updated = updateUser(resolvedUser.id, safe);
   if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

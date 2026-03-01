@@ -46,7 +46,15 @@ export default function ProfilePage() {
     usersController.fetchAll().then((users) => {
       setAllUsers(users);
       const me = users.find((user) => user.profile.email === session?.user?.email);
-      if (me) applyUserProfile(me);
+      if (me) {
+        applyUserProfile(me);
+      } else if (session?.user) {
+        // User not found in DB (e.g. after a cold start on Vercel); pre-fill from session
+        const nameParts = (session.user.name ?? "").split(" ");
+        setFirstName(nameParts[0] ?? "");
+        setLastName(nameParts.slice(1).join(" ") ?? "");
+        setEmail(session.user.email ?? "");
+      }
     });
   }, [status, session]);
 
