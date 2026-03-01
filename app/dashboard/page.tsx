@@ -181,7 +181,7 @@ function getYearAllowanceWarning(user: PublicUser): string | null {
   const now = new Date();
   const daysUntilEnd = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
-  if (daysUntilEnd <= 60) {
+  if (daysUntilEnd > 0 && daysUntilEnd <= 60) {
     const nextYear = start.getFullYear() + 1;
     const hasNextYear = user.yearAllowances.some((a) => a.year === nextYear);
     if (!hasNextYear) {

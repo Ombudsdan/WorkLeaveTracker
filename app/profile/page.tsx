@@ -277,9 +277,10 @@ export default function ProfilePage() {
 
     if (workingDays.length === 0) {
       setError("workingDays", "At least one working day must be selected");
+      return;
     }
 
-    if (!fieldsValid || workingDays.length === 0) return;
+    if (!fieldsValid) return;
 
     setSubmitError("");
     setSaved(false);
