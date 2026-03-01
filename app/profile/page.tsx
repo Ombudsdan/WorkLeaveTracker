@@ -51,26 +51,37 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (status !== "authenticated") return;
+    let active = true;
     setLoading(true);
     const sessionId = (session?.user as { id?: string })?.id;
-    usersController.fetchAll().then((result) => {
-      setLoading(false);
-      if (!Array.isArray(result)) return;
-      setAllUsers(result);
-      // Prefer ID-based lookup; fall back to email for robustness
-      const me =
-        (sessionId ? result.find((u) => u.id === sessionId) : undefined) ??
-        result.find((u) => u.profile.email === session?.user?.email);
-      if (me) {
-        applyUserProfile(me);
-      } else if (session?.user) {
-        // User not found in DB (e.g. after a cold start on Vercel); pre-fill from session
-        const nameParts = (session.user.name ?? "").split(" ");
-        setFirstName(nameParts[0] ?? "");
-        setLastName(nameParts.slice(1).join(" ") ?? "");
-        setEmail(session.user.email ?? "");
-      }
-    });
+    usersController
+      .fetchAll()
+      .then((result) => {
+        if (!active) return;
+        setLoading(false);
+        if (!Array.isArray(result)) return;
+        setAllUsers(result);
+        // Prefer ID-based lookup; fall back to email for robustness
+        const me =
+          (sessionId ? result.find((u) => u.id === sessionId) : undefined) ??
+          result.find((u) => u.profile.email === session?.user?.email);
+        if (me) {
+          applyUserProfile(me);
+        } else if (session?.user) {
+          // User not found in DB (e.g. after a cold start on Vercel); pre-fill from session
+          const nameParts = (session.user.name ?? "").split(" ");
+          setFirstName(nameParts[0] ?? "");
+          setLastName(nameParts.slice(1).join(" ") ?? "");
+          setEmail(session.user.email ?? "");
+        }
+      })
+      .catch(() => {
+        if (!active) return;
+        setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, [status, session]);
 
   if (status === "loading" || loading) {
@@ -319,6 +330,9 @@ export default function ProfilePage() {
       setSubmitError("Failed to save. Please try again.");
     } else {
       setSaved(true);
+      // Invalidate the Next.js router cache so any page navigated to next
+      // (e.g. dashboard) will fetch fresh data instead of using a cached snapshot.
+      router.refresh();
       setTimeout(() => setSaved(false), 3000);
     }
   }
