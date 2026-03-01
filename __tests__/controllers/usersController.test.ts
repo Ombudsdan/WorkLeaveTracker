@@ -31,7 +31,7 @@ describe("usersController.fetchAll", () => {
   it("calls GET /api/users and returns the parsed response", async () => {
     mockFetch([mockUser]);
     const result = await usersController.fetchAll();
-    expect(fetch).toHaveBeenCalledWith("/api/users");
+    expect(fetch).toHaveBeenCalledWith("/api/users", { cache: "no-store" });
     expect(result).toEqual([mockUser]);
   });
 

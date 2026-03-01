@@ -14,7 +14,9 @@ export async function GET() {
   const db = readDb();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const users = db.users.map(({ password: _p, ...rest }) => rest);
-  return NextResponse.json(users);
+  return NextResponse.json(users, {
+    headers: { "Cache-Control": "no-store, max-age=0" },
+  });
 }
 
 /** POST /api/users - register a new user */

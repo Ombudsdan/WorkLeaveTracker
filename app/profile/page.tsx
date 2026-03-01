@@ -44,14 +44,26 @@ export default function ProfilePage() {
     if (status === "unauthenticated") router.push("/login");
   }, [status, router]);
 
+  // Clear any stale form errors carried over from other pages that share the
+  // root-level FormValidationProvider. Empty dep array is intentional — this
+  // should only run once on mount, not whenever the clearAllErrors ref changes.
+  useEffect(() => {
+    clearAllErrors();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (status !== "authenticated") return;
     setLoading(true);
+    const sessionId = (session?.user as { id?: string })?.id;
     usersController.fetchAll().then((result) => {
       setLoading(false);
       if (!Array.isArray(result)) return;
       setAllUsers(result);
-      const me = result.find((user) => user.profile.email === session?.user?.email);
+      // Prefer ID-based lookup; fall back to email for robustness
+      const me =
+        (sessionId ? result.find((u) => u.id === sessionId) : undefined) ??
+        result.find((u) => u.profile.email === session?.user?.email);
       if (me) {
         applyUserProfile(me);
       } else if (session?.user) {

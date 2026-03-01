@@ -200,29 +200,34 @@ function SetupPageInner() {
     const firstName = nameParts[0] ?? "";
     const lastName = nameParts.slice(1).join(" ");
 
-    // Save profile (working days + holiday start month) and allowance in parallel.
-    // Company is intentionally omitted here; the user can fill it in via Profile later.
-    const [profileOk, allowanceOk] = await Promise.all([
-      usersController.updateProfile({
-        firstName,
-        lastName,
-        company: "",
-        email: session?.user?.email ?? "",
-        nonWorkingDays,
-        holidayStartMonth,
-        pinnedUserIds: [],
-      }),
-      usersController.addYearAllowance({
-        year: currentHolidayYear,
-        core: coreDays,
-        bought: boughtDays,
-        carried: carriedDays,
-      }),
-    ]);
+    // Save profile then allowance sequentially to avoid a read-modify-write race
+    // on the JSON database file (concurrent writes can overwrite each other).
+    const profileOk = await usersController.updateProfile({
+      firstName,
+      lastName,
+      company: "",
+      email: session?.user?.email ?? "",
+      nonWorkingDays,
+      holidayStartMonth,
+      pinnedUserIds: [],
+    });
+
+    if (!profileOk) {
+      setSaving(false);
+      setSubmitError("Failed to save. Please try again.");
+      return;
+    }
+
+    const allowanceOk = await usersController.addYearAllowance({
+      year: currentHolidayYear,
+      core: coreDays,
+      bought: boughtDays,
+      carried: carriedDays,
+    });
 
     setSaving(false);
 
-    if (!profileOk || !allowanceOk) {
+    if (!allowanceOk) {
       setSubmitError("Failed to save. Please try again.");
       return;
     }

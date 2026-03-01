@@ -18,6 +18,9 @@ import { entriesController } from "@/controllers/entriesController";
 import { getHolidayYearBounds } from "@/utils/dateHelpers";
 import type { YearAllowance } from "@/types";
 
+/** How long to wait before retrying initDashboard when the user record is not found. */
+const DASHBOARD_RETRY_DELAY_MS = 400;
+
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -46,20 +49,28 @@ export default function DashboardPage() {
     async function initDashboard() {
       setLoading(true);
       try {
-        const [rawUsers, holidays] = await Promise.all([
-          usersController.fetchAll(),
-          holidaysController.fetchBankHolidays(),
-        ]);
-        if (cancelled) return;
-        const redirected = applyUserData(
-          Array.isArray(rawUsers) ? rawUsers : [],
-          holidays,
-          sessionEmail,
-          sessionId
-        );
-        // Keep loading=true if we're redirecting to /setup so we never flash
-        // the "profile not found" error before the navigation completes.
-        if (!redirected && !cancelled) setLoading(false);
+        // Retry once (after a brief delay) if the user record is not found on
+        // the first attempt — handles the rare case where a preceding write
+        // (e.g. setup page save) hasn't fully persisted yet.
+        for (let attempt = 0; attempt <= 1; attempt++) {
+          if (attempt > 0) await new Promise<void>((r) => setTimeout(r, DASHBOARD_RETRY_DELAY_MS));
+          const [rawUsers, holidays] = await Promise.all([
+            usersController.fetchAll(),
+            holidaysController.fetchBankHolidays(),
+          ]);
+          if (cancelled) return;
+          const result = applyUserData(
+            Array.isArray(rawUsers) ? rawUsers : [],
+            holidays,
+            sessionEmail,
+            sessionId
+          );
+          // Keep loading=true if we're redirecting so we never flash the error UI.
+          if (result === "redirected") return;
+          if (result === "found") break;
+          // "not_found" on first attempt → loop and retry
+        }
+        if (!cancelled) setLoading(false);
       } catch {
         // Stop loading on fetch failure so the "profile not found" banner shows
         if (!cancelled) setLoading(false);
@@ -212,15 +223,17 @@ export default function DashboardPage() {
 
   /**
    * Apply fetched user data to component state.
-   * Returns true if a navigation to /setup was triggered (so the caller can
-   * avoid setting loading=false and flashing the "not found" UI).
+   * Returns:
+   *  "redirected" – a navigation to /setup was triggered (don't stop loading)
+   *  "found"      – current user was located and currentUser state was updated
+   *  "not_found"  – current user was not present in the fetched list
    */
   function applyUserData(
     users: PublicUser[],
     holidays: string[],
     sessionEmail: string | null | undefined,
     sessionId: string | null | undefined
-  ): boolean {
+  ): "redirected" | "found" | "not_found" {
     setBankHolidays(holidays);
     setAllUsers(users);
     const me = users.find(
@@ -231,11 +244,12 @@ export default function DashboardPage() {
     if (me) {
       if (me.yearAllowances.length === 0) {
         router.replace("/setup");
-        return true;
+        return "redirected";
       }
       setCurrentUser(me);
+      return "found";
     }
-    return false;
+    return "not_found";
   }
 
   async function handleAddEntry(entry: Omit<LeaveEntry, "id">) {
