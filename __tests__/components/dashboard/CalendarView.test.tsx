@@ -196,21 +196,21 @@ describe("CalendarView — legend", () => {
 });
 
 describe("CalendarView — add leave button", () => {
-  it("shows the + Add Leave button when isOwnProfile=true and onAdd is provided", () => {
+  it("shows the Add Leave button when isOwnProfile=true and onAdd is provided", () => {
     render(<CalendarView user={alice} bankHolidays={[]} isOwnProfile={true} onAdd={jest.fn()} />);
-    expect(screen.getByRole("button", { name: "+ Add Leave" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Add Leave/i })).toBeInTheDocument();
   });
 
-  it("does not show the + Add Leave button when isOwnProfile is false", () => {
+  it("does not show the Add Leave button when isOwnProfile is false", () => {
     render(<CalendarView user={alice} bankHolidays={[]} isOwnProfile={false} onAdd={jest.fn()} />);
-    expect(screen.queryByRole("button", { name: "+ Add Leave" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Add Leave/i })).toBeNull();
   });
 
-  it("calls onAdd when the + Add Leave button is clicked", async () => {
+  it("calls onAdd when the Add Leave button is clicked", async () => {
     const user = setup();
     const onAdd = jest.fn();
     render(<CalendarView user={alice} bankHolidays={[]} isOwnProfile={true} onAdd={onAdd} />);
-    await user.click(screen.getByRole("button", { name: "+ Add Leave" }));
+    await user.click(screen.getByRole("button", { name: /Add Leave/i }));
     expect(onAdd).toHaveBeenCalledTimes(1);
   });
 });

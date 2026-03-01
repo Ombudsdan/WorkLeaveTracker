@@ -3,7 +3,7 @@ import { useState, useEffect, type FormEvent } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import type { PublicUser, YearAllowance } from "@/types";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Check } from "lucide-react";
 import NavBar from "@/components/NavBar";
 import FormField from "@/components/FormField";
 import FormErrorOutlet from "@/components/FormErrorOutlet";
@@ -114,12 +114,14 @@ export default function ProfilePage() {
                   key={index}
                   type="button"
                   onClick={() => toggleWorkingDay(index)}
-                  className={`px-3 py-1 rounded-full text-sm font-medium border transition ${
+                  className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium border transition ${
                     workingDays.includes(index)
-                      ? "bg-green-100 border-green-300 text-green-700"
+                      ? "bg-green-100 border-green-400 text-green-700"
                       : "bg-gray-100 border-gray-300 text-gray-400"
                   }`}
+                  aria-pressed={workingDays.includes(index)}
                 >
+                  {workingDays.includes(index) && <Check size={12} strokeWidth={3} />}
                   {day}
                 </button>
               ))}
