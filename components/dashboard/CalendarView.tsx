@@ -92,7 +92,7 @@ export default function CalendarView({
             >
               <span>{day}</span>
               {cell.entry?.notes && (
-                <span className="text-[7px] leading-none truncate w-full text-center px-0.5 opacity-80">
+                <span className="text-[7px] leading-tight truncate w-full text-center px-0.5 opacity-80">
                   {cell.entry.notes}
                 </span>
               )}

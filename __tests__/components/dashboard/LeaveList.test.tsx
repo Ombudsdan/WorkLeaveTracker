@@ -186,8 +186,8 @@ describe("LeaveList — with entries", () => {
         onDelete={jest.fn()}
       />
     );
-    // Mon–Fri = 5 working days; shown as "5d"
-    expect(screen.getByText("5d")).toBeInTheDocument();
+    // Mon–Fri = 5 working days; shown as "(5d)"
+    expect(screen.getByText("(5d)")).toBeInTheDocument();
   });
 
   it("shows notes when present", () => {
@@ -204,7 +204,35 @@ describe("LeaveList — with entries", () => {
     expect(screen.getByText("Beach trip")).toBeInTheDocument();
   });
 
-  it("shows Edit and Delete buttons for own profile entries", () => {
+  it("shows a dash when notes are absent", () => {
+    render(
+      <LeaveList
+        user={{ ...alice, entries: [singleDayEntry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onAdd={jest.fn()}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    expect(screen.getByText("–")).toBeInTheDocument();
+  });
+
+  it("shows the status label for an entry", () => {
+    render(
+      <LeaveList
+        user={{ ...alice, entries: [entry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onAdd={jest.fn()}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    expect(screen.getByText("Approved")).toBeInTheDocument();
+  });
+
+  it("shows Edit and Delete icon buttons for own profile entries", () => {
     render(
       <LeaveList
         user={userWithEntries}
@@ -216,7 +244,7 @@ describe("LeaveList — with entries", () => {
       />
     );
     expect(screen.getAllByRole("button", { name: "Edit" })).toHaveLength(2);
-    expect(screen.getAllByRole("button", { name: "Del" })).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: "Delete" })).toHaveLength(2);
   });
 
   it("hides Edit and Delete buttons for other user's entries", () => {
@@ -231,7 +259,7 @@ describe("LeaveList — with entries", () => {
       />
     );
     expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Del" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Delete" })).toBeNull();
   });
 
   it("calls onEdit with the entry when the Edit button is clicked", async () => {
@@ -264,7 +292,7 @@ describe("LeaveList — with entries", () => {
         onDelete={onDelete}
       />
     );
-    await user.click(screen.getByRole("button", { name: "Del" }));
+    await user.click(screen.getByRole("button", { name: "Delete" }));
     expect(onDelete).toHaveBeenCalledWith(entry.id);
   });
 
@@ -280,6 +308,6 @@ describe("LeaveList — with entries", () => {
       />
     );
     // Mon–Fri minus 1 bank holiday = 4 working days
-    expect(screen.getByText("4d")).toBeInTheDocument();
+    expect(screen.getByText("(4d)")).toBeInTheDocument();
   });
 });
