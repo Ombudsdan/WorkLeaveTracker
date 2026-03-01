@@ -330,9 +330,6 @@ export default function ProfilePage() {
       setSubmitError("Failed to save. Please try again.");
     } else {
       setSaved(true);
-      // Invalidate the Next.js router cache so any page navigated to next
-      // (e.g. dashboard) will fetch fresh data instead of using a cached snapshot.
-      router.refresh();
       setTimeout(() => setSaved(false), 3000);
     }
   }
