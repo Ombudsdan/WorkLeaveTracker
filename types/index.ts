@@ -31,6 +31,11 @@ export interface UserAllowance {
   carried: number;
 }
 
+export interface YearAllowance extends UserAllowance {
+  /** The calendar year in which this holiday period begins */
+  year: number;
+}
+
 export interface UserProfile {
   firstName: string;
   lastName: string;
@@ -40,13 +45,15 @@ export interface UserProfile {
   nonWorkingDays: number[];
   /** 1-12, e.g. 1 for Jan, 4 for Apr */
   holidayStartMonth: number;
+  /** IDs of up to 3 other users pinned in the dashboard user selector */
+  pinnedUserIds?: string[];
 }
 
 export interface AppUser {
   id: string;
   password: string;
   profile: UserProfile;
-  allowance: UserAllowance;
+  yearAllowances: YearAllowance[];
   entries: LeaveEntry[];
 }
 

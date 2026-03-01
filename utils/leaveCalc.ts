@@ -16,8 +16,10 @@ export interface LeaveSummary {
  * Only holiday-type entries are counted; bank holidays on working days are excluded.
  */
 export function calcLeaveSummary(user: PublicUser, bankHolidays: string[]): LeaveSummary {
-  const total = user.allowance.core + user.allowance.bought + user.allowance.carried;
   const { start, end } = getHolidayYearBounds(user.profile.holidayStartMonth);
+  const currentYear = start.getFullYear();
+  const ya = user.yearAllowances.find((a) => a.year === currentYear);
+  const total = ya ? ya.core + ya.bought + ya.carried : 0;
 
   // Bank holidays that fall within this holiday year on working days
   const relevantBankHolidays = bankHolidays.filter((d) => {

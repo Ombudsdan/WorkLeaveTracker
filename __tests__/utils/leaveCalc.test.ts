@@ -23,7 +23,7 @@ const baseUser: PublicUser = {
     nonWorkingDays: [0, 6], // Sat + Sun
     holidayStartMonth: 1,
   },
-  allowance: { core: 25, bought: 0, carried: 0 },
+  yearAllowances: [{ year: 2026, core: 25, bought: 0, carried: 0 }],
   entries: [],
 };
 
@@ -31,7 +31,7 @@ describe("calcLeaveSummary — totals", () => {
   it("returns total as sum of core + bought + carried", () => {
     const user: PublicUser = {
       ...baseUser,
-      allowance: { core: 20, bought: 3, carried: 2 },
+      yearAllowances: [{ year: 2026, core: 20, bought: 3, carried: 2 }],
     };
     const { total } = calcLeaveSummary(user, []);
     expect(total).toBe(25);
@@ -237,7 +237,7 @@ describe("calcLeaveSummary — remaining can go negative", () => {
   it("returns a negative remaining when used days exceed allowance", () => {
     const user: PublicUser = {
       ...baseUser,
-      allowance: { core: 1, bought: 0, carried: 0 },
+      yearAllowances: [{ year: 2026, core: 1, bought: 0, carried: 0 }],
       entries: [
         {
           id: "e9",
@@ -250,5 +250,14 @@ describe("calcLeaveSummary — remaining can go negative", () => {
     };
     const { remaining } = calcLeaveSummary(user, []);
     expect(remaining).toBe(-4);
+  });
+});
+
+describe("calcLeaveSummary — no allowance configured", () => {
+  it("returns 0 total when no yearAllowance is configured for the current year", () => {
+    const user: PublicUser = { ...baseUser, yearAllowances: [] };
+    const summary = calcLeaveSummary(user, []);
+    expect(summary.total).toBe(0);
+    expect(summary.remaining).toBe(0);
   });
 });

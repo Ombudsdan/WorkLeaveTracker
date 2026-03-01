@@ -16,7 +16,7 @@ import {
   toIsoDate,
 } from "@/utils/dateHelpers";
 
-export default function CalendarView({ user, bankHolidays }: CalendarViewProps) {
+export default function CalendarView({ user, bankHolidays, isOwnProfile, onAdd }: CalendarViewProps) {
   const today = new Date();
   const [calendarYear, setCalendarYear] = useState(today.getFullYear());
   const [calendarMonth, setCalendarMonth] = useState(today.getMonth());
@@ -39,13 +39,23 @@ export default function CalendarView({ user, bankHolidays }: CalendarViewProps) 
         <h3 className="font-bold text-gray-800">
           {MONTH_NAMES_SHORT[calendarMonth]} {calendarYear}
         </h3>
-        <button
-          onClick={nextMonth}
-          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600"
-          aria-label="Next month"
-        >
-          ›
-        </button>
+        <div className="flex items-center gap-2">
+          {isOwnProfile && onAdd && (
+            <button
+              onClick={onAdd}
+              className="bg-indigo-600 text-white text-sm px-4 py-1.5 rounded-lg hover:bg-indigo-700 transition font-medium"
+            >
+              + Add Leave
+            </button>
+          )}
+          <button
+            onClick={nextMonth}
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600"
+            aria-label="Next month"
+          >
+            ›
+          </button>
+        </div>
       </div>
 
       {/* Day labels */}
@@ -153,4 +163,6 @@ interface CalendarCellProps {
 interface CalendarViewProps {
   user: PublicUser;
   bankHolidays: string[];
+  isOwnProfile?: boolean;
+  onAdd?: () => void;
 }

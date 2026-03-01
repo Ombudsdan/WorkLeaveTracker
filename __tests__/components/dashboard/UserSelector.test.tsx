@@ -12,8 +12,9 @@ const alice: PublicUser = {
     email: "alice@example.com",
     nonWorkingDays: [0, 6],
     holidayStartMonth: 1,
+    pinnedUserIds: ["u2"],
   },
-  allowance: { core: 25, bought: 0, carried: 0 },
+  yearAllowances: [{ year: 2026, core: 25, bought: 0, carried: 0 }],
   entries: [],
 };
 
@@ -26,8 +27,9 @@ const bob: PublicUser = {
     email: "bob@example.com",
     nonWorkingDays: [0, 6],
     holidayStartMonth: 1,
+    pinnedUserIds: [],
   },
-  allowance: { core: 25, bought: 0, carried: 0 },
+  yearAllowances: [{ year: 2026, core: 25, bought: 0, carried: 0 }],
   entries: [],
 };
 
@@ -136,6 +138,57 @@ describe("UserSelector", () => {
       />
     );
     // Only the "My Calendar" button
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+  });
+
+  it("does NOT render a button for a user that is not pinned", () => {
+    const charlie: typeof bob = {
+      ...bob,
+      id: "u3",
+      profile: { ...bob.profile, firstName: "Charlie", lastName: "Brown", email: "charlie@example.com" },
+    };
+    // alice only pins u2 (bob), not u3 (charlie)
+    render(
+      <UserSelector
+        currentUser={alice}
+        allUsers={[alice, bob, charlie]}
+        viewingUserId={null}
+        onSelectUser={jest.fn()}
+      />
+    );
+    expect(screen.queryByRole("button", { name: "Charlie Brown" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Bob Jones" })).toBeInTheDocument();
+  });
+
+  it("renders no pinned buttons when pinnedUserIds is empty", () => {
+    const aliceNoPins: typeof alice = {
+      ...alice,
+      profile: { ...alice.profile, pinnedUserIds: [] },
+    };
+    render(
+      <UserSelector
+        currentUser={aliceNoPins}
+        allUsers={[aliceNoPins, bob]}
+        viewingUserId={null}
+        onSelectUser={jest.fn()}
+      />
+    );
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+  });
+
+  it("renders no pinned buttons when pinnedUserIds is undefined", () => {
+    const aliceUndefinedPins: typeof alice = {
+      ...alice,
+      profile: { ...alice.profile, pinnedUserIds: undefined },
+    };
+    render(
+      <UserSelector
+        currentUser={aliceUndefinedPins}
+        allUsers={[aliceUndefinedPins, bob]}
+        viewingUserId={null}
+        onSelectUser={jest.fn()}
+      />
+    );
     expect(screen.getAllByRole("button")).toHaveLength(1);
   });
 });

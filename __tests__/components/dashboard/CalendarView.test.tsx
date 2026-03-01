@@ -29,7 +29,7 @@ const alice: PublicUser = {
     nonWorkingDays: [0, 6], // Sun + Sat
     holidayStartMonth: 1,
   },
-  allowance: { core: 25, bought: 0, carried: 0 },
+  yearAllowances: [{ year: 2026, core: 25, bought: 0, carried: 0 }],
   entries: [],
 };
 
@@ -192,5 +192,25 @@ describe("CalendarView — legend", () => {
     expect(screen.getByText("Planned")).toBeInTheDocument();
     expect(screen.getByText("Bank Holiday")).toBeInTheDocument();
     expect(screen.getByText("Non-Working")).toBeInTheDocument();
+  });
+});
+
+describe("CalendarView — add leave button", () => {
+  it("shows the + Add Leave button when isOwnProfile=true and onAdd is provided", () => {
+    render(<CalendarView user={alice} bankHolidays={[]} isOwnProfile={true} onAdd={jest.fn()} />);
+    expect(screen.getByRole("button", { name: "+ Add Leave" })).toBeInTheDocument();
+  });
+
+  it("does not show the + Add Leave button when isOwnProfile is false", () => {
+    render(<CalendarView user={alice} bankHolidays={[]} isOwnProfile={false} onAdd={jest.fn()} />);
+    expect(screen.queryByRole("button", { name: "+ Add Leave" })).toBeNull();
+  });
+
+  it("calls onAdd when the + Add Leave button is clicked", async () => {
+    const user = setup();
+    const onAdd = jest.fn();
+    render(<CalendarView user={alice} bankHolidays={[]} isOwnProfile={true} onAdd={onAdd} />);
+    await user.click(screen.getByRole("button", { name: "+ Add Leave" }));
+    expect(onAdd).toHaveBeenCalledTimes(1);
   });
 });

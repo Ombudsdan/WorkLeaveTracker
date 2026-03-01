@@ -49,6 +49,12 @@ export function updateUser(id: string, updates: Partial<AppUser>): AppUser | nul
   return db.users[idx];
 }
 
+export function addUser(user: AppUser): void {
+  const db = readDb();
+  db.users.push(user);
+  writeDb(db);
+}
+
 export function addEntry(userId: string, entry: LeaveEntry): boolean {
   const db = readDb();
   const user = db.users.find((u) => u.id === userId);

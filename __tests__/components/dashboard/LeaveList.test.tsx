@@ -28,7 +28,7 @@ const alice: PublicUser = {
     nonWorkingDays: [0, 6],
     holidayStartMonth: 1,
   },
-  allowance: { core: 25, bought: 0, carried: 0 },
+  yearAllowances: [{ year: 2026, core: 25, bought: 0, carried: 0 }],
   entries: [],
 };
 
