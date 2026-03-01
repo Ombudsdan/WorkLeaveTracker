@@ -46,18 +46,28 @@ describe("EmailField — rendering", () => {
 });
 
 describe("EmailField — validation", () => {
-  it("shows a format error when an invalid email is typed", async () => {
+  it("shows a format error when an invalid email is typed and field is blurred", async () => {
     renderInProvider(<ControlledEmailField id="email" label="Email" initialValue="" value="" />);
     await userEvent.type(screen.getByLabelText("Email"), "notanemail");
+    await userEvent.tab(); // trigger blur
     expect(screen.getByText(/valid email address/i)).toBeInTheDocument();
   });
 
-  it("clears the format error when a valid email is typed", async () => {
+  it("does not show a format error while typing (before blur)", async () => {
+    renderInProvider(<ControlledEmailField id="email" label="Email" initialValue="" value="" />);
+    await userEvent.type(screen.getByLabelText("Email"), "notanemail");
+    expect(screen.queryByText(/valid email address/i)).toBeNull();
+  });
+
+  it("clears the format error when a valid email is typed after an invalid one (both blurred)", async () => {
     renderInProvider(<ControlledEmailField id="email" label="Email" initialValue="" value="" />);
     await userEvent.type(screen.getByLabelText("Email"), "bad");
+    await userEvent.tab();
     expect(screen.getByText(/valid email address/i)).toBeInTheDocument();
+    await userEvent.click(screen.getByLabelText("Email"));
     await userEvent.clear(screen.getByLabelText("Email"));
     await userEvent.type(screen.getByLabelText("Email"), "valid@example.com");
+    await userEvent.tab();
     expect(screen.queryByText(/valid email address/i)).toBeNull();
   });
 
@@ -77,14 +87,24 @@ describe("EmailField — validation", () => {
 });
 
 describe("StandaloneEmailField — isolated validation scope", () => {
+  function ControlledStandaloneEmailField(
+    props: Omit<React.ComponentProps<typeof StandaloneEmailField>, "onChange" | "value"> & {
+      initialValue?: string;
+    }
+  ) {
+    const [value, setValue] = useState(props.initialValue ?? "");
+    return <StandaloneEmailField {...props} value={value} onChange={setValue} />;
+  }
+
   it("renders without needing an outer FormValidationProvider", () => {
     render(<StandaloneEmailField id="email" label="Email" value="" onChange={jest.fn()} />);
     expect(screen.getByLabelText("Email")).toBeInTheDocument();
   });
 
-  it("validates email format independently", async () => {
-    render(<StandaloneEmailField id="email" label="Email" value="" onChange={jest.fn()} />);
+  it("validates email format independently after blur", async () => {
+    render(<ControlledStandaloneEmailField id="email" label="Email" />);
     await userEvent.type(screen.getByLabelText("Email"), "bad");
+    await userEvent.tab();
     expect(screen.getByText(/valid email address/i)).toBeInTheDocument();
   });
 });

@@ -35,6 +35,7 @@ export default function ProfilePage() {
   const [pinnedUserIds, setPinnedUserIds] = useState<string[]>([]);
   const [saved, setSaved] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [loading, setLoading] = useState(true);
   const [showAllowanceModal, setShowAllowanceModal] = useState(false);
   const [editingAllowance, setEditingAllowance] = useState<YearAllowance | undefined>(undefined);
   const [showPinModal, setShowPinModal] = useState(false);
@@ -45,7 +46,9 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (status !== "authenticated") return;
+    setLoading(true);
     usersController.fetchAll().then((result) => {
+      setLoading(false);
       if (!Array.isArray(result)) return;
       setAllUsers(result);
       const me = result.find((user) => user.profile.email === session?.user?.email);
@@ -61,7 +64,7 @@ export default function ProfilePage() {
     });
   }, [status, session]);
 
-  if (status === "loading") {
+  if (status === "loading" || loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading…</div>;
   }
 

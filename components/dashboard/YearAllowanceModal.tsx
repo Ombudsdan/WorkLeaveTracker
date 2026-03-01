@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { YearAllowance } from "@/types";
 import FormField from "@/components/FormField";
 import Button from "@/components/Button";
-import { FormValidationProvider } from "@/contexts/FormValidationContext";
+import { FormValidationProvider, useFormValidation } from "@/contexts/FormValidationContext";
 
 export default function YearAllowanceModal({
   initialYear,
@@ -29,6 +29,7 @@ function YearAllowanceModalInner({
   onClose,
   onSave,
 }: YearAllowanceModalProps) {
+  const { triggerAllValidations } = useFormValidation();
   const [year, setYear] = useState(existing?.year ?? initialYear ?? new Date().getFullYear());
   const [core, setCore] = useState(existing?.core ?? 25);
   const [bought, setBought] = useState(existing?.bought ?? 0);
@@ -94,6 +95,7 @@ function YearAllowanceModalInner({
   );
 
   function handleSave() {
+    if (!triggerAllValidations()) return;
     onSave({ year, core, bought, carried });
   }
 }
