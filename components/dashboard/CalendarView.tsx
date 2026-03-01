@@ -88,8 +88,14 @@ export default function CalendarView({
               className={`relative aspect-square flex flex-col items-center justify-center rounded-lg text-xs font-medium transition cursor-default
                 ${cell.isToday ? "ring-2 ring-indigo-500" : ""}
                 ${cell.cellClass}`}
+              title={cell.entry?.notes}
             >
               <span>{day}</span>
+              {cell.entry?.notes && (
+                <span className="text-[7px] leading-none truncate w-full text-center px-0.5 opacity-80">
+                  {cell.entry.notes}
+                </span>
+              )}
               {cell.isBankHoliday && !cell.entry && (
                 <span className="text-purple-400 text-[8px] leading-none">BH</span>
               )}

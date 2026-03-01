@@ -9,62 +9,64 @@ import {
   LEAVE_TYPE_LABELS,
 } from "@/variables/leaveConfig";
 import FormField from "@/components/FormField";
-import FormSelect from "@/components/FormSelect";
+import DateRangePicker from "@/components/DateRangePicker";
+import LeaveOptionPicker from "@/components/LeaveOptionPicker";
 import Button from "@/components/Button";
+import { FormValidationProvider, useFormValidation } from "@/contexts/FormValidationContext";
 
 export default function AddLeaveModal({ onClose, onSave }: AddLeaveModalProps) {
+  return (
+    <FormValidationProvider>
+      <AddLeaveModalInner onClose={onClose} onSave={onSave} />
+    </FormValidationProvider>
+  );
+}
+
+function AddLeaveModalInner({ onClose, onSave }: AddLeaveModalProps) {
+  const { triggerAllValidations } = useFormValidation();
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [status, setStatus] = useState<LeaveStatus>(LeaveStatus.Planned);
-  const [type, setType] = useState<LeaveType>(LeaveType.Holiday);
+  const [type, setType] = useState<LeaveType | "">("");
+  const [status, setStatus] = useState<LeaveStatus | "">("");
   const [notes, setNotes] = useState("");
-
-  const statusOptions = LEAVE_STATUS_ORDER.map((leaveStatus) => ({
-    value: leaveStatus,
-    label: LEAVE_STATUS_LABELS[leaveStatus],
-  }));
 
   const typeOptions = LEAVE_TYPE_ORDER.map((leaveType) => ({
     value: leaveType,
     label: LEAVE_TYPE_LABELS[leaveType],
   }));
 
+  const statusOptions = LEAVE_STATUS_ORDER.map((leaveStatus) => ({
+    value: leaveStatus,
+    label: LEAVE_STATUS_LABELS[leaveStatus],
+  }));
+
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
         <h3 className="font-bold text-gray-800 mb-4">Add Leave</h3>
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <FormField
-              id="add-startDate"
-              label="Start Date"
-              type="date"
-              value={startDate}
-              onChange={(v) => setStartDate(v)}
-              required
-            />
-            <FormField
-              id="add-endDate"
-              label="End Date"
-              type="date"
-              value={endDate}
-              onChange={(v) => setEndDate(v)}
-              required
-            />
-          </div>
-          <FormSelect
-            id="add-status"
-            label="Status"
-            value={status}
-            onChange={(v) => setStatus(v)}
-            options={statusOptions}
+        <div className="space-y-4">
+          <DateRangePicker
+            id="add-dateRange"
+            startDate={startDate}
+            endDate={endDate}
+            onStartChange={setStartDate}
+            onEndChange={setEndDate}
           />
-          <FormSelect
+          <LeaveOptionPicker
             id="add-type"
             label="Type"
+            options={typeOptions}
             value={type}
             onChange={(v) => setType(v)}
-            options={typeOptions}
+            required
+          />
+          <LeaveOptionPicker
+            id="add-status"
+            label="Status"
+            options={statusOptions}
+            value={status}
+            onChange={(v) => setStatus(v)}
+            required
           />
           <FormField
             id="add-notes"
@@ -72,16 +74,12 @@ export default function AddLeaveModal({ onClose, onSave }: AddLeaveModalProps) {
             value={notes}
             onChange={(v) => setNotes(v)}
             placeholder="e.g. Beach holiday"
+            maxLength={30}
           />
         </div>
         <div className="flex gap-2 mt-5">
-          <Button
-            variant="primary"
-            fullWidth
-            onClick={handleSave}
-            disabled={!startDate || !endDate}
-          >
-            Add Leave
+          <Button variant="primary" fullWidth onClick={handleSave}>
+            Save
           </Button>
           <Button variant="secondary" fullWidth onClick={onClose}>
             Cancel
@@ -92,7 +90,15 @@ export default function AddLeaveModal({ onClose, onSave }: AddLeaveModalProps) {
   );
 
   function handleSave() {
-    onSave({ startDate, endDate, status, type, notes });
+    const valid = triggerAllValidations();
+    if (!valid) return;
+    onSave({
+      startDate,
+      endDate,
+      status: status as LeaveStatus,
+      type: type as LeaveType,
+      notes,
+    });
   }
 }
 

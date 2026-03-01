@@ -3,8 +3,27 @@ import { useState } from "react";
 import type { YearAllowance } from "@/types";
 import FormField from "@/components/FormField";
 import Button from "@/components/Button";
+import { FormValidationProvider } from "@/contexts/FormValidationContext";
 
 export default function YearAllowanceModal({
+  initialYear,
+  existing,
+  onClose,
+  onSave,
+}: YearAllowanceModalProps) {
+  return (
+    <FormValidationProvider>
+      <YearAllowanceModalInner
+        initialYear={initialYear}
+        existing={existing}
+        onClose={onClose}
+        onSave={onSave}
+      />
+    </FormValidationProvider>
+  );
+}
+
+function YearAllowanceModalInner({
   initialYear,
   existing,
   onClose,
