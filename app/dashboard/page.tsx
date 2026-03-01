@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import type { PublicUser, LeaveEntry, UserAllowance } from "@/types";
 import NavBar from "@/components/NavBar";
@@ -105,9 +105,12 @@ export default function DashboardPage() {
               refresh the page
             </button>{" "}
             or{" "}
-            <a href="/profile" className="underline font-medium hover:text-amber-900">
-              update your profile
-            </a>
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="underline font-medium hover:text-amber-900"
+            >
+              sign in again
+            </button>
             .
           </div>
         </main>

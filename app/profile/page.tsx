@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, type FormEvent } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import type { PublicUser, YearAllowance } from "@/types";
 import { CheckCircle, Check } from "lucide-react";
@@ -67,12 +67,12 @@ export default function ProfilePage() {
           result.find((u) => u.profile.email === session?.user?.email);
         if (me) {
           applyUserProfile(me);
-        } else if (session?.user) {
-          // User not found in DB (e.g. after a cold start on Vercel); pre-fill from session
-          const nameParts = (session.user.name ?? "").split(" ");
-          setFirstName(nameParts[0] ?? "");
-          setLastName(nameParts.slice(1).join(" ") ?? "");
-          setEmail(session.user.email ?? "");
+        } else {
+          // User not found in DB — the session is likely stale (e.g. the dev
+          // server restarted, regenerating NEXTAUTH_SECRET, or the DB was
+          // reset).  Sign out to clear the stale client-side session so the
+          // user can log back in with a fresh session.
+          signOut({ callbackUrl: "/login" });
         }
       })
       .catch(() => {
@@ -333,6 +333,18 @@ export default function ProfilePage() {
     } else {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
+      // Re-sync local state from the server after a successful save.  This
+      // ensures that yearAllowances and pinnedUserIds (which are not part of
+      // the PATCH body) are always up to date, and catches any case where the
+      // client and server state have diverged.
+      const sessionId = (session?.user as { id?: string })?.id;
+      const refreshed = await usersController.fetchAll();
+      if (Array.isArray(refreshed) && refreshed.length > 0) {
+        const me =
+          (sessionId ? refreshed.find((u) => u.id === sessionId) : undefined) ??
+          refreshed.find((u) => u.profile.email === email);
+        if (me) applyUserProfile(me);
+      }
     }
   }
 
