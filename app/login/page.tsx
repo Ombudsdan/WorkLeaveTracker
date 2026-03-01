@@ -2,6 +2,7 @@
 import { useState, FormEvent } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -40,7 +41,7 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400"
               placeholder="you@example.com"
             />
           </div>
@@ -51,7 +52,7 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400"
               placeholder="••••••••"
             />
           </div>
@@ -64,8 +65,11 @@ export default function LoginPage() {
             {loading ? "Signing in…" : "Sign In"}
           </button>
         </form>
-        <p className="text-xs text-gray-400 mt-6 text-center">
-          Demo users: alice@example.com / bob@example.com &mdash; password: password123
+        <p className="text-sm text-center mt-4 text-gray-500">
+          Don&apos;t have an account?{" "}
+          <Link href="/register" className="text-indigo-600 hover:underline font-medium">
+            Register
+          </Link>
         </p>
       </div>
     </div>

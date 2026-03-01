@@ -71,7 +71,10 @@ export function getHolidayYearEnd(holidayStartMonth: number): Date {
 }
 
 export function calculateLeaveSummary(user: AppUser, bankHolidayDates: string[]): LeaveSummary {
-  const totalAllowance = user.allowance.core + user.allowance.bought + user.allowance.carried;
+  const yearStart = getHolidayYearStart(user.profile.holidayStartMonth);
+  const currentYear = yearStart.getFullYear();
+  const ya = user.yearAllowances.find((a) => a.year === currentYear);
+  const totalAllowance = ya ? ya.core + ya.bought + ya.carried : 0;
 
   const bhForUser = getBankHolidaysForUser(user, bankHolidayDates);
 

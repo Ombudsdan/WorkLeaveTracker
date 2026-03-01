@@ -7,7 +7,7 @@ export default function UserSelector({
   viewingUserId,
   onSelectUser,
 }: UserSelectorProps) {
-  const otherUsers = getOtherUsers(allUsers, currentUser.id);
+  const pinnedUsers = getPinnedUsers(allUsers, currentUser);
 
   return (
     <div className="flex items-center gap-3 mb-6 flex-wrap">
@@ -22,7 +22,7 @@ export default function UserSelector({
       >
         My Calendar
       </button>
-      {otherUsers.map((user) => (
+      {pinnedUsers.map((user) => (
         <button
           key={user.id}
           onClick={() => onSelectUser(user.id)}
@@ -39,8 +39,9 @@ export default function UserSelector({
   );
 }
 
-function getOtherUsers(allUsers: PublicUser[], currentUserId: string): PublicUser[] {
-  return allUsers.filter((user) => user.id !== currentUserId);
+function getPinnedUsers(allUsers: PublicUser[], currentUser: PublicUser): PublicUser[] {
+  const pinnedIds = currentUser.profile.pinnedUserIds ?? [];
+  return allUsers.filter((u) => u.id !== currentUser.id && pinnedIds.includes(u.id));
 }
 
 interface UserSelectorProps {

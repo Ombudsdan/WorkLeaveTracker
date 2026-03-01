@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import type { PublicUser, LeaveEntry } from "@/types";
+import type { PublicUser, LeaveEntry, UserAllowance } from "@/types";
 import NavBar from "@/components/NavBar";
 import UserSelector from "@/components/dashboard/UserSelector";
 import SummaryCard from "@/components/dashboard/SummaryCard";
@@ -14,6 +14,7 @@ import EditLeaveModal from "@/components/dashboard/EditLeaveModal";
 import { usersController } from "@/controllers/usersController";
 import { holidaysController } from "@/controllers/holidaysController";
 import { entriesController } from "@/controllers/entriesController";
+import { getHolidayYearBounds } from "@/utils/dateHelpers";
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -67,11 +68,21 @@ export default function DashboardPage() {
 
   const isOwnProfile = !viewingUserId || viewingUserId === currentUser.id;
 
+  const currentAllowance = getCurrentYearAllowance(currentUser);
+  const allowanceWarning = getYearAllowanceWarning(currentUser);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <NavBar activePage="dashboard" />
 
       <main className="max-w-6xl mx-auto py-6 px-4">
+        {allowanceWarning && (
+          <div className="mb-4 bg-amber-50 border border-amber-300 text-amber-800 rounded-xl px-4 py-3 text-sm flex items-start gap-2">
+            <span className="text-amber-500 text-lg leading-none mt-0.5">⚠</span>
+            <span>{allowanceWarning}</span>
+          </div>
+        )}
+
         <UserSelector
           currentUser={currentUser}
           allUsers={allUsers}
@@ -86,7 +97,7 @@ export default function DashboardPage() {
               bankHolidays={bankHolidays}
               isOwnProfile={isOwnProfile}
             />
-            <AllowanceBreakdown allowance={displayedUser.allowance} />
+            <AllowanceBreakdown allowance={currentAllowance} />
             <LeaveList
               user={displayedUser}
               bankHolidays={bankHolidays}
@@ -98,7 +109,12 @@ export default function DashboardPage() {
           </div>
 
           <div className="lg:col-span-2">
-            <CalendarView user={displayedUser} bankHolidays={bankHolidays} />
+            <CalendarView
+              user={displayedUser}
+              bankHolidays={bankHolidays}
+              isOwnProfile={isOwnProfile}
+              onAdd={() => setShowAddModal(true)}
+            />
           </div>
         </div>
       </main>
@@ -152,4 +168,26 @@ export default function DashboardPage() {
     await entriesController.remove(id);
     await refreshData();
   }
+}
+
+function getCurrentYearAllowance(user: PublicUser): UserAllowance {
+  const { start } = getHolidayYearBounds(user.profile.holidayStartMonth);
+  const ya = user.yearAllowances.find((a) => a.year === start.getFullYear());
+  return ya ?? { core: 0, bought: 0, carried: 0 };
+}
+
+function getYearAllowanceWarning(user: PublicUser): string | null {
+  const { end, start } = getHolidayYearBounds(user.profile.holidayStartMonth);
+  const now = new Date();
+  const daysUntilEnd = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (daysUntilEnd > 0 && daysUntilEnd <= 60) {
+    const nextYear = start.getFullYear() + 1;
+    const hasNextYear = user.yearAllowances.some((a) => a.year === nextYear);
+    if (!hasNextYear) {
+      return `Your holiday year ends in ${daysUntilEnd} day${daysUntilEnd === 1 ? "" : "s"}. Please configure your ${nextYear} leave allowance in your profile.`;
+    }
+  }
+
+  return null;
 }

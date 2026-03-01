@@ -30,7 +30,7 @@ export default function FormSelect<T extends string>({
         id={id}
         value={value}
         onChange={(e) => handleChange(e.target.value as T)}
-        className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 focus:outline-none
+        className={`w-full border rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-indigo-400 focus:outline-none
           ${error ? "border-red-400" : "border-gray-300"}`}
       >
         {options.map((option) => (
