@@ -27,6 +27,7 @@ function SetupPageInner() {
   const { setError, triggerAllValidations, clearAllErrors } = useFormValidation();
 
   const [workingDays, setWorkingDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [company, setCompany] = useState("");
   const [holidayStartMonth, setHolidayStartMonth] = useState(1);
   const [coreDays, setCoreDays] = useState(25);
   const [boughtDays, setBoughtDays] = useState(0);
@@ -104,39 +105,48 @@ function SetupPageInner() {
             <p className="text-xs text-gray-400 mt-1">Select the days you work</p>
           </section>
 
-          {/* Holiday period */}
-          <section>
-            <h3 className="font-semibold text-gray-700 mb-2 text-sm uppercase tracking-wide">
-              Holiday Year
-            </h3>
-            <div>
-              <label
-                htmlFor="holidayStartMonth"
-                className="block text-sm font-medium text-gray-600 mb-1"
-              >
-                Holiday Year Starts
-              </label>
-              <select
-                id="holidayStartMonth"
-                value={holidayStartMonth}
-                onChange={(e) => setHolidayStartMonth(Number(e.target.value))}
-                className="border rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-indigo-400 focus:outline-none"
-              >
-                {MONTH_NAMES_LONG.map((month, index) => (
-                  <option key={index} value={index + 1}>
-                    {month}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </section>
-
           {/* Leave allowance */}
           <section>
             <h3 className="font-semibold text-gray-700 mb-2 text-sm uppercase tracking-wide">
               Leave Allowance for {currentHolidayYear}
             </h3>
             <div className="space-y-3">
+              <div>
+                <label
+                  htmlFor="setup-company"
+                  className="block text-sm font-medium text-gray-600 mb-1"
+                >
+                  Company <span className="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <input
+                  id="setup-company"
+                  type="text"
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
+                  className="w-full border rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+                  placeholder="Acme Ltd"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="setup-holidayStartMonth"
+                  className="block text-sm font-medium text-gray-600 mb-1"
+                >
+                  Holiday Year Starts
+                </label>
+                <select
+                  id="setup-holidayStartMonth"
+                  value={holidayStartMonth}
+                  onChange={(e) => setHolidayStartMonth(Number(e.target.value))}
+                  className="w-full border rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+                >
+                  {MONTH_NAMES_LONG.map((month, index) => (
+                    <option key={index} value={index + 1}>
+                      {month}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <FormField
                 id="setup-core"
                 label="Core Days"
@@ -205,10 +215,8 @@ function SetupPageInner() {
     const profileOk = await usersController.updateProfile({
       firstName,
       lastName,
-      company: "",
       email: session?.user?.email ?? "",
       nonWorkingDays,
-      holidayStartMonth,
       pinnedUserIds: [],
     });
 
@@ -220,6 +228,8 @@ function SetupPageInner() {
 
     const allowanceOk = await usersController.addYearAllowance({
       year: currentHolidayYear,
+      company,
+      holidayStartMonth,
       core: coreDays,
       bought: boughtDays,
       carried: carriedDays,

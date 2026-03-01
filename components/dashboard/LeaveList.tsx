@@ -8,7 +8,6 @@ interface LeaveListProps {
   user: PublicUser;
   bankHolidays: string[];
   isOwnProfile: boolean;
-  onAdd: () => void;
   onEdit: (entry: LeaveEntry) => void;
   onDelete: (id: string) => void;
 }
@@ -25,7 +24,6 @@ export default function LeaveList({
   user,
   bankHolidays,
   isOwnProfile,
-  onAdd,
   onEdit,
   onDelete,
 }: LeaveListProps) {
@@ -39,14 +37,6 @@ export default function LeaveList({
     <div className="bg-white rounded-2xl shadow p-5">
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-semibold text-gray-700 text-sm">{title}</h3>
-        {isOwnProfile && (
-          <button
-            onClick={onAdd}
-            className="bg-indigo-600 text-white text-xs px-3 py-1 rounded-lg hover:bg-indigo-700 transition"
-          >
-            + Add
-          </button>
-        )}
       </div>
 
       {sorted.length === 0 ? (

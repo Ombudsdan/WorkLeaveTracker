@@ -15,7 +15,7 @@ import YearAllowanceModal from "@/components/dashboard/YearAllowanceModal";
 import { usersController } from "@/controllers/usersController";
 import { holidaysController } from "@/controllers/holidaysController";
 import { entriesController } from "@/controllers/entriesController";
-import { getHolidayYearBounds } from "@/utils/dateHelpers";
+import { getHolidayYearBounds, getActiveYearAllowance } from "@/utils/dateHelpers";
 import type { YearAllowance } from "@/types";
 
 /** How long to wait before retrying initDashboard when the user record is not found. */
@@ -125,7 +125,8 @@ export default function DashboardPage() {
   const allowanceWarning = getYearAllowanceWarning(currentUser);
   /** The year we need to configure if the warning is visible */
   const nextAllowanceYear = (() => {
-    const { start } = getHolidayYearBounds(currentUser.profile.holidayStartMonth);
+    const activeYa = getActiveYearAllowance(currentUser.yearAllowances);
+    const { start } = getHolidayYearBounds(activeYa?.holidayStartMonth ?? 1);
     return start.getFullYear() + 1;
   })();
 
@@ -168,7 +169,6 @@ export default function DashboardPage() {
               user={displayedUser}
               bankHolidays={bankHolidays}
               isOwnProfile={isOwnProfile}
-              onAdd={() => setShowAddModal(true)}
               onEdit={setEditingEntry}
               onDelete={handleDeleteEntry}
             />
@@ -207,20 +207,6 @@ export default function DashboardPage() {
     </div>
   );
 
-  async function refreshData() {
-    const sessionEmail = session?.user?.email;
-    const sessionId = (session?.user as { id?: string })?.id;
-    try {
-      const [rawUsers, holidays] = await Promise.all([
-        usersController.fetchAll(),
-        holidaysController.fetchBankHolidays(),
-      ]);
-      applyUserData(Array.isArray(rawUsers) ? rawUsers : [], holidays, sessionEmail, sessionId);
-    } catch {
-      // silently ignore refresh errors
-    }
-  }
-
   /**
    * Apply fetched user data to component state.
    * Returns:
@@ -253,43 +239,59 @@ export default function DashboardPage() {
   }
 
   async function handleAddEntry(entry: Omit<LeaveEntry, "id">) {
-    const ok = await entriesController.create(entry);
-    if (ok) {
+    const created = await entriesController.create(entry);
+    if (created) {
       setShowAddModal(false);
-      await refreshData();
+      applyEntryUpdate((entries) => [...entries, created]);
     }
   }
 
   async function handleUpdateEntry(entry: LeaveEntry) {
-    const ok = await entriesController.update(entry);
-    if (ok) {
+    const updated = await entriesController.update(entry);
+    if (updated) {
       setEditingEntry(null);
-      await refreshData();
+      applyEntryUpdate((entries) => entries.map((e) => (e.id === updated.id ? updated : e)));
     }
   }
 
   async function handleDeleteEntry(id: string) {
-    await entriesController.remove(id);
-    await refreshData();
+    const ok = await entriesController.remove(id);
+    if (ok) {
+      applyEntryUpdate((entries) => entries.filter((e) => e.id !== id));
+    }
+  }
+
+  /** Update the current user's entries in both currentUser and allUsers state. */
+  function applyEntryUpdate(updater: (entries: LeaveEntry[]) => LeaveEntry[]) {
+    const userId = currentUser?.id;
+    setCurrentUser((prev) => (prev ? { ...prev, entries: updater(prev.entries) } : prev));
+    setAllUsers((prev) =>
+      prev.map((u) => (u.id === userId ? { ...u, entries: updater(u.entries) } : u))
+    );
   }
 
   async function handleSaveWarningAllowance(ya: YearAllowance) {
-    const ok = await usersController.addYearAllowance(ya);
-    if (ok) {
+    const saved = await usersController.addYearAllowance(ya);
+    if (saved) {
       setShowAllowanceWarningModal(false);
-      await refreshData();
+      setCurrentUser((prev) => {
+        if (!prev) return prev;
+        const rest = prev.yearAllowances.filter((a) => a.year !== saved.year);
+        return { ...prev, yearAllowances: [...rest, saved].sort((a, b) => a.year - b.year) };
+      });
     }
   }
 }
 
 function getCurrentYearAllowance(user: PublicUser): UserAllowance {
-  const { start } = getHolidayYearBounds(user.profile.holidayStartMonth);
-  const ya = user.yearAllowances.find((a) => a.year === start.getFullYear());
+  const ya = getActiveYearAllowance(user.yearAllowances);
   return ya ?? { core: 0, bought: 0, carried: 0 };
 }
 
 function getYearAllowanceWarning(user: PublicUser): string | null {
-  const { end, start } = getHolidayYearBounds(user.profile.holidayStartMonth);
+  const activeYa = getActiveYearAllowance(user.yearAllowances);
+  const holidayStartMonth = activeYa?.holidayStartMonth ?? 1;
+  const { end, start } = getHolidayYearBounds(holidayStartMonth);
   const now = new Date();
   const daysUntilEnd = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 

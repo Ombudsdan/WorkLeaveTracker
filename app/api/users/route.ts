@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     company?: string;
   };
 
-  const { firstName, lastName, email, password, company } = body;
+  const { firstName, lastName, email, password } = body;
   if (!firstName || !lastName || !email || !password) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
@@ -48,9 +48,7 @@ export async function POST(request: Request) {
       firstName,
       lastName,
       email,
-      company: company ?? "",
       nonWorkingDays: [0, 6],
-      holidayStartMonth: 1,
       pinnedUserIds: [],
     },
     yearAllowances: [],

@@ -3,7 +3,7 @@ import { LeaveStatus } from "@/types";
 import type { PublicUser } from "@/types";
 import { STATUS_DOT } from "@/variables/colours";
 import { calcLeaveSummary } from "@/utils/leaveCalc";
-import { getHolidayYearBounds } from "@/utils/dateHelpers";
+import { getHolidayYearBounds, getActiveYearAllowance } from "@/utils/dateHelpers";
 
 interface SummaryCardProps {
   user: PublicUser;
@@ -13,7 +13,8 @@ interface SummaryCardProps {
 
 export default function SummaryCard({ user, bankHolidays, isOwnProfile }: SummaryCardProps) {
   const summary = calcLeaveSummary(user, bankHolidays);
-  const { start: hyStart, end: hyEnd } = getHolidayYearBounds(user.profile.holidayStartMonth);
+  const activeYa = getActiveYearAllowance(user.yearAllowances);
+  const { start: hyStart, end: hyEnd } = getHolidayYearBounds(activeYa?.holidayStartMonth ?? 1);
 
   const statusRows: { label: string; status: LeaveStatus; count: number }[] = [
     { label: "Approved", status: LeaveStatus.Approved, count: summary.approved },

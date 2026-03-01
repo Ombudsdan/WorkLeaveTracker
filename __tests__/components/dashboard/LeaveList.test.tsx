@@ -23,12 +23,10 @@ const alice: PublicUser = {
   profile: {
     firstName: "Alice",
     lastName: "Smith",
-    company: "Acme",
     email: "alice@example.com",
     nonWorkingDays: [0, 6],
-    holidayStartMonth: 1,
   },
-  yearAllowances: [{ year: 2026, core: 25, bought: 0, carried: 0 }],
+  yearAllowances: [{ year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 }],
   entries: [],
 };
 
@@ -56,7 +54,6 @@ describe("LeaveList — empty state", () => {
         user={alice}
         bankHolidays={[]}
         isOwnProfile={true}
-        onAdd={jest.fn()}
         onEdit={jest.fn()}
         onDelete={jest.fn()}
       />
@@ -70,7 +67,6 @@ describe("LeaveList — empty state", () => {
         user={alice}
         bankHolidays={[]}
         isOwnProfile={false}
-        onAdd={jest.fn()}
         onEdit={jest.fn()}
         onDelete={jest.fn()}
       />
@@ -86,7 +82,6 @@ describe("LeaveList — headings", () => {
         user={alice}
         bankHolidays={[]}
         isOwnProfile={true}
-        onAdd={jest.fn()}
         onEdit={jest.fn()}
         onDelete={jest.fn()}
       />
@@ -100,7 +95,6 @@ describe("LeaveList — headings", () => {
         user={alice}
         bankHolidays={[]}
         isOwnProfile={false}
-        onAdd={jest.fn()}
         onEdit={jest.fn()}
         onDelete={jest.fn()}
       />
@@ -110,49 +104,17 @@ describe("LeaveList — headings", () => {
 });
 
 describe("LeaveList — add button", () => {
-  it("shows the + Add button for own profile", () => {
+  it("does not show an Add button (it was moved to CalendarView)", () => {
     render(
       <LeaveList
         user={alice}
         bankHolidays={[]}
         isOwnProfile={true}
-        onAdd={jest.fn()}
         onEdit={jest.fn()}
         onDelete={jest.fn()}
       />
     );
-    expect(screen.getByRole("button", { name: "+ Add" })).toBeInTheDocument();
-  });
-
-  it("hides the + Add button for other user's profile", () => {
-    render(
-      <LeaveList
-        user={alice}
-        bankHolidays={[]}
-        isOwnProfile={false}
-        onAdd={jest.fn()}
-        onEdit={jest.fn()}
-        onDelete={jest.fn()}
-      />
-    );
-    expect(screen.queryByRole("button", { name: "+ Add" })).toBeNull();
-  });
-
-  it("calls onAdd when the + Add button is clicked", async () => {
-    const user = setup();
-    const onAdd = jest.fn();
-    render(
-      <LeaveList
-        user={alice}
-        bankHolidays={[]}
-        isOwnProfile={true}
-        onAdd={onAdd}
-        onEdit={jest.fn()}
-        onDelete={jest.fn()}
-      />
-    );
-    await user.click(screen.getByRole("button", { name: "+ Add" }));
-    expect(onAdd).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("button", { name: /add/i })).toBeNull();
   });
 });
 
@@ -165,7 +127,6 @@ describe("LeaveList — with entries", () => {
         user={userWithEntries}
         bankHolidays={[]}
         isOwnProfile={true}
-        onAdd={jest.fn()}
         onEdit={jest.fn()}
         onDelete={jest.fn()}
       />
@@ -181,7 +142,6 @@ describe("LeaveList — with entries", () => {
         user={userWithEntries}
         bankHolidays={[]}
         isOwnProfile={true}
-        onAdd={jest.fn()}
         onEdit={jest.fn()}
         onDelete={jest.fn()}
       />
@@ -196,7 +156,6 @@ describe("LeaveList — with entries", () => {
         user={userWithEntries}
         bankHolidays={[]}
         isOwnProfile={true}
-        onAdd={jest.fn()}
         onEdit={jest.fn()}
         onDelete={jest.fn()}
       />
@@ -210,7 +169,6 @@ describe("LeaveList — with entries", () => {
         user={{ ...alice, entries: [singleDayEntry] }}
         bankHolidays={[]}
         isOwnProfile={true}
-        onAdd={jest.fn()}
         onEdit={jest.fn()}
         onDelete={jest.fn()}
       />
@@ -224,7 +182,6 @@ describe("LeaveList — with entries", () => {
         user={{ ...alice, entries: [entry] }}
         bankHolidays={[]}
         isOwnProfile={true}
-        onAdd={jest.fn()}
         onEdit={jest.fn()}
         onDelete={jest.fn()}
       />
@@ -238,7 +195,6 @@ describe("LeaveList — with entries", () => {
         user={userWithEntries}
         bankHolidays={[]}
         isOwnProfile={true}
-        onAdd={jest.fn()}
         onEdit={jest.fn()}
         onDelete={jest.fn()}
       />
@@ -253,7 +209,6 @@ describe("LeaveList — with entries", () => {
         user={userWithEntries}
         bankHolidays={[]}
         isOwnProfile={false}
-        onAdd={jest.fn()}
         onEdit={jest.fn()}
         onDelete={jest.fn()}
       />
@@ -270,7 +225,6 @@ describe("LeaveList — with entries", () => {
         user={{ ...alice, entries: [entry] }}
         bankHolidays={[]}
         isOwnProfile={true}
-        onAdd={jest.fn()}
         onEdit={onEdit}
         onDelete={jest.fn()}
       />
@@ -287,7 +241,6 @@ describe("LeaveList — with entries", () => {
         user={{ ...alice, entries: [entry] }}
         bankHolidays={[]}
         isOwnProfile={true}
-        onAdd={jest.fn()}
         onEdit={jest.fn()}
         onDelete={onDelete}
       />
@@ -302,7 +255,6 @@ describe("LeaveList — with entries", () => {
         user={{ ...alice, entries: [entry] }}
         bankHolidays={["2026-03-09"]} // Monday is a bank holiday
         isOwnProfile={true}
-        onAdd={jest.fn()}
         onEdit={jest.fn()}
         onDelete={jest.fn()}
       />

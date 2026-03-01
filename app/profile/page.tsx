@@ -9,12 +9,12 @@ import FormField from "@/components/FormField";
 import FormErrorOutlet from "@/components/FormErrorOutlet";
 import Button from "@/components/Button";
 import { useFormValidation } from "@/contexts/FormValidationContext";
-import { DAY_NAMES_SHORT, MONTH_NAMES_LONG } from "@/variables/calendar";
+import { DAY_NAMES_SHORT } from "@/variables/calendar";
 
 import { usersController } from "@/controllers/usersController";
 import YearAllowanceModal from "@/components/dashboard/YearAllowanceModal";
 import PinUserModal from "@/components/dashboard/PinUserModal";
-import { getHolidayYearBounds } from "@/utils/dateHelpers";
+import { getActiveYearAllowance } from "@/utils/dateHelpers";
 
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
 
@@ -25,11 +25,8 @@ export default function ProfilePage() {
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [company, setCompany] = useState("");
   const [email, setEmail] = useState("");
-  /** Selected days are WORKING days (the opposite of the stored nonWorkingDays) */
   const [workingDays, setWorkingDays] = useState<number[]>([1, 2, 3, 4, 5]);
-  const [holidayStartMonth, setHolidayStartMonth] = useState(1);
   const [yearAllowances, setYearAllowances] = useState<YearAllowance[]>([]);
   const [allUsers, setAllUsers] = useState<PublicUser[]>([]);
   const [pinnedUserIds, setPinnedUserIds] = useState<string[]>([]);
@@ -80,8 +77,8 @@ export default function ProfilePage() {
     return <div className="min-h-screen flex items-center justify-center">Loading…</div>;
   }
 
-  const { start: hyStart } = getHolidayYearBounds(holidayStartMonth);
-  const currentHolidayYear = hyStart.getFullYear();
+  const activeYa = getActiveYearAllowance(yearAllowances);
+  const currentHolidayYear = activeYa?.year ?? new Date().getFullYear();
   const otherUsers = allUsers.filter((u) => u.profile.email !== email);
 
   return (
@@ -118,12 +115,6 @@ export default function ProfilePage() {
                 onChange={(v) => setLastName(v)}
                 required
               />
-              <FormField
-                id="company"
-                label="Company"
-                value={company}
-                onChange={(v) => setCompany(v)}
-              />
               <FormField id="email" label="Email" type="email" value={email} readOnly />
             </div>
           </section>
@@ -152,33 +143,6 @@ export default function ProfilePage() {
               ))}
             </div>
             <p className="text-xs text-gray-400 mt-1">Select the days you work</p>
-          </section>
-
-          {/* Holiday period */}
-          <section>
-            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">
-              Holiday Period
-            </h3>
-            <div>
-              <label
-                htmlFor="holidayStartMonth"
-                className="block text-sm font-medium text-gray-600 mb-1"
-              >
-                Holiday Year Starts
-              </label>
-              <select
-                id="holidayStartMonth"
-                value={holidayStartMonth}
-                onChange={(e) => setHolidayStartMonth(Number(e.target.value))}
-                className="border rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-indigo-400 focus:outline-none"
-              >
-                {MONTH_NAMES_LONG.map((month, index) => (
-                  <option key={index} value={index + 1}>
-                    {month}
-                  </option>
-                ))}
-              </select>
-            </div>
           </section>
 
           {/* Year Allowances */}
@@ -215,6 +179,9 @@ export default function ProfilePage() {
                     >
                       <span className="font-medium">
                         {ya.year}
+                        {ya.company ? (
+                          <span className="ml-1 font-normal text-xs opacity-70">— {ya.company}</span>
+                        ) : null}
                         {ya.year === currentHolidayYear && (
                           <span className="ml-2 text-xs text-indigo-500">(current)</span>
                         )}
@@ -343,10 +310,8 @@ export default function ProfilePage() {
     const ok = await usersController.updateProfile({
       firstName,
       lastName,
-      company,
       email,
       nonWorkingDays,
-      holidayStartMonth,
       pinnedUserIds,
     });
 
@@ -359,11 +324,11 @@ export default function ProfilePage() {
   }
 
   async function handleSaveAllowance(ya: YearAllowance) {
-    const ok = await usersController.addYearAllowance(ya);
-    if (ok) {
+    const saved = await usersController.addYearAllowance(ya);
+    if (saved) {
       setYearAllowances((prev) => {
-        const rest = prev.filter((a) => a.year !== ya.year);
-        return [...rest, ya].sort((a, b) => a.year - b.year);
+        const rest = prev.filter((a) => a.year !== saved.year);
+        return [...rest, saved].sort((a, b) => a.year - b.year);
       });
     }
     setShowAllowanceModal(false);
@@ -387,10 +352,8 @@ export default function ProfilePage() {
   function applyUserProfile(me: PublicUser) {
     setFirstName(me.profile.firstName);
     setLastName(me.profile.lastName);
-    setCompany(me.profile.company);
     setEmail(me.profile.email);
     setWorkingDays(ALL_DAYS.filter((d) => !me.profile.nonWorkingDays.includes(d)));
-    setHolidayStartMonth(me.profile.holidayStartMonth);
     setYearAllowances(me.yearAllowances ?? []);
     setPinnedUserIds(me.profile.pinnedUserIds ?? []);
   }

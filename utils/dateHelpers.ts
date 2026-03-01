@@ -1,4 +1,4 @@
-import type { LeaveEntry } from "@/types";
+import type { LeaveEntry, YearAllowance } from "@/types";
 
 /**
  * Count working days between two ISO date strings (inclusive).
@@ -29,9 +29,25 @@ export function countWorkingDays(
 }
 
 /**
- * Return the start and end dates of the holiday year based on the start month.
- * The year boundaries shift dynamically so the current date is always within the returned range.
+ * Find the year allowance whose holiday year contains today.
+ * Iterates allowances using each one's own holidayStartMonth so no external
+ * start month is needed. Falls back to the most recently started allowance.
  */
+export function getActiveYearAllowance(allowances: YearAllowance[]): YearAllowance | undefined {
+  const today = new Date();
+  for (const ya of allowances) {
+    const sm = ya.holidayStartMonth ?? 1;
+    const start = new Date(ya.year, sm - 1, 1);
+    const end = new Date(ya.year + 1, sm - 1, 1); // exclusive upper bound
+    if (today >= start && today < end) return ya;
+  }
+  // Fallback: the most recently started allowance
+  const past = allowances.filter((ya) => today >= new Date(ya.year, (ya.holidayStartMonth ?? 1) - 1, 1));
+  if (past.length > 0) return past.sort((a, b) => b.year - a.year)[0];
+  return [...allowances].sort((a, b) => a.year - b.year)[0];
+}
+
+
 export function getHolidayYearBounds(holidayStartMonth: number): { start: Date; end: Date } {
   const now = new Date();
   const year = now.getMonth() + 1 >= holidayStartMonth ? now.getFullYear() : now.getFullYear() - 1;

@@ -6,15 +6,13 @@
       "profile": {
         "firstName": "Alice",
         "lastName": "Smith",
-        "company": "Acme Ltd",
         "email": "alice@example.com",
         "nonWorkingDays": [0, 6],
-        "holidayStartMonth": 1,
         "pinnedUserIds": ["00000000-0000-0000-0000-000000000002"]
       },
       "yearAllowances": [
-        { "year": 2025, "core": 25, "bought": 0, "carried": 0 },
-        { "year": 2026, "core": 25, "bought": 0, "carried": 0 }
+        { "year": 2025, "company": "Acme Ltd", "holidayStartMonth": 1, "core": 25, "bought": 0, "carried": 0 },
+        { "year": 2026, "company": "Acme Ltd", "holidayStartMonth": 1, "core": 25, "bought": 0, "carried": 0 }
       ],
       "entries": []
     },
@@ -24,15 +22,13 @@
       "profile": {
         "firstName": "Bob",
         "lastName": "Jones",
-        "company": "Acme Ltd",
         "email": "bob@example.com",
         "nonWorkingDays": [0, 6],
-        "holidayStartMonth": 4,
         "pinnedUserIds": ["00000000-0000-0000-0000-000000000001"]
       },
       "yearAllowances": [
-        { "year": 2025, "core": 28, "bought": 2, "carried": 3 },
-        { "year": 2026, "core": 28, "bought": 2, "carried": 3 }
+        { "year": 2025, "company": "Acme Ltd", "holidayStartMonth": 4, "core": 28, "bought": 2, "carried": 3 },
+        { "year": 2026, "company": "Acme Ltd", "holidayStartMonth": 4, "core": 28, "bought": 2, "carried": 3 }
       ],
       "entries": []
     }

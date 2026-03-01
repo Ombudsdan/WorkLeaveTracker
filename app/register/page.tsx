@@ -7,7 +7,6 @@ import { usersController } from "@/controllers/usersController";
 export default function RegisterPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [company, setCompany] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -35,7 +34,6 @@ export default function RegisterPage() {
       lastName,
       email,
       password,
-      company,
     });
     setLoading(false);
 
@@ -75,18 +73,6 @@ export default function RegisterPage() {
                 placeholder="Doe"
               />
             </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Company <span className="text-gray-400 font-normal">(optional)</span>
-            </label>
-            <input
-              type="text"
-              value={company}
-              onChange={(e) => setCompany(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-              placeholder="Acme Ltd"
-            />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>

@@ -16,13 +16,14 @@ export const usersController = {
     return res.ok;
   },
 
-  async addYearAllowance(yearAllowance: YearAllowance): Promise<boolean> {
+  async addYearAllowance(yearAllowance: YearAllowance): Promise<YearAllowance | null> {
     const res = await fetch("/api/users/allowance", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(yearAllowance),
     });
-    return res.ok;
+    if (!res.ok) return null;
+    return res.json() as Promise<YearAllowance>;
   },
 
   async register(data: {
@@ -30,7 +31,6 @@ export const usersController = {
     lastName: string;
     email: string;
     password: string;
-    company: string;
   }): Promise<{ ok: boolean; error?: string }> {
     const res = await fetch("/api/users", {
       method: "POST",

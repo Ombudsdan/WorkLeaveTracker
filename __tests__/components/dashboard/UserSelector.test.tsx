@@ -8,13 +8,11 @@ const alice: PublicUser = {
   profile: {
     firstName: "Alice",
     lastName: "Smith",
-    company: "Acme",
     email: "alice@example.com",
     nonWorkingDays: [0, 6],
-    holidayStartMonth: 1,
     pinnedUserIds: ["u2"],
   },
-  yearAllowances: [{ year: 2026, core: 25, bought: 0, carried: 0 }],
+  yearAllowances: [{ year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 }],
   entries: [],
 };
 
@@ -23,13 +21,11 @@ const bob: PublicUser = {
   profile: {
     firstName: "Bob",
     lastName: "Jones",
-    company: "Acme",
     email: "bob@example.com",
     nonWorkingDays: [0, 6],
-    holidayStartMonth: 1,
     pinnedUserIds: [],
   },
-  yearAllowances: [{ year: 2026, core: 25, bought: 0, carried: 0 }],
+  yearAllowances: [{ year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 }],
   entries: [],
 };
 

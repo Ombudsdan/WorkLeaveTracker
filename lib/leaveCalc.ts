@@ -1,5 +1,6 @@
 import { LeaveStatus, LeaveType } from "@/types";
 import type { AppUser } from "@/types";
+import { getActiveYearAllowance } from "@/utils/dateHelpers";
 
 /**
  * Count working days between two ISO date strings (inclusive).
@@ -42,7 +43,9 @@ export interface LeaveSummary {
 
 /** Bank holidays that fall on the user's working days within the holiday year */
 export function getBankHolidaysForUser(user: AppUser, bankHolidayDates: string[]): string[] {
-  const { holidayStartMonth, nonWorkingDays } = user.profile;
+  const { nonWorkingDays } = user.profile;
+  const activeYa = getActiveYearAllowance(user.yearAllowances);
+  const holidayStartMonth = activeYa?.holidayStartMonth ?? 1;
   const yearStart = getHolidayYearStart(holidayStartMonth);
   const yearEnd = new Date(yearStart);
   yearEnd.setFullYear(yearEnd.getFullYear() + 1);
@@ -71,10 +74,8 @@ export function getHolidayYearEnd(holidayStartMonth: number): Date {
 }
 
 export function calculateLeaveSummary(user: AppUser, bankHolidayDates: string[]): LeaveSummary {
-  const yearStart = getHolidayYearStart(user.profile.holidayStartMonth);
-  const currentYear = yearStart.getFullYear();
-  const ya = user.yearAllowances.find((a) => a.year === currentYear);
-  const totalAllowance = ya ? ya.core + ya.bought + ya.carried : 0;
+  const activeYa = getActiveYearAllowance(user.yearAllowances);
+  const totalAllowance = activeYa ? activeYa.core + activeYa.bought + activeYa.carried : 0;
 
   const bhForUser = getBankHolidaysForUser(user, bankHolidayDates);
 

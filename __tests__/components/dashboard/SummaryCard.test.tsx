@@ -18,12 +18,10 @@ const alice: PublicUser = {
   profile: {
     firstName: "Alice",
     lastName: "Smith",
-    company: "Acme",
     email: "alice@example.com",
     nonWorkingDays: [0, 6],
-    holidayStartMonth: 1,
   },
-  yearAllowances: [{ year: 2026, core: 25, bought: 0, carried: 0 }],
+  yearAllowances: [{ year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 }],
   entries: [],
 };
 
@@ -106,7 +104,7 @@ describe("SummaryCard — progress bar width", () => {
   it("caps width at 100% even when days exceed allowance", () => {
     const over: PublicUser = {
       ...alice,
-      yearAllowances: [{ year: 2026, core: 1, bought: 0, carried: 0 }],
+      yearAllowances: [{ year: 2026, company: "Acme", holidayStartMonth: 1, core: 1, bought: 0, carried: 0 }],
       entries: [
         {
           id: "e2",
@@ -125,10 +123,19 @@ describe("SummaryCard — progress bar width", () => {
   it("shows 0% when total allowance is zero (avoid division by zero)", () => {
     const zero: PublicUser = {
       ...alice,
-      yearAllowances: [{ year: 2026, core: 0, bought: 0, carried: 0 }],
+      yearAllowances: [{ year: 2026, company: "Acme", holidayStartMonth: 1, core: 0, bought: 0, carried: 0 }],
     };
     render(<SummaryCard user={zero} bankHolidays={[]} isOwnProfile={true} />);
     // Should show "0% used" not NaN
+    expect(screen.getByText("0% used")).toBeInTheDocument();
+  });
+});
+
+describe("SummaryCard — no year allowances (legacy/missing data)", () => {
+  it("shows 0% used when user has no year allowances", () => {
+    render(
+      <SummaryCard user={{ ...alice, yearAllowances: [] }} bankHolidays={[]} isOwnProfile={true} />
+    );
     expect(screen.getByText("0% used")).toBeInTheDocument();
   });
 });
