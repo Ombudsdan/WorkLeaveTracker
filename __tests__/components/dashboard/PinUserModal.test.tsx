@@ -204,4 +204,3 @@ describe("PinUserModal — close", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
-

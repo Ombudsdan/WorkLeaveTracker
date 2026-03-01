@@ -60,8 +60,7 @@ export default function LeaveList({
               user.profile.nonWorkingDays,
               bankHolidays
             );
-            const statusLabel =
-              entry.status.charAt(0).toUpperCase() + entry.status.slice(1);
+            const statusLabel = entry.status.charAt(0).toUpperCase() + entry.status.slice(1);
             const noteText = entry.notes ?? "–";
             return (
               <div

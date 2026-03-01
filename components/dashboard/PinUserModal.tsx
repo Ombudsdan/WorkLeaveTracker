@@ -18,12 +18,7 @@ interface PinUserModalProps {
  * Inner content rendered inside its own FormValidationProvider so the email
  * field's validators don't register in the parent page's form context.
  */
-function PinUserModalContent({
-  otherUsers,
-  pinnedUserIds,
-  onClose,
-  onPin,
-}: PinUserModalProps) {
+function PinUserModalContent({ otherUsers, pinnedUserIds, onClose, onPin }: PinUserModalProps) {
   const { triggerAllValidations } = useFormValidation();
   const [emailInput, setEmailInput] = useState("");
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -59,9 +54,7 @@ function PinUserModalContent({
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm">
         <h3 className="font-bold text-gray-800 mb-4">Search for a User</h3>
-        <p className="text-sm text-gray-500 mb-4">
-          Enter an email address to find and pin a user.
-        </p>
+        <p className="text-sm text-gray-500 mb-4">Enter an email address to find and pin a user.</p>
         <EmailField
           id="pin-email"
           label="Email address"
@@ -75,11 +68,7 @@ function PinUserModalContent({
         />
         {searchError && <p className="text-sm mt-2 text-red-600">{searchError}</p>}
         <div className="flex gap-2 mt-4">
-          <Button
-            variant="primary"
-            fullWidth
-            onClick={handleSearch}
-          >
+          <Button variant="primary" fullWidth onClick={handleSearch}>
             Search &amp; Pin
           </Button>
           <Button variant="secondary" fullWidth onClick={onClose}>

@@ -9,7 +9,9 @@ function renderInProvider(ui: React.ReactElement) {
 }
 
 /** Wrapper that maintains real controlled state so validation fires on actual values */
-function ControlledEmailField(props: React.ComponentProps<typeof EmailField> & { initialValue?: string }) {
+function ControlledEmailField(
+  props: React.ComponentProps<typeof EmailField> & { initialValue?: string }
+) {
   const { initialValue, ...rest } = props;
   const [value, setValue] = useState(initialValue ?? (rest.value as string));
   return <EmailField {...rest} value={value} onChange={setValue} />;
@@ -25,9 +27,7 @@ describe("EmailField — rendering", () => {
   });
 
   it("renders as read-only when readOnly is true", () => {
-    renderInProvider(
-      <EmailField id="email" label="Email" value="alice@example.com" readOnly />
-    );
+    renderInProvider(<EmailField id="email" label="Email" value="alice@example.com" readOnly />);
     expect(screen.getByLabelText("Email")).toHaveAttribute("readonly");
   });
 
@@ -47,17 +47,13 @@ describe("EmailField — rendering", () => {
 
 describe("EmailField — validation", () => {
   it("shows a format error when an invalid email is typed", async () => {
-    renderInProvider(
-      <ControlledEmailField id="email" label="Email" initialValue="" value="" />
-    );
+    renderInProvider(<ControlledEmailField id="email" label="Email" initialValue="" value="" />);
     await userEvent.type(screen.getByLabelText("Email"), "notanemail");
     expect(screen.getByText(/valid email address/i)).toBeInTheDocument();
   });
 
   it("clears the format error when a valid email is typed", async () => {
-    renderInProvider(
-      <ControlledEmailField id="email" label="Email" initialValue="" value="" />
-    );
+    renderInProvider(<ControlledEmailField id="email" label="Email" initialValue="" value="" />);
     await userEvent.type(screen.getByLabelText("Email"), "bad");
     expect(screen.getByText(/valid email address/i)).toBeInTheDocument();
     await userEvent.clear(screen.getByLabelText("Email"));
@@ -67,7 +63,13 @@ describe("EmailField — validation", () => {
 
   it("shows a required error when the field is emptied and required", async () => {
     renderInProvider(
-      <ControlledEmailField id="email" label="Email" initialValue="a@b.com" value="a@b.com" required />
+      <ControlledEmailField
+        id="email"
+        label="Email"
+        initialValue="a@b.com"
+        value="a@b.com"
+        required
+      />
     );
     await userEvent.clear(screen.getByLabelText("Email"));
     expect(screen.getByText("Email is required")).toBeInTheDocument();
@@ -76,16 +78,12 @@ describe("EmailField — validation", () => {
 
 describe("StandaloneEmailField — isolated validation scope", () => {
   it("renders without needing an outer FormValidationProvider", () => {
-    render(
-      <StandaloneEmailField id="email" label="Email" value="" onChange={jest.fn()} />
-    );
+    render(<StandaloneEmailField id="email" label="Email" value="" onChange={jest.fn()} />);
     expect(screen.getByLabelText("Email")).toBeInTheDocument();
   });
 
   it("validates email format independently", async () => {
-    render(
-      <StandaloneEmailField id="email" label="Email" value="" onChange={jest.fn()} />
-    );
+    render(<StandaloneEmailField id="email" label="Email" value="" onChange={jest.fn()} />);
     await userEvent.type(screen.getByLabelText("Email"), "bad");
     expect(screen.getByText(/valid email address/i)).toBeInTheDocument();
   });
