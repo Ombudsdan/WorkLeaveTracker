@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 import PinUserModal from "@/components/dashboard/PinUserModal";
@@ -87,6 +87,20 @@ describe("PinUserModal — search", () => {
     expect(screen.getByText("Please enter an email address.")).toBeInTheDocument();
   });
 
+  it("shows error when an invalid email format is entered", async () => {
+    render(
+      <PinUserModal
+        otherUsers={[alice, bob]}
+        pinnedUserIds={[]}
+        onClose={jest.fn()}
+        onPin={jest.fn()}
+      />
+    );
+    await userEvent.type(screen.getByLabelText("Email address"), "notanemail");
+    await userEvent.click(screen.getByRole("button", { name: /search/i }));
+    expect(screen.getByText(/valid email address/i)).toBeInTheDocument();
+  });
+
   it("shows error when no user is found with the entered email", async () => {
     render(
       <PinUserModal
@@ -116,18 +130,19 @@ describe("PinUserModal — search", () => {
     expect(onPin).toHaveBeenCalledWith("u1");
   });
 
-  it("shows success message after pinning", async () => {
+  it("calls onClose after a successful pin", async () => {
+    const onClose = jest.fn();
     render(
       <PinUserModal
         otherUsers={[alice, bob]}
         pinnedUserIds={[]}
-        onClose={jest.fn()}
+        onClose={onClose}
         onPin={jest.fn()}
       />
     );
     await userEvent.type(screen.getByLabelText("Email address"), "alice@example.com");
     await userEvent.click(screen.getByRole("button", { name: /search/i }));
-    expect(screen.getByText(/Alice Smith has been pinned/i)).toBeInTheDocument();
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
 
   it("shows error when the user is already pinned", async () => {
@@ -172,20 +187,6 @@ describe("PinUserModal — search", () => {
     await userEvent.click(screen.getByRole("button", { name: /search/i }));
     expect(onPin).toHaveBeenCalledWith("u1");
   });
-
-  it("triggers search on Enter key press", async () => {
-    const onPin = jest.fn();
-    render(
-      <PinUserModal
-        otherUsers={[alice, bob]}
-        pinnedUserIds={[]}
-        onClose={jest.fn()}
-        onPin={onPin}
-      />
-    );
-    await userEvent.type(screen.getByLabelText("Email address"), "bob@example.com{Enter}");
-    expect(onPin).toHaveBeenCalledWith("u2");
-  });
 });
 
 describe("PinUserModal — close", () => {
@@ -203,3 +204,4 @@ describe("PinUserModal — close", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
+

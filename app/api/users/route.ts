@@ -5,7 +5,6 @@ import { readDb, updateUser, addUser, findUserByEmail } from "@/lib/db";
 import type { AppUser } from "@/types";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
-import { getHolidayYearBounds } from "@/utils/dateHelpers";
 
 /** GET /api/users - list all users (profiles only, no passwords) */
 export async function GET() {
@@ -39,9 +38,6 @@ export async function POST(request: Request) {
   }
 
   const hashed = await bcrypt.hash(password, 10);
-  const defaultHolidayStartMonth = 1;
-  const { start } = getHolidayYearBounds(defaultHolidayStartMonth);
-  const currentYear = start.getFullYear();
 
   const newUser: AppUser = {
     id: randomUUID(),
@@ -55,7 +51,7 @@ export async function POST(request: Request) {
       holidayStartMonth: 1,
       pinnedUserIds: [],
     },
-    yearAllowances: [{ year: currentYear, core: 25, bought: 0, carried: 0 }],
+    yearAllowances: [],
     entries: [],
   };
 

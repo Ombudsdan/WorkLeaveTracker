@@ -59,6 +59,9 @@ export default function DashboardPage() {
     return () => {
       cancelled = true;
     };
+    // applyUserData is defined later in this component and depends on stable
+    // setter refs and router; adding it would trigger re-runs on every render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, session]);
 
   if (status === "loading" || loading) {
@@ -189,7 +192,13 @@ export default function DashboardPage() {
         (sessionId != null && u.id === sessionId) ||
         (sessionEmail != null && u.profile.email === sessionEmail)
     );
-    if (me) setCurrentUser(me);
+    if (me) {
+      if (me.yearAllowances.length === 0) {
+        router.replace("/setup");
+      } else {
+        setCurrentUser(me);
+      }
+    }
   }
 
   async function handleAddEntry(entry: Omit<LeaveEntry, "id">) {

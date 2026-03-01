@@ -2,6 +2,8 @@
 import { useState } from "react";
 import type { PublicUser } from "@/types";
 import Button from "@/components/Button";
+import EmailField from "@/components/EmailField";
+import { FormValidationProvider, useFormValidation } from "@/contexts/FormValidationContext";
 
 interface PinUserModalProps {
   /** All users except the current user */
@@ -12,47 +14,45 @@ interface PinUserModalProps {
   onPin: (userId: string) => void;
 }
 
-export default function PinUserModal({
+/**
+ * Inner content rendered inside its own FormValidationProvider so the email
+ * field's validators don't register in the parent page's form context.
+ */
+function PinUserModalContent({
   otherUsers,
   pinnedUserIds,
   onClose,
   onPin,
 }: PinUserModalProps) {
+  const { triggerAllValidations } = useFormValidation();
   const [emailInput, setEmailInput] = useState("");
-  const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   function handleSearch() {
+    setSearchError(null);
+    const formatValid = triggerAllValidations();
+    if (!formatValid) return;
+
     const trimmed = emailInput.trim().toLowerCase();
-    if (!trimmed) {
-      setMessage({ type: "error", text: "Please enter an email address." });
-      return;
-    }
 
     const found = otherUsers.find((u) => u.profile.email.toLowerCase() === trimmed);
     if (!found) {
-      setMessage({ type: "error", text: "No user found with that email address." });
+      setSearchError("No user found with that email address.");
       return;
     }
 
     if (pinnedUserIds.includes(found.id)) {
-      setMessage({
-        type: "error",
-        text: `${found.profile.firstName} ${found.profile.lastName} is already pinned.`,
-      });
+      setSearchError(`${found.profile.firstName} ${found.profile.lastName} is already pinned.`);
       return;
     }
 
     if (pinnedUserIds.length >= 3) {
-      setMessage({ type: "error", text: "You can pin a maximum of 3 users." });
+      setSearchError("You can pin a maximum of 3 users.");
       return;
     }
 
     onPin(found.id);
-    setMessage({
-      type: "success",
-      text: `${found.profile.firstName} ${found.profile.lastName} has been pinned.`,
-    });
-    setEmailInput("");
+    onClose();
   }
 
   return (
@@ -62,31 +62,24 @@ export default function PinUserModal({
         <p className="text-sm text-gray-500 mb-4">
           Enter an email address to find and pin a user.
         </p>
-        <label htmlFor="pin-email" className="block text-sm font-medium text-gray-600 mb-1">
-          Email address
-        </label>
-        <input
+        <EmailField
           id="pin-email"
-          type="email"
+          label="Email address"
           value={emailInput}
-          onChange={(e) => {
-            setEmailInput(e.target.value);
-            setMessage(null);
+          onChange={(v) => {
+            setEmailInput(v);
+            setSearchError(null);
           }}
-          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400 mb-3"
           placeholder="colleague@example.com"
-          autoFocus
+          required="Please enter an email address."
         />
-        {message && (
-          <p
-            className={`text-sm mb-3 ${message.type === "error" ? "text-red-600" : "text-green-600"}`}
+        {searchError && <p className="text-sm mt-2 text-red-600">{searchError}</p>}
+        <div className="flex gap-2 mt-4">
+          <Button
+            variant="primary"
+            fullWidth
+            onClick={handleSearch}
           >
-            {message.text}
-          </p>
-        )}
-        <div className="flex gap-2">
-          <Button variant="primary" fullWidth onClick={handleSearch}>
             Search &amp; Pin
           </Button>
           <Button variant="secondary" fullWidth onClick={onClose}>
@@ -95,5 +88,13 @@ export default function PinUserModal({
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PinUserModal(props: PinUserModalProps) {
+  return (
+    <FormValidationProvider>
+      <PinUserModalContent {...props} />
+    </FormValidationProvider>
   );
 }
