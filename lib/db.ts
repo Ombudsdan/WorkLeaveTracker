@@ -2,7 +2,12 @@ import fs from "fs";
 import path from "path";
 import type { Database, AppUser, LeaveEntry } from "@/types";
 
-const DB_PATH = path.join(process.cwd(), "data", "data.json");
+// On Vercel, the deployment directory is read-only; /tmp is the only writable
+// location. Note: /tmp is ephemeral per Lambda instance, so data is
+// re-initialised from data.example.json on each cold start.
+const DB_PATH = process.env.VERCEL
+  ? path.join("/tmp", "data.json")
+  : path.join(process.cwd(), "data", "data.json");
 const EXAMPLE_PATH = path.join(process.cwd(), "data", "data.example.json");
 
 /**
