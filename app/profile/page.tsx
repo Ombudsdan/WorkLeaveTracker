@@ -13,6 +13,7 @@ import { DAY_NAMES_SHORT, MONTH_NAMES_LONG } from "@/variables/calendar";
 
 import { usersController } from "@/controllers/usersController";
 import YearAllowanceModal from "@/components/dashboard/YearAllowanceModal";
+import PinUserModal from "@/components/dashboard/PinUserModal";
 import { getHolidayYearBounds } from "@/utils/dateHelpers";
 
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
@@ -36,6 +37,7 @@ export default function ProfilePage() {
   const [submitError, setSubmitError] = useState("");
   const [showAllowanceModal, setShowAllowanceModal] = useState(false);
   const [editingAllowance, setEditingAllowance] = useState<YearAllowance | undefined>(undefined);
+  const [showPinModal, setShowPinModal] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
@@ -43,10 +45,19 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (status !== "authenticated") return;
-    usersController.fetchAll().then((users) => {
-      setAllUsers(users);
-      const me = users.find((user) => user.profile.email === session?.user?.email);
-      if (me) applyUserProfile(me);
+    usersController.fetchAll().then((result) => {
+      if (!Array.isArray(result)) return;
+      setAllUsers(result);
+      const me = result.find((user) => user.profile.email === session?.user?.email);
+      if (me) {
+        applyUserProfile(me);
+      } else if (session?.user) {
+        // User not found in DB (e.g. after a cold start on Vercel); pre-fill from session
+        const nameParts = (session.user.name ?? "").split(" ");
+        setFirstName(nameParts[0] ?? "");
+        setLastName(nameParts.slice(1).join(" ") ?? "");
+        setEmail(session.user.email ?? "");
+      }
     });
   }, [status, session]);
 
@@ -215,35 +226,52 @@ export default function ProfilePage() {
           </section>
 
           {/* Pinned Users */}
-          {otherUsers.length > 0 && (
-            <section>
-              <h3 className="font-semibold text-gray-700 mb-1 text-sm uppercase tracking-wide">
+          <section>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">
                 Pinned Users
               </h3>
-              <p className="text-xs text-gray-400 mb-3">
-                Select up to 3 users to show in the dashboard switcher.
-              </p>
-              <div className="flex gap-2 flex-wrap">
-                {otherUsers.map((u) => {
-                  const isPinned = pinnedUserIds.includes(u.id);
+              <button
+                type="button"
+                onClick={() => setShowPinModal(true)}
+                disabled={pinnedUserIds.length >= 3}
+                className="bg-indigo-600 text-white text-xs px-3 py-1 rounded-lg hover:bg-indigo-700 transition disabled:opacity-40"
+              >
+                + Search User
+              </button>
+            </div>
+            <p className="text-xs text-gray-400 mb-3">
+              Pin up to 3 users to show in the dashboard switcher.
+            </p>
+            {pinnedUserIds.length === 0 ? (
+              <p className="text-sm text-gray-400">No users pinned yet.</p>
+            ) : (
+              <ul className="space-y-2">
+                {pinnedUserIds.map((id) => {
+                  const u = allUsers.find((user) => user.id === id);
+                  if (!u) return null;
                   return (
-                    <button
-                      key={u.id}
-                      type="button"
-                      onClick={() => togglePinnedUser(u.id)}
-                      className={`px-3 py-1 rounded-full text-sm font-medium border transition ${
-                        isPinned
-                          ? "bg-indigo-100 border-indigo-300 text-indigo-700"
-                          : "bg-gray-100 border-gray-300 text-gray-500"
-                      }`}
+                    <li
+                      key={id}
+                      className="flex items-center justify-between text-sm bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2"
                     >
-                      {u.profile.firstName} {u.profile.lastName}
-                    </button>
+                      <span className="text-indigo-800">
+                        {u.profile.firstName} {u.profile.lastName}{" "}
+                        <span className="text-indigo-500 font-normal">({u.profile.email})</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => unpinUser(id)}
+                        className="text-xs text-red-500 hover:text-red-700 ml-3"
+                      >
+                        Unpin
+                      </button>
+                    </li>
                   );
                 })}
-              </div>
-            </section>
-          )}
+              </ul>
+            )}
+          </section>
 
           {submitError && <p className="text-red-500 text-sm">{submitError}</p>}
           {saved && (
@@ -265,6 +293,15 @@ export default function ProfilePage() {
           existing={editingAllowance}
           onClose={() => setShowAllowanceModal(false)}
           onSave={handleSaveAllowance}
+        />
+      )}
+
+      {showPinModal && (
+        <PinUserModal
+          otherUsers={otherUsers}
+          pinnedUserIds={pinnedUserIds}
+          onClose={() => setShowPinModal(false)}
+          onPin={handlePinUser}
         />
       )}
     </div>
@@ -321,12 +358,15 @@ export default function ProfilePage() {
     setWorkingDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
   }
 
-  function togglePinnedUser(id: string) {
+  function handlePinUser(id: string) {
     setPinnedUserIds((prev) => {
-      if (prev.includes(id)) return prev.filter((p) => p !== id);
-      if (prev.length >= 3) return prev; // max 3
+      if (prev.includes(id) || prev.length >= 3) return prev;
       return [...prev, id];
     });
+  }
+
+  function unpinUser(id: string) {
+    setPinnedUserIds((prev) => prev.filter((p) => p !== id));
   }
 
   function applyUserProfile(me: PublicUser) {

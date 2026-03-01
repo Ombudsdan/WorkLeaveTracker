@@ -236,3 +236,43 @@ describe("FormField — triggerAllValidations", () => {
     expect(screen.queryByText("Name is required")).toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Email format validation
+// ---------------------------------------------------------------------------
+describe("FormField — email validation", () => {
+  it("shows a format error when an invalid email string is entered", async () => {
+    renderInProvider(
+      <FormField id="email" label="Email" type="email" value="" onChange={jest.fn()} />
+    );
+    await userEvent.type(screen.getByLabelText("Email"), "notvalid");
+    expect(screen.getByText("Email must be a valid email address")).toBeInTheDocument();
+  });
+
+  it("does not show an error for a valid email string", async () => {
+    renderInProvider(
+      <ControlledFormField id="email" label="Email" type="email" initialValue="" value="" />
+    );
+    await userEvent.type(screen.getByLabelText("Email"), "user@example.com");
+    expect(screen.queryByText(/valid email address/i)).toBeNull();
+  });
+
+  it("clears the format error when a valid email is entered after an invalid one", async () => {
+    renderInProvider(
+      <ControlledFormField id="email" label="Email" type="email" initialValue="" value="" />
+    );
+    await userEvent.type(screen.getByLabelText("Email"), "bad");
+    expect(screen.getByText(/valid email address/i)).toBeInTheDocument();
+    await userEvent.clear(screen.getByLabelText("Email"));
+    await userEvent.type(screen.getByLabelText("Email"), "good@example.com");
+    expect(screen.queryByText(/valid email address/i)).toBeNull();
+  });
+
+  it("does not show format error when the email field is empty (required handles that)", async () => {
+    renderInProvider(
+      <FormField id="email" label="Email" type="email" value="a@b.com" onChange={jest.fn()} />
+    );
+    await userEvent.clear(screen.getByLabelText("Email"));
+    expect(screen.queryByText(/valid email address/i)).toBeNull();
+  });
+});

@@ -66,6 +66,14 @@ export default function FormField({
       return false;
     }
 
+    if (type === "email" && trimmed !== "") {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmed)) {
+        setError(id, `${label} must be a valid email address`);
+        return false;
+      }
+    }
+
     if (type === "number" && trimmed !== "") {
       const num = Number(rawValue);
       if (isNaN(num)) {

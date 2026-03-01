@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { addEntry, findUserById } from "@/lib/db";
+import { addEntry, findUserById, findUserByEmail } from "@/lib/db";
 import { v4 as uuidv4 } from "uuid";
 import { LeaveStatus, LeaveType } from "@/types";
 import type { LeaveEntry } from "@/types";
@@ -14,7 +14,10 @@ export async function GET() {
   const userId = (session.user as { id?: string }).id;
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const user = findUserById(userId);
+  let user = findUserById(userId);
+  if (!user && session.user?.email) {
+    user = findUserByEmail(session.user.email);
+  }
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   return NextResponse.json(user.entries);
@@ -28,6 +31,13 @@ export async function POST(request: Request) {
   const userId = (session.user as { id?: string }).id;
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // Try ID first; fall back to email lookup in case the session ID is stale
+  let resolvedUser = findUserById(userId);
+  if (!resolvedUser && session.user?.email) {
+    resolvedUser = findUserByEmail(session.user.email);
+  }
+  if (!resolvedUser) return NextResponse.json({ error: "User not found" }, { status: 404 });
+
   const body = (await request.json()) as Omit<LeaveEntry, "id">;
   const entry: LeaveEntry = {
     id: uuidv4(),
@@ -38,7 +48,7 @@ export async function POST(request: Request) {
     notes: body.notes,
   };
 
-  const ok = addEntry(userId, entry);
+  const ok = addEntry(resolvedUser.id, entry);
   if (!ok) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
   return NextResponse.json(entry, { status: 201 });

@@ -3,6 +3,7 @@ import type { PublicUser, UserProfile, YearAllowance } from "@/types";
 export const usersController = {
   async fetchAll(): Promise<PublicUser[]> {
     const res = await fetch("/api/users");
+    if (!res.ok) return [];
     return res.json();
   },
 

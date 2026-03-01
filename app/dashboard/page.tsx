@@ -34,23 +34,33 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (status !== "authenticated") return;
+    // Capture identifiers before the async call so they're not stale
+    const sessionEmail = session?.user?.email;
+    const sessionId = (session?.user as { id?: string })?.id;
+    if (!sessionEmail && !sessionId) return;
+
     let cancelled = false;
     async function initDashboard() {
       setLoading(true);
-      const [users, holidays] = await Promise.all([
-        usersController.fetchAll(),
-        holidaysController.fetchBankHolidays(),
-      ]);
-      if (!cancelled) {
-        applyUserData(users, holidays);
-        setLoading(false);
+      try {
+        const [rawUsers, holidays] = await Promise.all([
+          usersController.fetchAll(),
+          holidaysController.fetchBankHolidays(),
+        ]);
+        if (cancelled) return;
+        applyUserData(Array.isArray(rawUsers) ? rawUsers : [], holidays, sessionEmail, sessionId);
+      } catch {
+        // keep loading=false even on fetch failure
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     }
     initDashboard();
     return () => {
       cancelled = true;
     };
-    // applyUserData uses session which is already in the dep array
+    // applyUserData is defined later in this component and depends on stable
+    // setter refs and router; adding it would trigger re-runs on every render
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, session]);
 
@@ -60,7 +70,29 @@ export default function DashboardPage() {
     );
   }
 
-  if (!currentUser) return null;
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <NavBar activePage="dashboard" />
+        <main className="max-w-6xl mx-auto py-6 px-4">
+          <div className="bg-amber-50 border border-amber-300 text-amber-800 rounded-xl px-4 py-3 text-sm">
+            Your profile could not be loaded. Please{" "}
+            <button
+              onClick={() => window.location.reload()}
+              className="underline font-medium hover:text-amber-900"
+            >
+              refresh the page
+            </button>{" "}
+            or{" "}
+            <a href="/profile" className="underline font-medium hover:text-amber-900">
+              update your profile
+            </a>
+            .
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   const displayedUser = viewingUserId
     ? (allUsers.find((user) => user.id === viewingUserId) ?? currentUser)
@@ -134,18 +166,39 @@ export default function DashboardPage() {
   );
 
   async function refreshData() {
-    const [users, holidays] = await Promise.all([
-      usersController.fetchAll(),
-      holidaysController.fetchBankHolidays(),
-    ]);
-    applyUserData(users, holidays);
+    const sessionEmail = session?.user?.email;
+    const sessionId = (session?.user as { id?: string })?.id;
+    try {
+      const [rawUsers, holidays] = await Promise.all([
+        usersController.fetchAll(),
+        holidaysController.fetchBankHolidays(),
+      ]);
+      applyUserData(Array.isArray(rawUsers) ? rawUsers : [], holidays, sessionEmail, sessionId);
+    } catch {
+      // silently ignore refresh errors
+    }
   }
 
-  function applyUserData(users: PublicUser[], holidays: string[]) {
+  function applyUserData(
+    users: PublicUser[],
+    holidays: string[],
+    sessionEmail: string | null | undefined,
+    sessionId: string | null | undefined
+  ) {
     setBankHolidays(holidays);
     setAllUsers(users);
-    const me = users.find((user) => user.profile.email === session?.user?.email);
-    if (me) setCurrentUser(me);
+    const me = users.find(
+      (u) =>
+        (sessionId != null && u.id === sessionId) ||
+        (sessionEmail != null && u.profile.email === sessionEmail)
+    );
+    if (me) {
+      if (me.yearAllowances.length === 0) {
+        router.replace("/setup");
+      } else {
+        setCurrentUser(me);
+      }
+    }
   }
 
   async function handleAddEntry(entry: Omit<LeaveEntry, "id">) {
