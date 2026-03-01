@@ -191,7 +191,9 @@ export default function ProfilePage() {
                       <span className="font-medium">
                         {ya.year}
                         {ya.company ? (
-                          <span className="ml-1 font-normal text-xs opacity-70">— {ya.company}</span>
+                          <span className="ml-1 font-normal text-xs opacity-70">
+                            — {ya.company}
+                          </span>
                         ) : null}
                         {ya.year === currentHolidayYear && (
                           <span className="ml-2 text-xs text-indigo-500">(current)</span>

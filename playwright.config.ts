@@ -47,9 +47,7 @@ export default defineConfig({
   webServer: {
     /* In CI we build once then run the production server; locally we use `dev`
        so changes are reflected instantly. */
-    command: process.env.CI
-      ? "npm run start"
-      : "npm run dev",
+    command: process.env.CI ? "npm run start" : "npm run dev",
     url: "http://localhost:3000",
     /* Allow up to 3 minutes for the Next.js build/start in CI */
     timeout: 180_000,

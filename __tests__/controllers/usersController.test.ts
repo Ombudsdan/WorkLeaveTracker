@@ -9,7 +9,9 @@ const mockUser: PublicUser = {
     email: "alice@example.com",
     nonWorkingDays: [0, 6],
   },
-  yearAllowances: [{ year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 }],
+  yearAllowances: [
+    { year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+  ],
   entries: [],
 };
 
@@ -65,7 +67,14 @@ describe("usersController.updateProfile", () => {
 });
 
 describe("usersController.addYearAllowance", () => {
-  const yearAllowance = { year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 };
+  const yearAllowance = {
+    year: 2026,
+    company: "Acme",
+    holidayStartMonth: 1,
+    core: 25,
+    bought: 0,
+    carried: 0,
+  };
 
   it("calls POST /api/users/allowance and returns the saved allowance on success", async () => {
     mockFetch(yearAllowance, true);

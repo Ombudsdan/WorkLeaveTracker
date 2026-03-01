@@ -30,7 +30,14 @@ describe("YearAllowanceModal — rendering", () => {
   it("renders the 'Edit Year Allowance' heading when existing allowance provided", () => {
     renderModal(
       <YearAllowanceModal
-        existing={{ year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 }}
+        existing={{
+          year: 2026,
+          company: "Acme",
+          holidayStartMonth: 1,
+          core: 25,
+          bought: 0,
+          carried: 0,
+        }}
         onClose={jest.fn()}
         onSave={jest.fn()}
       />
@@ -41,7 +48,14 @@ describe("YearAllowanceModal — rendering", () => {
   it("pre-fills fields with existing values", () => {
     renderModal(
       <YearAllowanceModal
-        existing={{ year: 2025, company: "Acme", holidayStartMonth: 1, core: 20, bought: 3, carried: 2 }}
+        existing={{
+          year: 2025,
+          company: "Acme",
+          holidayStartMonth: 1,
+          core: 20,
+          bought: 3,
+          carried: 2,
+        }}
         onClose={jest.fn()}
         onSave={jest.fn()}
       />
@@ -55,7 +69,14 @@ describe("YearAllowanceModal — rendering", () => {
   it("shows the computed total", () => {
     renderModal(
       <YearAllowanceModal
-        existing={{ year: 2026, company: "Acme", holidayStartMonth: 1, core: 20, bought: 3, carried: 2 }}
+        existing={{
+          year: 2026,
+          company: "Acme",
+          holidayStartMonth: 1,
+          core: 20,
+          bought: 3,
+          carried: 2,
+        }}
         onClose={jest.fn()}
         onSave={jest.fn()}
       />
@@ -83,7 +104,14 @@ describe("YearAllowanceModal — interactions", () => {
     const onSave = jest.fn();
     renderModal(
       <YearAllowanceModal
-        existing={{ year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 }}
+        existing={{
+          year: 2026,
+          company: "Acme",
+          holidayStartMonth: 1,
+          core: 25,
+          bought: 0,
+          carried: 0,
+        }}
         onClose={jest.fn()}
         onSave={onSave}
       />
@@ -103,7 +131,14 @@ describe("YearAllowanceModal — interactions", () => {
     const user = setup();
     renderModal(
       <YearAllowanceModal
-        existing={{ year: 2026, company: "Acme", holidayStartMonth: 1, core: 20, bought: 0, carried: 0 }}
+        existing={{
+          year: 2026,
+          company: "Acme",
+          holidayStartMonth: 1,
+          core: 20,
+          bought: 0,
+          carried: 0,
+        }}
         onClose={jest.fn()}
         onSave={jest.fn()}
       />
@@ -141,22 +176,22 @@ describe("YearAllowanceModal — interactions", () => {
   });
 });
 
-  it("calls onSave with the updated company when company field is changed", async () => {
-    const user = setup();
-    const onSave = jest.fn();
-    renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={onSave} />);
-    const companyInput = screen.getByLabelText("Company");
-    await user.type(companyInput, "NewCo");
-    await user.click(screen.getByRole("button", { name: "Save" }));
-    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ company: "NewCo" }));
-  });
+it("calls onSave with the updated company when company field is changed", async () => {
+  const user = setup();
+  const onSave = jest.fn();
+  renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={onSave} />);
+  const companyInput = screen.getByLabelText("Company");
+  await user.type(companyInput, "NewCo");
+  await user.click(screen.getByRole("button", { name: "Save" }));
+  expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ company: "NewCo" }));
+});
 
-  it("calls onSave with the updated holidayStartMonth when month is changed", async () => {
-    const user = setup();
-    const onSave = jest.fn();
-    renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={onSave} />);
-    const monthSelect = screen.getByLabelText("Holiday Year Starts");
-    await user.selectOptions(monthSelect, "4");
-    await user.click(screen.getByRole("button", { name: "Save" }));
-    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ holidayStartMonth: 4 }));
-  });
+it("calls onSave with the updated holidayStartMonth when month is changed", async () => {
+  const user = setup();
+  const onSave = jest.fn();
+  renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={onSave} />);
+  const monthSelect = screen.getByLabelText("Holiday Year Starts");
+  await user.selectOptions(monthSelect, "4");
+  await user.click(screen.getByRole("button", { name: "Save" }));
+  expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ holidayStartMonth: 4 }));
+});

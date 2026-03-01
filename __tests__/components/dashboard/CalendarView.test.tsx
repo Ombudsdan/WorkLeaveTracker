@@ -27,7 +27,9 @@ const alice: PublicUser = {
     email: "alice@example.com",
     nonWorkingDays: [0, 6], // Sun + Sat
   },
-  yearAllowances: [{ year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 }],
+  yearAllowances: [
+    { year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+  ],
   entries: [],
 };
 

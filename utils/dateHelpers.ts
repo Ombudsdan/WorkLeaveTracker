@@ -42,11 +42,12 @@ export function getActiveYearAllowance(allowances: YearAllowance[]): YearAllowan
     if (today >= start && today < end) return ya;
   }
   // Fallback: the most recently started allowance
-  const past = allowances.filter((ya) => today >= new Date(ya.year, (ya.holidayStartMonth ?? 1) - 1, 1));
+  const past = allowances.filter(
+    (ya) => today >= new Date(ya.year, (ya.holidayStartMonth ?? 1) - 1, 1)
+  );
   if (past.length > 0) return past.sort((a, b) => b.year - a.year)[0];
   return [...allowances].sort((a, b) => a.year - b.year)[0];
 }
-
 
 export function getHolidayYearBounds(holidayStartMonth: number): { start: Date; end: Date } {
   const now = new Date();

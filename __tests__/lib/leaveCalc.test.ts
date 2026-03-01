@@ -27,7 +27,9 @@ const baseUser: AppUser = {
     email: "alice@example.com",
     nonWorkingDays: [0, 6], // Sat + Sun
   },
-  yearAllowances: [{ year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 }],
+  yearAllowances: [
+    { year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+  ],
   entries: [],
 };
 
@@ -221,7 +223,9 @@ describe("calculateLeaveSummary", () => {
   it("calculates totalAllowance from core + bought + carried", () => {
     const user: AppUser = {
       ...baseUser,
-      yearAllowances: [{ year: 2026, company: "Acme", holidayStartMonth: 1, core: 20, bought: 3, carried: 2 }],
+      yearAllowances: [
+        { year: 2026, company: "Acme", holidayStartMonth: 1, core: 20, bought: 3, carried: 2 },
+      ],
     };
     const { totalAllowance } = calculateLeaveSummary(user, []);
     expect(totalAllowance).toBe(25);
@@ -230,7 +234,9 @@ describe("calculateLeaveSummary", () => {
   it("can return negative remaining when days exceed allowance", () => {
     const user: AppUser = {
       ...baseUser,
-      yearAllowances: [{ year: 2026, company: "Acme", holidayStartMonth: 1, core: 2, bought: 0, carried: 0 }],
+      yearAllowances: [
+        { year: 2026, company: "Acme", holidayStartMonth: 1, core: 2, bought: 0, carried: 0 },
+      ],
       entries: [
         {
           id: "e6",
@@ -255,7 +261,13 @@ describe("calculateLeaveSummary", () => {
 describe("calculateLeaveSummary — legacy allowances (missing holidayStartMonth)", () => {
   it("defaults holidayStartMonth to January for allowances without the field", () => {
     // Simulate pre-migration data: yearAllowance has no holidayStartMonth
-    const legacy = { year: 2024, company: "Acme", core: 20, bought: 0, carried: 0 } as import("@/types").YearAllowance;
+    const legacy = {
+      year: 2024,
+      company: "Acme",
+      core: 20,
+      bought: 0,
+      carried: 0,
+    } as import("@/types").YearAllowance;
     const user: AppUser = { ...baseUser, yearAllowances: [legacy] };
     // Should still work — defaults to month 1, falls back to legacy (past) allowance
     const { totalAllowance } = calculateLeaveSummary(user, []);

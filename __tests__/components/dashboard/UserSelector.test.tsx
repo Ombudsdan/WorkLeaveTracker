@@ -12,7 +12,9 @@ const alice: PublicUser = {
     nonWorkingDays: [0, 6],
     pinnedUserIds: ["u2"],
   },
-  yearAllowances: [{ year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 }],
+  yearAllowances: [
+    { year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+  ],
   entries: [],
 };
 
@@ -25,7 +27,9 @@ const bob: PublicUser = {
     nonWorkingDays: [0, 6],
     pinnedUserIds: [],
   },
-  yearAllowances: [{ year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 }],
+  yearAllowances: [
+    { year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+  ],
   entries: [],
 };
 

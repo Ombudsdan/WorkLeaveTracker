@@ -1,6 +1,10 @@
 import { LeaveStatus, LeaveType } from "@/types";
 import type { PublicUser } from "@/types";
-import { countWorkingDays, getHolidayYearBounds, getActiveYearAllowance } from "@/utils/dateHelpers";
+import {
+  countWorkingDays,
+  getHolidayYearBounds,
+  getActiveYearAllowance,
+} from "@/utils/dateHelpers";
 
 export interface LeaveSummary {
   total: number;

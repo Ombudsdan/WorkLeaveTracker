@@ -44,4 +44,3 @@ describe("holidaysController.fetchBankHolidays", () => {
     expect(result).toEqual([]);
   });
 });
-
