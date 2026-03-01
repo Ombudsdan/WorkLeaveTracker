@@ -97,7 +97,6 @@ export default function ProfilePage() {
                 label="Company"
                 value={company}
                 onChange={(v) => setCompany(v)}
-                required
               />
               <FormField id="email" label="Email" type="email" value={email} readOnly />
             </div>

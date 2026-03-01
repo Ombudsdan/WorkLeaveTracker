@@ -12,6 +12,7 @@ export default function FormField({
   placeholder,
   min,
   max,
+  maxLength,
   required,
 }: FormFieldProps) {
   const { getError, setError, clearError, registerValidator } = useFormValidation();
@@ -42,6 +43,7 @@ export default function FormField({
         placeholder={placeholder}
         min={min}
         max={max}
+        maxLength={maxLength}
         className={`w-full border rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-indigo-400 focus:outline-none
           ${readOnly ? "bg-gray-50 text-gray-400" : ""}
           ${error ? "border-red-400" : "border-gray-300"}`}
@@ -96,6 +98,7 @@ interface FormFieldProps {
   placeholder?: string;
   min?: number;
   max?: number;
+  maxLength?: number;
   /**
    * Built-in required validation.
    * Pass `true` to use the default "{label} is required" message,

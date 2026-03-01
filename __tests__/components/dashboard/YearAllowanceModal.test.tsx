@@ -4,7 +4,7 @@ import React from "react";
 import { FormValidationProvider } from "@/contexts/FormValidationContext";
 import YearAllowanceModal from "@/components/dashboard/YearAllowanceModal";
 
-function renderInProvider(ui: React.ReactElement) {
+function renderModal(ui: React.ReactElement) {
   return render(<FormValidationProvider>{ui}</FormValidationProvider>);
 }
 
@@ -23,12 +23,12 @@ afterEach(() => {
 
 describe("YearAllowanceModal — rendering", () => {
   it("renders the 'Add Year Allowance' heading when no existing allowance", () => {
-    renderInProvider(<YearAllowanceModal onClose={jest.fn()} onSave={jest.fn()} />);
+    renderModal(<YearAllowanceModal onClose={jest.fn()} onSave={jest.fn()} />);
     expect(screen.getByText("Add Year Allowance")).toBeInTheDocument();
   });
 
   it("renders the 'Edit Year Allowance' heading when existing allowance provided", () => {
-    renderInProvider(
+    renderModal(
       <YearAllowanceModal
         existing={{ year: 2026, core: 25, bought: 0, carried: 0 }}
         onClose={jest.fn()}
@@ -39,7 +39,7 @@ describe("YearAllowanceModal — rendering", () => {
   });
 
   it("pre-fills fields with existing values", () => {
-    renderInProvider(
+    renderModal(
       <YearAllowanceModal
         existing={{ year: 2025, core: 20, bought: 3, carried: 2 }}
         onClose={jest.fn()}
@@ -53,7 +53,7 @@ describe("YearAllowanceModal — rendering", () => {
   });
 
   it("shows the computed total", () => {
-    renderInProvider(
+    renderModal(
       <YearAllowanceModal
         existing={{ year: 2026, core: 20, bought: 3, carried: 2 }}
         onClose={jest.fn()}
@@ -64,9 +64,7 @@ describe("YearAllowanceModal — rendering", () => {
   });
 
   it("uses initialYear when provided and no existing", () => {
-    renderInProvider(
-      <YearAllowanceModal initialYear={2027} onClose={jest.fn()} onSave={jest.fn()} />
-    );
+    renderModal(<YearAllowanceModal initialYear={2027} onClose={jest.fn()} onSave={jest.fn()} />);
     expect(screen.getByDisplayValue("2027")).toBeInTheDocument();
   });
 });
@@ -75,7 +73,7 @@ describe("YearAllowanceModal — interactions", () => {
   it("calls onClose when Cancel is clicked", async () => {
     const user = setup();
     const onClose = jest.fn();
-    renderInProvider(<YearAllowanceModal onClose={onClose} onSave={jest.fn()} />);
+    renderModal(<YearAllowanceModal onClose={onClose} onSave={jest.fn()} />);
     await user.click(screen.getByRole("button", { name: "Cancel" }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
@@ -83,7 +81,7 @@ describe("YearAllowanceModal — interactions", () => {
   it("calls onSave with the correct values when Save is clicked", async () => {
     const user = setup();
     const onSave = jest.fn();
-    renderInProvider(
+    renderModal(
       <YearAllowanceModal
         existing={{ year: 2026, core: 25, bought: 0, carried: 0 }}
         onClose={jest.fn()}
@@ -96,7 +94,7 @@ describe("YearAllowanceModal — interactions", () => {
 
   it("updates the total when core days are changed", async () => {
     const user = setup();
-    renderInProvider(
+    renderModal(
       <YearAllowanceModal
         existing={{ year: 2026, core: 20, bought: 0, carried: 0 }}
         onClose={jest.fn()}
@@ -113,7 +111,7 @@ describe("YearAllowanceModal — interactions", () => {
   it("calls onSave with updated values after editing fields", async () => {
     const user = setup();
     const onSave = jest.fn();
-    renderInProvider(<YearAllowanceModal initialYear={2027} onClose={jest.fn()} onSave={onSave} />);
+    renderModal(<YearAllowanceModal initialYear={2027} onClose={jest.fn()} onSave={onSave} />);
     const boughtInput = screen.getByLabelText("Days Bought");
     await user.clear(boughtInput);
     await user.type(boughtInput, "5");
@@ -127,7 +125,7 @@ describe("YearAllowanceModal — interactions", () => {
   it("calls onSave with updated year when year field is changed", async () => {
     const user = setup();
     const onSave = jest.fn();
-    renderInProvider(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={onSave} />);
+    renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={onSave} />);
     const yearInput = screen.getByLabelText("Holiday Year");
     await user.clear(yearInput);
     await user.type(yearInput, "2028");

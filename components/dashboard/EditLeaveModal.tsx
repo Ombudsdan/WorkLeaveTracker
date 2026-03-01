@@ -6,8 +6,17 @@ import { LEAVE_STATUS_ORDER, LEAVE_STATUS_LABELS } from "@/variables/leaveConfig
 import FormField from "@/components/FormField";
 import FormSelect from "@/components/FormSelect";
 import Button from "@/components/Button";
+import { FormValidationProvider } from "@/contexts/FormValidationContext";
 
 export default function EditLeaveModal({ entry, onClose, onSave }: EditLeaveModalProps) {
+  return (
+    <FormValidationProvider>
+      <EditLeaveModalInner entry={entry} onClose={onClose} onSave={onSave} />
+    </FormValidationProvider>
+  );
+}
+
+function EditLeaveModalInner({ entry, onClose, onSave }: EditLeaveModalProps) {
   const [startDate, setStartDate] = useState(entry.startDate);
   const [endDate, setEndDate] = useState(entry.endDate);
   const [status, setStatus] = useState<LeaveStatus>(entry.status);
@@ -54,6 +63,7 @@ export default function EditLeaveModal({ entry, onClose, onSave }: EditLeaveModa
             value={notes}
             onChange={(v) => setNotes(v)}
             placeholder="e.g. Beach holiday"
+            maxLength={30}
           />
         </div>
         <div className="flex gap-2 mt-5">
