@@ -17,10 +17,6 @@ function ControlledFormField(
   return <FormField {...rest} value={value} onChange={setValue} />;
 }
 
-function renderInProvider(ui: React.ReactElement) {
-  return render(<FormValidationProvider>{ui}</FormValidationProvider>);
-}
-
 // Helper component that exposes triggerAllValidations for testing
 function TriggerButton() {
   const { triggerAllValidations } = useFormValidation();
