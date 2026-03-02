@@ -9,32 +9,36 @@ export default function UserSelector({
 }: UserSelectorProps) {
   const pinnedUsers = getPinnedUsers(allUsers, currentUser);
 
+  if (pinnedUsers.length === 0) return null;
+
+  const tabs = [
+    { id: null as string | null, label: "My Calendar" },
+    ...pinnedUsers.map((u) => ({
+      id: u.id,
+      label: `${u.profile.firstName} ${u.profile.lastName}`,
+    })),
+  ];
+
   return (
-    <div className="flex items-center gap-3 mb-6 flex-wrap">
-      <span className="text-sm font-medium text-gray-600">Viewing:</span>
-      <button
-        onClick={() => onSelectUser(null)}
-        className={`px-3 py-1 rounded-full text-sm border transition ${
-          !viewingUserId
-            ? "bg-indigo-600 text-white border-indigo-600"
-            : "bg-white text-gray-600 border-gray-300 hover:border-indigo-400"
-        }`}
-      >
-        My Calendar
-      </button>
-      {pinnedUsers.map((user) => (
-        <button
-          key={user.id}
-          onClick={() => onSelectUser(user.id)}
-          className={`px-3 py-1 rounded-full text-sm border transition ${
-            viewingUserId === user.id
-              ? "bg-indigo-600 text-white border-indigo-600"
-              : "bg-white text-gray-600 border-gray-300 hover:border-indigo-400"
-          }`}
-        >
-          {user.profile.firstName} {user.profile.lastName}
-        </button>
-      ))}
+    <div className="flex px-2 pt-2 gap-1" role="tablist" aria-label="Calendar view">
+      {tabs.map((tab) => {
+        const isActive = tab.id === viewingUserId;
+        return (
+          <button
+            key={tab.id ?? "__me__"}
+            role="tab"
+            aria-selected={isActive}
+            onClick={() => onSelectUser(tab.id)}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer focus:outline-none whitespace-nowrap ${
+              isActive
+                ? "bg-indigo-600 text-white"
+                : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+            }`}
+          >
+            {tab.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

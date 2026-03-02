@@ -4,6 +4,7 @@ import {
   getDaysInMonth,
   getFirstDayOfMonth,
   getEntryForDate,
+  getEntriesForDate,
   isNonWorkingDay,
   toIsoDate,
 } from "@/utils/dateHelpers";
@@ -194,6 +195,59 @@ describe("getEntryForDate", () => {
     };
     // entry covers 10-14, overlap covers 12-16; 12 is in both → first in array wins
     expect(getEntryForDate("2026-03-12", [entry, overlap])).toBe(entry);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getEntriesForDate
+// ---------------------------------------------------------------------------
+describe("getEntriesForDate", () => {
+  const entry: LeaveEntry = {
+    id: "1",
+    startDate: "2026-03-10",
+    endDate: "2026-03-14",
+    status: LeaveStatus.Approved,
+    type: LeaveType.Holiday,
+  };
+
+  const overlap: LeaveEntry = {
+    id: "2",
+    startDate: "2026-03-12",
+    endDate: "2026-03-16",
+    status: LeaveStatus.Planned,
+    type: LeaveType.Holiday,
+  };
+
+  const thirdEntry: LeaveEntry = {
+    id: "3",
+    startDate: "2026-03-11",
+    endDate: "2026-03-13",
+    status: LeaveStatus.Requested,
+    type: LeaveType.Holiday,
+  };
+
+  it("returns an empty array when no entries match", () => {
+    expect(getEntriesForDate("2026-03-09", [entry])).toEqual([]);
+  });
+
+  it("returns a single-item array when exactly one entry covers the date", () => {
+    expect(getEntriesForDate("2026-03-10", [entry])).toEqual([entry]);
+  });
+
+  it("returns both entries when two overlap on a date", () => {
+    const result = getEntriesForDate("2026-03-12", [entry, overlap]);
+    expect(result).toHaveLength(2);
+    expect(result).toContain(entry);
+    expect(result).toContain(overlap);
+  });
+
+  it("caps results at 2 even when 3 entries overlap on the same date", () => {
+    const result = getEntriesForDate("2026-03-12", [entry, overlap, thirdEntry]);
+    expect(result).toHaveLength(2);
+  });
+
+  it("returns an empty array for an empty entries array", () => {
+    expect(getEntriesForDate("2026-03-12", [])).toEqual([]);
   });
 });
 

@@ -46,6 +46,7 @@ export async function POST(request: Request) {
     status: body.status ?? LeaveStatus.Planned,
     type: body.type ?? LeaveType.Holiday,
     notes: body.notes,
+    ...(body.duration && { duration: body.duration }),
   };
 
   const ok = await addEntry(resolvedUser.id, entry);

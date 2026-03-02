@@ -1,10 +1,12 @@
 "use client";
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, useRef, type FormEvent } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import type { PublicUser, YearAllowance } from "@/types";
+import type { PublicUser, YearAllowance, UkCountry } from "@/types";
 import { CheckCircle, Check } from "lucide-react";
 import NavBar from "@/components/NavBar";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import SessionExpiredScreen from "@/components/SessionExpiredScreen";
 import FormField from "@/components/FormField";
 import FormErrorOutlet from "@/components/FormErrorOutlet";
 import Button from "@/components/Button";
@@ -13,8 +15,13 @@ import { DAY_NAMES_SHORT } from "@/variables/calendar";
 
 import { usersController } from "@/controllers/usersController";
 import YearAllowanceModal from "@/components/dashboard/YearAllowanceModal";
-import PinUserModal from "@/components/dashboard/PinUserModal";
 import { getActiveYearAllowance } from "@/utils/dateHelpers";
+
+const UK_COUNTRIES: { value: UkCountry; label: string }[] = [
+  { value: "england-and-wales", label: "England & Wales" },
+  { value: "scotland", label: "Scotland" },
+  { value: "northern-ireland", label: "Northern Ireland" },
+];
 
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
 /** How long to wait before retrying when the user record is not found. */
@@ -29,6 +36,7 @@ export default function ProfilePage() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [workingDays, setWorkingDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [country, setCountry] = useState<UkCountry | "">("");
   const [yearAllowances, setYearAllowances] = useState<YearAllowance[]>([]);
   const [allUsers, setAllUsers] = useState<PublicUser[]>([]);
   const [pinnedUserIds, setPinnedUserIds] = useState<string[]>([]);
@@ -38,10 +46,22 @@ export default function ProfilePage() {
   const [profileError, setProfileError] = useState(false);
   const [showAllowanceModal, setShowAllowanceModal] = useState(false);
   const [editingAllowance, setEditingAllowance] = useState<YearAllowance | undefined>(undefined);
-  const [showPinModal, setShowPinModal] = useState(false);
+  /** Pending company-change confirmation: the allowance the user wants to save */
+  const [pendingCompanyChange, setPendingCompanyChange] = useState<{
+    allowance: YearAllowance;
+    existingCompany: string;
+    message: string;
+  } | null>(null);
+
+  // Track whether the user was previously authenticated in this tab so we can
+  // show the "session expired" screen instead of silently redirecting to login.
+  const wasAuthenticatedRef = useRef(false);
 
   useEffect(() => {
-    if (status === "unauthenticated") router.push("/login");
+    if (status === "authenticated") wasAuthenticatedRef.current = true;
+    if (status === "unauthenticated" && !wasAuthenticatedRef.current) {
+      router.push("/login");
+    }
   }, [status, router]);
 
   // Clear any stale form errors carried over from other pages that share the
@@ -105,7 +125,12 @@ export default function ProfilePage() {
   }, [status, session]);
 
   if (status === "loading" || loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading…</div>;
+    return <LoadingSpinner />;
+  }
+
+  // Session expired after the user was previously authenticated in this tab
+  if (status === "unauthenticated" && wasAuthenticatedRef.current) {
+    return <SessionExpiredScreen />;
   }
 
   if (profileError) {
@@ -130,7 +155,8 @@ export default function ProfilePage() {
 
   const activeYa = getActiveYearAllowance(yearAllowances);
   const currentHolidayYear = activeYa?.year ?? new Date().getFullYear();
-  const otherUsers = allUsers.filter((u) => u.profile.email !== email);
+  /** Active companies across all allowances — used as combobox suggestions */
+  const existingCompanies = [...new Set(yearAllowances.map((ya) => ya.company).filter(Boolean))];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -168,6 +194,33 @@ export default function ProfilePage() {
               />
               <FormField id="email" label="Email" type="email" value={email} readOnly />
             </div>
+          </section>
+
+          {/* UK Country */}
+          <section>
+            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">
+              Bank Holidays Region
+            </h3>
+            <div className="flex gap-2 flex-wrap">
+              {UK_COUNTRIES.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setCountry(country === opt.value ? "" : opt.value)}
+                  aria-pressed={country === opt.value}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition cursor-pointer ${
+                    country === opt.value
+                      ? "bg-indigo-600 text-white border-indigo-600"
+                      : "bg-white text-gray-700 border-gray-300 hover:border-indigo-400 hover:text-indigo-600"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-gray-400 mt-1">
+              Select your region to show the correct UK bank holidays
+            </p>
           </section>
 
           {/* Working week */}
@@ -218,94 +271,74 @@ export default function ProfilePage() {
             ) : (
               <div className="space-y-2">
                 {[...yearAllowances]
-                  .sort((a, b) => b.year - a.year)
-                  .map((ya) => (
-                    <div
-                      key={ya.year}
-                      className={`flex items-center justify-between text-sm rounded-lg px-3 py-2 border ${
-                        ya.year === currentHolidayYear
-                          ? "bg-indigo-50 border-indigo-200 text-indigo-800"
-                          : "bg-gray-50 border-gray-200 text-gray-600"
-                      }`}
-                    >
-                      <span className="font-medium">
-                        {ya.year}
-                        {ya.company ? (
-                          <span className="ml-1 font-normal text-xs opacity-70">
-                            — {ya.company}
-                          </span>
-                        ) : null}
-                        {ya.year === currentHolidayYear && (
-                          <span className="ml-2 text-xs text-indigo-500">(current)</span>
-                        )}
-                      </span>
-                      <span>
-                        {ya.core + ya.bought + ya.carried} days ({ya.core} core
-                        {ya.bought > 0 ? ` + ${ya.bought} bought` : ""}
-                        {ya.carried > 0 ? ` + ${ya.carried} carried` : ""})
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingAllowance(ya);
-                          setShowAllowanceModal(true);
-                        }}
-                        className="underline text-xs text-indigo-600"
+                  .sort((a, b) => b.year - a.year || (a.active === false ? 1 : -1))
+                  .map((ya, idx) => {
+                    const isInactive = ya.active === false;
+                    return (
+                      <div
+                        key={`${ya.year}-${ya.company}-${idx}`}
+                        className={`flex items-center justify-between text-sm rounded-lg px-3 py-2 border ${
+                          isInactive
+                            ? "bg-gray-50 border-gray-200 text-gray-400 opacity-60"
+                            : ya.year === currentHolidayYear
+                              ? "bg-indigo-50 border-indigo-200 text-indigo-800"
+                              : "bg-gray-50 border-gray-200 text-gray-600"
+                        }`}
                       >
-                        Edit
-                      </button>
-                    </div>
-                  ))}
+                        <span className="font-medium">
+                          {ya.year}
+                          {ya.company ? (
+                            <span className="ml-1 font-normal text-xs opacity-70">
+                              — {ya.company}
+                            </span>
+                          ) : null}
+                          {ya.year === currentHolidayYear && !isInactive && (
+                            <span className="ml-2 text-xs text-indigo-500">(current)</span>
+                          )}
+                          {isInactive && (
+                            <span className="ml-2 text-xs text-gray-400">(ended)</span>
+                          )}
+                        </span>
+                        <span>
+                          {ya.core + ya.bought + ya.carried} days ({ya.core} core
+                          {ya.bought > 0 ? ` + ${ya.bought} bought` : ""}
+                          {ya.carried > 0 ? ` + ${ya.carried} carried` : ""})
+                        </span>
+                        {!isInactive && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingAllowance(ya);
+                              setShowAllowanceModal(true);
+                            }}
+                            className="underline text-xs text-indigo-600"
+                          >
+                            Edit
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
               </div>
             )}
+            <p className="text-xs text-gray-400 mt-2">
+              If you change companies, add a new allowance for the same year with your new company.
+              Your previous allowance will be marked as ended.
+            </p>
           </section>
 
-          {/* Pinned Users */}
+          {/* Connections link */}
           <section>
-            <div className="flex items-center justify-between mb-1">
-              <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">
-                Pinned Users
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowPinModal(true)}
-                disabled={pinnedUserIds.length >= 3}
-                className="bg-indigo-600 text-white text-xs px-3 py-1 rounded-lg hover:bg-indigo-700 transition disabled:opacity-40"
-              >
-                + Search User
-              </button>
-            </div>
-            <p className="text-xs text-gray-400 mb-3">
-              Pin up to 3 users to show in the dashboard switcher.
+            <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide mb-1">
+              Connections
+            </h3>
+            <p className="text-sm text-gray-500">
+              Manage your colleague connections (view their calendar) from the{" "}
+              <a href="/connections" className="text-indigo-600 underline hover:text-indigo-800">
+                Connections page
+              </a>
+              .
             </p>
-            {pinnedUserIds.length === 0 ? (
-              <p className="text-sm text-gray-400">No users pinned yet.</p>
-            ) : (
-              <ul className="space-y-2">
-                {pinnedUserIds.map((id) => {
-                  const u = allUsers.find((user) => user.id === id);
-                  if (!u) return null;
-                  return (
-                    <li
-                      key={id}
-                      className="flex items-center justify-between text-sm bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2"
-                    >
-                      <span className="text-indigo-800">
-                        {u.profile.firstName} {u.profile.lastName}{" "}
-                        <span className="text-indigo-500 font-normal">({u.profile.email})</span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => unpinUser(id)}
-                        className="text-xs text-red-500 hover:text-red-700 ml-3"
-                      >
-                        Unpin
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
           </section>
 
           {submitError && <p className="text-red-500 text-sm">{submitError}</p>}
@@ -326,18 +359,32 @@ export default function ProfilePage() {
         <YearAllowanceModal
           initialYear={editingAllowance?.year ?? currentHolidayYear + 1}
           existing={editingAllowance}
+          existingCompanies={existingCompanies}
           onClose={() => setShowAllowanceModal(false)}
           onSave={handleSaveAllowance}
         />
       )}
 
-      {showPinModal && (
-        <PinUserModal
-          otherUsers={otherUsers}
-          pinnedUserIds={pinnedUserIds}
-          onClose={() => setShowPinModal(false)}
-          onPin={handlePinUser}
-        />
+      {/* Company change confirmation dialog */}
+      {pendingCompanyChange && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm">
+            <h3 className="font-bold text-gray-800 mb-3">Company Change Detected</h3>
+            <p className="text-sm text-gray-600 mb-4">{pendingCompanyChange.message}</p>
+            <div className="flex gap-2">
+              <Button
+                variant="primary"
+                fullWidth
+                onClick={() => confirmCompanyChange(pendingCompanyChange.allowance)}
+              >
+                Confirm Change
+              </Button>
+              <Button variant="secondary" fullWidth onClick={() => setPendingCompanyChange(null)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -370,6 +417,7 @@ export default function ProfilePage() {
       email,
       nonWorkingDays,
       pinnedUserIds,
+      ...(country && { country }),
     });
 
     if (!updated) {
@@ -382,29 +430,52 @@ export default function ProfilePage() {
   }
 
   async function handleSaveAllowance(ya: YearAllowance) {
-    const saved = await usersController.addYearAllowance(ya);
-    if (saved) {
-      setYearAllowances((prev) => {
-        const rest = prev.filter((a) => a.year !== saved.year);
-        return [...rest, saved].sort((a, b) => a.year - b.year);
-      });
+    const result = await usersController.addYearAllowance(ya);
+    if (!result) {
+      // Network error
+      return;
     }
+    if ("conflict" in result) {
+      // Company change detected — ask the user to confirm
+      setPendingCompanyChange({
+        allowance: ya,
+        existingCompany: result.existingCompany,
+        message: result.message,
+      });
+      setShowAllowanceModal(false);
+      return;
+    }
+    // Successfully saved
+    setYearAllowances((prev) => {
+      const rest = prev.filter(
+        (a) =>
+          !(
+            a.year === result.year &&
+            a.company.trim().toLowerCase() === result.company.trim().toLowerCase() &&
+            a.active !== false
+          )
+      );
+      return [...rest, result].sort((a, b) => a.year - b.year);
+    });
     setShowAllowanceModal(false);
+  }
+
+  async function confirmCompanyChange(ya: YearAllowance) {
+    const result = await usersController.addYearAllowance({ ...ya, forceCompanyChange: true });
+    setPendingCompanyChange(null);
+    if (!result || "conflict" in result) return;
+    // Refresh all allowances from server to get the deactivated old entry
+    const users = await usersController.fetchAll();
+    if (!Array.isArray(users)) return;
+    const sessionId = (session?.user as { id?: string })?.id;
+    const me =
+      (sessionId ? users.find((u) => u.id === sessionId) : undefined) ??
+      users.find((u) => u.profile.email === session?.user?.email);
+    if (me) applyUserProfile(me);
   }
 
   function toggleWorkingDay(day: number) {
     setWorkingDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
-  }
-
-  function handlePinUser(id: string) {
-    setPinnedUserIds((prev) => {
-      if (prev.includes(id) || prev.length >= 3) return prev;
-      return [...prev, id];
-    });
-  }
-
-  function unpinUser(id: string) {
-    setPinnedUserIds((prev) => prev.filter((p) => p !== id));
   }
 
   function applyUserProfile(me: PublicUser) {
@@ -414,5 +485,6 @@ export default function ProfilePage() {
     setWorkingDays(ALL_DAYS.filter((d) => !me.profile.nonWorkingDays.includes(d)));
     setYearAllowances(me.yearAllowances ?? []);
     setPinnedUserIds(me.profile.pinnedUserIds ?? []);
+    setCountry(me.profile.country ?? "");
   }
 }

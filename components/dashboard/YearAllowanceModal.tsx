@@ -1,14 +1,17 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { YearAllowance } from "@/types";
 import FormField from "@/components/FormField";
 import Button from "@/components/Button";
+import CompanySelect from "@/components/CompanySelect";
 import { FormValidationProvider, useFormValidation } from "@/contexts/FormValidationContext";
 import { MONTH_NAMES_LONG } from "@/variables/calendar";
+import { usersController } from "@/controllers/usersController";
 
 export default function YearAllowanceModal({
   initialYear,
   existing,
+  existingCompanies,
   onClose,
   onSave,
 }: YearAllowanceModalProps) {
@@ -17,6 +20,7 @@ export default function YearAllowanceModal({
       <YearAllowanceModalInner
         initialYear={initialYear}
         existing={existing}
+        existingCompanies={existingCompanies}
         onClose={onClose}
         onSave={onSave}
       />
@@ -27,6 +31,7 @@ export default function YearAllowanceModal({
 function YearAllowanceModalInner({
   initialYear,
   existing,
+  existingCompanies = [],
   onClose,
   onSave,
 }: YearAllowanceModalProps) {
@@ -37,6 +42,17 @@ function YearAllowanceModalInner({
   const [core, setCore] = useState(existing?.core ?? 25);
   const [bought, setBought] = useState(existing?.bought ?? 0);
   const [carried, setCarried] = useState(existing?.carried ?? 0);
+
+  // Merge prop-provided companies with anything fetched from the API
+  const [companies, setCompanies] = useState<string[]>(existingCompanies);
+
+  useEffect(() => {
+    usersController.fetchCompanies().then((fetched) => {
+      if (fetched.length > 0) {
+        setCompanies((prev) => [...new Set([...prev, ...fetched])]);
+      }
+    });
+  }, []);
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
@@ -53,11 +69,12 @@ function YearAllowanceModalInner({
             max={2100}
             required
           />
-          <FormField
+          <CompanySelect
             id="ya-company"
             label="Company"
             value={company}
-            onChange={(v) => setCompany(v)}
+            onChange={setCompany}
+            companies={companies}
           />
           <div>
             <label
@@ -132,6 +149,8 @@ function YearAllowanceModalInner({
 interface YearAllowanceModalProps {
   initialYear?: number;
   existing?: YearAllowance;
+  /** Existing company names to pre-populate the selector (will be merged with API results) */
+  existingCompanies?: string[];
   onClose: () => void;
   onSave: (allowance: YearAllowance) => void;
 }

@@ -1,9 +1,10 @@
-import { LeaveStatus, LeaveType } from "@/types";
+import { LeaveStatus, LeaveType, LeaveDuration } from "@/types";
 import type { PublicUser } from "@/types";
 import {
   countWorkingDays,
   getHolidayYearBounds,
   getActiveYearAllowance,
+  getEntryDuration,
 } from "@/utils/dateHelpers";
 
 export interface LeaveSummary {
@@ -18,6 +19,7 @@ export interface LeaveSummary {
 /**
  * Calculate the leave summary for a user within their current holiday year.
  * Only holiday-type entries are counted; bank holidays on working days are excluded.
+ * Half-day entries count as 0.5 working days.
  */
 export function calcLeaveSummary(user: PublicUser, bankHolidays: string[]): LeaveSummary {
   const activeYa = getActiveYearAllowance(user.yearAllowances);
@@ -41,12 +43,15 @@ export function calcLeaveSummary(user: PublicUser, bankHolidays: string[]): Leav
     const ee = new Date(entry.endDate);
     if (ee < start || es > end) continue;
 
-    const days = countWorkingDays(
-      entry.startDate,
-      entry.endDate,
-      user.profile.nonWorkingDays,
-      relevantBankHolidays
-    );
+    const days =
+      getEntryDuration(entry) !== LeaveDuration.Full
+        ? 0.5
+        : countWorkingDays(
+            entry.startDate,
+            entry.endDate,
+            user.profile.nonWorkingDays,
+            relevantBankHolidays
+          );
 
     if (entry.status === LeaveStatus.Approved) approved += days;
     else if (entry.status === LeaveStatus.Requested) requested += days;

@@ -1,8 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import LeaveList from "@/components/dashboard/LeaveList";
-import { LeaveStatus, LeaveType } from "@/types";
-import type { PublicUser, LeaveEntry } from "@/types";
+import { LeaveStatus, LeaveType, LeaveDuration } from "@/types";
+import type { PublicUser, LeaveEntry, BankHolidayEntry } from "@/types";
 
 beforeEach(() => {
   jest.useFakeTimers();
@@ -16,6 +16,11 @@ afterEach(() => {
 // Use userEvent.setup with advanceTimers so fake timers don't block async interactions
 function setup() {
   return userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+}
+
+/** Helper to wrap a date string into the BankHolidayEntry shape expected by the component */
+function bh(date: string, title = "Bank Holiday"): BankHolidayEntry {
+  return { date, title };
 }
 
 const alice: PublicUser = {
@@ -255,7 +260,7 @@ describe("LeaveList — with entries", () => {
     render(
       <LeaveList
         user={{ ...alice, entries: [entry] }}
-        bankHolidays={["2026-03-09"]} // Monday is a bank holiday
+        bankHolidays={[bh("2026-03-09")]} // Monday is a bank holiday
         isOwnProfile={true}
         onEdit={jest.fn()}
         onDelete={jest.fn()}
@@ -263,5 +268,137 @@ describe("LeaveList — with entries", () => {
     );
     // Mon–Fri minus 1 bank holiday = 4 working days
     expect(screen.getByText("(4d)")).toBeInTheDocument();
+  });
+});
+
+describe("LeaveList — half-day entries", () => {
+  const halfDayEntry: LeaveEntry = {
+    id: "e3",
+    startDate: "2026-03-09",
+    endDate: "2026-03-09",
+    status: LeaveStatus.Approved,
+    type: LeaveType.Holiday,
+    notes: "Dentist",
+    duration: LeaveDuration.HalfMorning,
+  };
+
+  it("shows '(Half Day AM)' for an AM half-day entry", () => {
+    render(
+      <LeaveList
+        user={{ ...alice, entries: [halfDayEntry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    expect(screen.getByText("(Half Day AM)")).toBeInTheDocument();
+  });
+
+  it("appends (AM) to the reason for an AM half-day entry", () => {
+    render(
+      <LeaveList
+        user={{ ...alice, entries: [halfDayEntry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    expect(screen.getByText("Dentist (AM)")).toBeInTheDocument();
+  });
+
+  it("appends (PM) to the reason for a PM half-day entry", () => {
+    const pmEntry: LeaveEntry = {
+      ...halfDayEntry,
+      id: "e4",
+      duration: LeaveDuration.HalfAfternoon,
+      notes: "Physio",
+    };
+    render(
+      <LeaveList
+        user={{ ...alice, entries: [pmEntry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    expect(screen.getByText("Physio (PM)")).toBeInTheDocument();
+  });
+
+  it("also handles legacy halfDay/halfDayPeriod fields for backward compat", () => {
+    const legacyEntry: LeaveEntry = {
+      id: "e-legacy",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      notes: "Old format",
+      halfDay: true,
+      halfDayPeriod: "am",
+    };
+    render(
+      <LeaveList
+        user={{ ...alice, entries: [legacyEntry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    expect(screen.getByText("(Half Day AM)")).toBeInTheDocument();
+    expect(screen.getByText("Old format (AM)")).toBeInTheDocument();
+  });
+});
+
+describe("LeaveList — sick leave entries", () => {
+  const sickEntry: LeaveEntry = {
+    id: "e-sick",
+    startDate: "2026-03-10",
+    endDate: "2026-03-10",
+    status: LeaveStatus.Approved,
+    type: LeaveType.Sick,
+    notes: "Cold",
+  };
+
+  it("shows sick leave entries in the list", () => {
+    render(
+      <LeaveList
+        user={{ ...alice, entries: [sickEntry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    expect(screen.getByText("Cold")).toBeInTheDocument();
+  });
+
+  it("shows 'Sick' label (not 'Approved') for a sick-leave entry", () => {
+    render(
+      <LeaveList
+        user={{ ...alice, entries: [sickEntry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    expect(screen.getByText("Sick")).toBeInTheDocument();
+    expect(screen.queryByText("Approved")).toBeNull();
+  });
+
+  it("renders sick entry with red card styling (bg-red-100)", () => {
+    const { container } = render(
+      <LeaveList
+        user={{ ...alice, entries: [sickEntry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    expect(container.querySelector(".bg-red-100")).toBeInTheDocument();
   });
 });

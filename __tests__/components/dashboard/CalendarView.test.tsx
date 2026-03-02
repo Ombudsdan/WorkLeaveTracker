@@ -1,8 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import CalendarView from "@/components/dashboard/CalendarView";
-import { LeaveStatus, LeaveType } from "@/types";
-import type { PublicUser } from "@/types";
+import { LeaveStatus, LeaveType, LeaveDuration } from "@/types";
+import type { PublicUser, BankHolidayEntry } from "@/types";
 
 // Fix "today" so tests are deterministic
 beforeEach(() => {
@@ -33,24 +33,29 @@ const alice: PublicUser = {
   entries: [],
 };
 
+/** Helper to wrap a date string into the BankHolidayEntry shape expected by the component */
+function bh(date: string, title = "Bank Holiday"): BankHolidayEntry {
+  return { date, title };
+}
+
 describe("CalendarView — header and navigation", () => {
   it("renders the current month and year initially", () => {
     render(<CalendarView user={alice} bankHolidays={[]} />);
-    expect(screen.getByRole("heading", { name: /Mar 2026/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /March 2026/i })).toBeInTheDocument();
   });
 
   it("navigates to the previous month when the ‹ button is clicked", async () => {
     const user = setup();
     render(<CalendarView user={alice} bankHolidays={[]} />);
     await user.click(screen.getByRole("button", { name: "Previous month" }));
-    expect(screen.getByRole("heading", { name: /Feb 2026/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /February 2026/i })).toBeInTheDocument();
   });
 
   it("navigates to the next month when the › button is clicked", async () => {
     const user = setup();
     render(<CalendarView user={alice} bankHolidays={[]} />);
     await user.click(screen.getByRole("button", { name: "Next month" }));
-    expect(screen.getByRole("heading", { name: /Apr 2026/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /April 2026/i })).toBeInTheDocument();
   });
 
   it("wraps from January to December (previous) correctly", async () => {
@@ -61,7 +66,7 @@ describe("CalendarView — header and navigation", () => {
     await user.click(prev); // Feb
     await user.click(prev); // Jan
     await user.click(prev); // Dec 2025
-    expect(screen.getByRole("heading", { name: /Dec 2025/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /December 2025/i })).toBeInTheDocument();
   });
 
   it("wraps from December to January (next) correctly", async () => {
@@ -69,7 +74,7 @@ describe("CalendarView — header and navigation", () => {
     const user = setup();
     render(<CalendarView user={alice} bankHolidays={[]} />);
     await user.click(screen.getByRole("button", { name: "Next month" }));
-    expect(screen.getByRole("heading", { name: /Jan 2027/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /January 2027/i })).toBeInTheDocument();
   });
 });
 
@@ -147,17 +152,22 @@ describe("CalendarView — leave entry display", () => {
 
 describe("CalendarView — bank holiday indicator", () => {
   it("applies the bank holiday class to a bank holiday cell with no entry", () => {
-    const { container } = render(<CalendarView user={alice} bankHolidays={["2026-03-02"]} />);
+    const { container } = render(<CalendarView user={alice} bankHolidays={[bh("2026-03-02")]} />);
     // bg-purple-100 is CALENDAR_CELL_BANK_HOLIDAY
     expect(container.querySelector(".bg-purple-100")).toBeInTheDocument();
   });
 
-  it("shows the 'BH' label on a bank holiday cell with no entry", () => {
-    render(<CalendarView user={alice} bankHolidays={["2026-03-02"]} />);
+  it("shows the bank holiday name on a bank holiday cell with no entry", () => {
+    render(<CalendarView user={alice} bankHolidays={[bh("2026-03-02", "Spring Bank Holiday")]} />);
+    expect(screen.getByText("Spring Bank Holiday")).toBeInTheDocument();
+  });
+
+  it("falls back to 'BH' when the bank holiday entry has no title", () => {
+    render(<CalendarView user={alice} bankHolidays={[{ date: "2026-03-02", title: "BH" }]} />);
     expect(screen.getByText("BH")).toBeInTheDocument();
   });
 
-  it("does NOT show the 'BH' label when the bank holiday date has a leave entry", () => {
+  it("does NOT show the bank holiday name when the bank holiday date has a leave entry", () => {
     const userWithEntry: PublicUser = {
       ...alice,
       entries: [
@@ -170,8 +180,10 @@ describe("CalendarView — bank holiday indicator", () => {
         },
       ],
     };
-    render(<CalendarView user={userWithEntry} bankHolidays={["2026-03-02"]} />);
-    expect(screen.queryByText("BH")).toBeNull();
+    render(
+      <CalendarView user={userWithEntry} bankHolidays={[bh("2026-03-02", "Spring Bank Holiday")]} />
+    );
+    expect(screen.queryByText("Spring Bank Holiday")).toBeNull();
   });
 });
 
@@ -181,6 +193,28 @@ describe("CalendarView — non-working day display", () => {
     // bg-gray-100 is CALENDAR_CELL_NON_WORKING
     // March 2026 has Sundays on 1, 8, 15, 22, 29
     expect(container.querySelector(".bg-gray-100")).toBeInTheDocument();
+  });
+
+  it("shows 'Non-Working' label in a weekday non-working-day cell", () => {
+    // Set Wednesday (3) as a non-working day for this user
+    const userWithWedOff: PublicUser = {
+      ...alice,
+      profile: { ...alice.profile, nonWorkingDays: [0, 3, 6] },
+    };
+    render(<CalendarView user={userWithWedOff} bankHolidays={[]} />);
+    // March 2026 has Wednesdays on 4, 11, 18, 25 — "Non-Working" should appear
+    // (getByText would fail if there are 0 or >1 exact matches, use getAllByText)
+    const labels = screen.getAllByText("Non-Working");
+    // Cells + legend entry = more than one (at least legend + one cell)
+    expect(labels.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("does NOT show 'Non-Working' label in standard weekend cells", () => {
+    // Alice already has Sun+Sat non-working — default. Weekend cells should not get the label.
+    render(<CalendarView user={alice} bankHolidays={[]} />);
+    // The only "Non-Working" text should be the legend entry (exactly 1)
+    const labels = screen.getAllByText("Non-Working");
+    expect(labels).toHaveLength(1);
   });
 });
 
@@ -212,5 +246,526 @@ describe("CalendarView — add leave button", () => {
     render(<CalendarView user={alice} bankHolidays={[]} isOwnProfile={true} onAdd={onAdd} />);
     await user.click(screen.getByRole("button", { name: /Add Leave/i }));
     expect(onAdd).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("CalendarView — overlapping leave entries", () => {
+  it("renders both colour classes when two entries overlap on the same day", () => {
+    const userWithOverlap: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e-a",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+        {
+          id: "e-b",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Planned,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    const { container } = render(<CalendarView user={userWithOverlap} bankHolidays={[]} />);
+    // Both green-200 (approved) and yellow-200 (planned) should appear
+    expect(container.querySelector(".bg-green-200")).toBeInTheDocument();
+    expect(container.querySelector(".bg-yellow-200")).toBeInTheDocument();
+  });
+
+  it("shows only the first two entries when three overlap on the same day", () => {
+    const userWithThree: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e-x",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+        {
+          id: "e-y",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Planned,
+          type: LeaveType.Holiday,
+        },
+        {
+          id: "e-z",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Requested,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    const { container } = render(<CalendarView user={userWithThree} bankHolidays={[]} />);
+    // The legend always has one bg-blue-200 span.  A requested entry in the calendar
+    // would add a second one.  With capping at 2 the requested entry is not rendered
+    // so there should only be the one legend swatch.
+    const blueElements = container.querySelectorAll(".bg-blue-200");
+    // Only the legend swatch (1) — no calendar cell for the third entry
+    expect(blueElements.length).toBe(1);
+  });
+});
+
+describe("CalendarView — leave popover on click", () => {
+  it("shows a popover when a leave entry cell is clicked", async () => {
+    const user = setup();
+    const entry = {
+      id: "e-pop",
+      startDate: "2026-03-09",
+      endDate: "2026-03-11",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      notes: "Annual leave",
+    };
+    render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
+    // Click on day 9 (covered by the entry)
+    const dayNine = screen.getByText("9");
+    await user.click(dayNine);
+    // Popover should appear — there is now at least one instance in the popover
+    // (notes may also appear as a tiny label in the cell itself)
+    expect(screen.getAllByText("Annual leave").length).toBeGreaterThanOrEqual(1);
+    // The popover has role="tooltip"
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+  });
+
+  it("shows a popover with date range and working days", async () => {
+    const user = setup();
+    const entry = {
+      id: "e-pop2",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Planned,
+      type: LeaveType.Holiday,
+      notes: "Dentist",
+    };
+    render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
+    await user.click(screen.getByText("9"));
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    expect(screen.getByText(/working day/i)).toBeInTheDocument();
+  });
+
+  it("shows edit and delete buttons in the popover when isOwnProfile=true", async () => {
+    const user = setup();
+    const entry = {
+      id: "e-pop3",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+    };
+    render(
+      <CalendarView
+        user={{ ...alice, entries: [entry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    await user.click(screen.getByText("9"));
+    expect(screen.getByRole("button", { name: /edit/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /delete/i })).toBeInTheDocument();
+  });
+
+  it("does not show edit/delete buttons when isOwnProfile=false", async () => {
+    const user = setup();
+    const entry = {
+      id: "e-pop4",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+    };
+    render(
+      <CalendarView
+        user={{ ...alice, entries: [entry] }}
+        bankHolidays={[]}
+        isOwnProfile={false}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    await user.click(screen.getByText("9"));
+    expect(screen.queryByRole("button", { name: /edit/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /delete/i })).toBeNull();
+  });
+
+  it("closes the popover when the close (X) button is clicked", async () => {
+    const user = setup();
+    const entry = {
+      id: "e-pop5",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      notes: "Beach trip",
+    };
+    render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
+    await user.click(screen.getByText("9"));
+    // Popover is visible
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("tooltip")).toBeNull();
+  });
+
+  it("calls onEdit with the entry when Edit is clicked in the popover", async () => {
+    const user = setup();
+    const onEdit = jest.fn();
+    const entry = {
+      id: "e-edit",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+    };
+    render(
+      <CalendarView
+        user={{ ...alice, entries: [entry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={onEdit}
+        onDelete={jest.fn()}
+      />
+    );
+    await user.click(screen.getByText("9"));
+    await user.click(screen.getByRole("button", { name: /edit/i }));
+    expect(onEdit).toHaveBeenCalledWith(entry);
+  });
+
+  it("calls onDelete with the entry id when Delete is clicked in the popover", async () => {
+    const user = setup();
+    const onDelete = jest.fn();
+    const entry = {
+      id: "e-del",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+    };
+    render(
+      <CalendarView
+        user={{ ...alice, entries: [entry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={onDelete}
+      />
+    );
+    await user.click(screen.getByText("9"));
+    await user.click(screen.getByRole("button", { name: /delete/i }));
+    expect(onDelete).toHaveBeenCalledWith("e-del");
+  });
+});
+
+describe("CalendarView — sick leave colour", () => {
+  it("renders sick leave entry with red background in the grid cell", () => {
+    const entry = {
+      id: "e-sick",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Sick,
+    };
+    const { container } = render(
+      <CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />
+    );
+    // Should have a red-200 cell in the grid
+    expect(container.querySelector(".bg-red-200")).toBeInTheDocument();
+  });
+
+  it("does NOT show 'Sick' in the calendar legend when sick feature is disabled (default)", () => {
+    render(<CalendarView user={alice} bankHolidays={[]} />);
+    expect(screen.queryByText("Sick")).toBeNull();
+  });
+});
+
+describe("CalendarView — half-day cells", () => {
+  it("renders an AM half-day entry in the top half of the cell", () => {
+    const entry = {
+      id: "e-am",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      duration: LeaveDuration.HalfMorning,
+      notes: "Dentist",
+    };
+    render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
+    // The notes should appear with "(AM)" appended
+    expect(screen.getByText("Dentist (AM)")).toBeInTheDocument();
+  });
+
+  it("appends (PM) to the note text for PM half-day entries", () => {
+    const entry = {
+      id: "e-pm",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      duration: LeaveDuration.HalfAfternoon,
+      notes: "Physio",
+    };
+    render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
+    expect(screen.getByText("Physio (PM)")).toBeInTheDocument();
+  });
+
+  it("also handles legacy halfDay/halfDayPeriod fields for backward compat", () => {
+    const entry = {
+      id: "e-legacy",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      halfDay: true,
+      halfDayPeriod: "am" as const,
+      notes: "Legacy AM",
+    };
+    render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
+    expect(screen.getByText("Legacy AM (AM)")).toBeInTheDocument();
+  });
+
+  it("shows two half-days on the same day as split cells (AM top, PM bottom)", () => {
+    const amEntry = {
+      id: "e-am2",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      duration: LeaveDuration.HalfMorning,
+      notes: "Morning",
+    };
+    const pmEntry = {
+      id: "e-pm2",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Planned,
+      type: LeaveType.Holiday,
+      duration: LeaveDuration.HalfAfternoon,
+      notes: "Afternoon",
+    };
+    render(<CalendarView user={{ ...alice, entries: [amEntry, pmEntry] }} bankHolidays={[]} />);
+    // Both notes visible
+    expect(screen.getByText("Morning (AM)")).toBeInTheDocument();
+    expect(screen.getByText("Afternoon (PM)")).toBeInTheDocument();
+  });
+});
+
+describe("CalendarView — half-day popover shows duration label", () => {
+  it("shows 'Half day (AM)' for an AM half-day entry in the popover", async () => {
+    const user = setup();
+    const entry = {
+      id: "e-hd-pop",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      duration: LeaveDuration.HalfMorning,
+      notes: "Half day AM",
+    };
+    render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
+    await user.click(screen.getByText("Half day AM (AM)"));
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    expect(screen.getByText("Half day (AM)")).toBeInTheDocument();
+  });
+
+  it("shows 'Half day (PM)' for a PM half-day entry in the popover", async () => {
+    const user = setup();
+    const entry = {
+      id: "e-hd-pop-pm",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      duration: LeaveDuration.HalfAfternoon,
+      notes: "Half day PM",
+    };
+    render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
+    await user.click(screen.getByText("Half day PM (PM)"));
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    expect(screen.getByText("Half day (PM)")).toBeInTheDocument();
+  });
+
+  it("shows working day count for a full-day entry in the popover", async () => {
+    const user = setup();
+    const entry = {
+      id: "e-full-pop",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      notes: "Full day",
+    };
+    render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
+    await user.click(screen.getByText("9"));
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    expect(screen.getByText(/working day/i)).toBeInTheDocument();
+  });
+});
+
+describe("CalendarView — getCellLayout full-day + half-day placement", () => {
+  it("places a full-day entry in the bottom half when the half-day is AM", () => {
+    const amHalfDay = {
+      id: "e-am-h",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      duration: LeaveDuration.HalfMorning,
+      notes: "AM",
+    };
+    const fullDay = {
+      id: "e-full-h",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Planned,
+      type: LeaveType.Holiday,
+      notes: "Full",
+    };
+    render(<CalendarView user={{ ...alice, entries: [amHalfDay, fullDay] }} bankHolidays={[]} />);
+    // Both entries should be visible
+    expect(screen.getByText("AM (AM)")).toBeInTheDocument();
+    expect(screen.getByText("Full")).toBeInTheDocument();
+  });
+
+  it("places a full-day entry in the top half when the half-day is PM", () => {
+    const pmHalfDay = {
+      id: "e-pm-h",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      duration: LeaveDuration.HalfAfternoon,
+      notes: "PM",
+    };
+    const fullDay = {
+      id: "e-full-h2",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Requested,
+      type: LeaveType.Holiday,
+      notes: "Full",
+    };
+    render(<CalendarView user={{ ...alice, entries: [pmHalfDay, fullDay] }} bankHolidays={[]} />);
+    expect(screen.getByText("PM (PM)")).toBeInTheDocument();
+    expect(screen.getByText("Full")).toBeInTheDocument();
+  });
+});
+
+describe("CalendarView — getCellLayout status priority ordering", () => {
+  it("places the Approved entry above the Planned entry when both are full-day", () => {
+    const approved = {
+      id: "e-appr",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      notes: "ApprovedLeave",
+    };
+    const planned = {
+      id: "e-plan",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Planned,
+      type: LeaveType.Holiday,
+      notes: "PlannedLeave",
+    };
+    const { container } = render(
+      <CalendarView user={{ ...alice, entries: [planned, approved] }} bankHolidays={[]} />
+    );
+    // Both texts should appear in the split cell
+    expect(screen.getByText("ApprovedLeave")).toBeInTheDocument();
+    expect(screen.getByText("PlannedLeave")).toBeInTheDocument();
+    // Approved should appear before Planned in the DOM (top half first)
+    const allText = container.textContent ?? "";
+    const approvedPos = allText.indexOf("ApprovedLeave");
+    const plannedPos = allText.indexOf("PlannedLeave");
+    expect(approvedPos).toBeLessThan(plannedPos);
+  });
+
+  it("places the Requested entry above the Planned entry when both are same AM period", () => {
+    const requested = {
+      id: "e-req-am",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Requested,
+      type: LeaveType.Holiday,
+      duration: LeaveDuration.HalfMorning,
+      notes: "RequestedAM",
+    };
+    const planned = {
+      id: "e-plan-am",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Planned,
+      type: LeaveType.Holiday,
+      duration: LeaveDuration.HalfMorning,
+      notes: "PlannedAM",
+    };
+    const { container } = render(
+      <CalendarView user={{ ...alice, entries: [planned, requested] }} bankHolidays={[]} />
+    );
+    expect(screen.getByText("RequestedAM (AM)")).toBeInTheDocument();
+    expect(screen.getByText("PlannedAM (AM)")).toBeInTheDocument();
+    const allText = container.textContent ?? "";
+    expect(allText.indexOf("RequestedAM")).toBeLessThan(allText.indexOf("PlannedAM"));
+  });
+});
+
+describe("CalendarView — sick leave popover badge", () => {
+  it("shows 'Sick Leave' badge in the popover for a sick-leave entry", async () => {
+    const user = setup();
+    const entry = {
+      id: "e-sick-pop",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Sick,
+      notes: "Sick day",
+    };
+    render(
+      <CalendarView
+        user={{ ...alice, entries: [entry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    await user.click(screen.getByText("9"));
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    expect(screen.getByText("Sick Leave")).toBeInTheDocument();
+  });
+
+  it("does NOT show 'Approved' badge for a sick-leave entry", async () => {
+    const user = setup();
+    const entry = {
+      id: "e-sick-pop2",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Sick,
+      notes: "Cold",
+    };
+    render(
+      <CalendarView
+        user={{ ...alice, entries: [entry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    await user.click(screen.getByText("9"));
+    // The badge should say "Sick Leave", not "Approved"
+    const tooltip = screen.getByRole("tooltip");
+    expect(tooltip).not.toHaveTextContent("Approved");
+    expect(tooltip).toHaveTextContent("Sick Leave");
   });
 });

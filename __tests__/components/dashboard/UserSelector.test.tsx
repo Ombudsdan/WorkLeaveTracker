@@ -34,7 +34,7 @@ const bob: PublicUser = {
 };
 
 describe("UserSelector", () => {
-  it("renders the 'My Calendar' button", () => {
+  it("renders the 'My Calendar' tab", () => {
     render(
       <UserSelector
         currentUser={alice}
@@ -43,10 +43,10 @@ describe("UserSelector", () => {
         onSelectUser={jest.fn()}
       />
     );
-    expect(screen.getByRole("button", { name: "My Calendar" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "My Calendar" })).toBeInTheDocument();
   });
 
-  it("renders a button for each other user", () => {
+  it("renders a tab for each pinned user", () => {
     render(
       <UserSelector
         currentUser={alice}
@@ -55,10 +55,10 @@ describe("UserSelector", () => {
         onSelectUser={jest.fn()}
       />
     );
-    expect(screen.getByRole("button", { name: "Bob Jones" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Bob Jones" })).toBeInTheDocument();
   });
 
-  it("does NOT render a button for the current user", () => {
+  it("does NOT render a tab for the current user", () => {
     render(
       <UserSelector
         currentUser={alice}
@@ -67,10 +67,10 @@ describe("UserSelector", () => {
         onSelectUser={jest.fn()}
       />
     );
-    expect(screen.queryByRole("button", { name: "Alice Smith" })).toBeNull();
+    expect(screen.queryByRole("tab", { name: "Alice Smith" })).toBeNull();
   });
 
-  it("highlights 'My Calendar' with active class when viewingUserId is null", () => {
+  it("marks 'My Calendar' as selected (aria-selected=true) when viewingUserId is null", () => {
     render(
       <UserSelector
         currentUser={alice}
@@ -79,12 +79,13 @@ describe("UserSelector", () => {
         onSelectUser={jest.fn()}
       />
     );
-    expect(screen.getByRole("button", { name: "My Calendar" }).className).toContain(
-      "bg-indigo-600"
+    expect(screen.getByRole("tab", { name: "My Calendar" })).toHaveAttribute(
+      "aria-selected",
+      "true"
     );
   });
 
-  it("highlights the selected user's button when viewingUserId matches", () => {
+  it("marks the selected user's tab as selected when viewingUserId matches", () => {
     render(
       <UserSelector
         currentUser={alice}
@@ -93,14 +94,14 @@ describe("UserSelector", () => {
         onSelectUser={jest.fn()}
       />
     );
-    expect(screen.getByRole("button", { name: "Bob Jones" }).className).toContain("bg-indigo-600");
-    // 'My Calendar' should NOT be active
-    expect(screen.getByRole("button", { name: "My Calendar" }).className).not.toContain(
-      "bg-indigo-600"
+    expect(screen.getByRole("tab", { name: "Bob Jones" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "My Calendar" })).toHaveAttribute(
+      "aria-selected",
+      "false"
     );
   });
 
-  it("calls onSelectUser(null) when 'My Calendar' is clicked", async () => {
+  it("calls onSelectUser(null) when 'My Calendar' tab is clicked", async () => {
     const onSelectUser = jest.fn();
     render(
       <UserSelector
@@ -110,11 +111,11 @@ describe("UserSelector", () => {
         onSelectUser={onSelectUser}
       />
     );
-    await userEvent.click(screen.getByRole("button", { name: "My Calendar" }));
+    await userEvent.click(screen.getByRole("tab", { name: "My Calendar" }));
     expect(onSelectUser).toHaveBeenCalledWith(null);
   });
 
-  it("calls onSelectUser with the user's id when an other user button is clicked", async () => {
+  it("calls onSelectUser with the user's id when a pinned user tab is clicked", async () => {
     const onSelectUser = jest.fn();
     render(
       <UserSelector
@@ -124,24 +125,43 @@ describe("UserSelector", () => {
         onSelectUser={onSelectUser}
       />
     );
-    await userEvent.click(screen.getByRole("button", { name: "Bob Jones" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Bob Jones" }));
     expect(onSelectUser).toHaveBeenCalledWith("u2");
   });
 
-  it("renders no other-user buttons when the current user is the only user", () => {
-    render(
+  it("renders nothing when the current user has no pinned users", () => {
+    const aliceNoPins: typeof alice = {
+      ...alice,
+      profile: { ...alice.profile, pinnedUserIds: [] },
+    };
+    const { container } = render(
       <UserSelector
-        currentUser={alice}
-        allUsers={[alice]}
+        currentUser={aliceNoPins}
+        allUsers={[aliceNoPins, bob]}
         viewingUserId={null}
         onSelectUser={jest.fn()}
       />
     );
-    // Only the "My Calendar" button
-    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(container.firstChild).toBeNull();
   });
 
-  it("does NOT render a button for a user that is not pinned", () => {
+  it("renders nothing when pinnedUserIds is undefined", () => {
+    const aliceUndefinedPins: typeof alice = {
+      ...alice,
+      profile: { ...alice.profile, pinnedUserIds: undefined },
+    };
+    const { container } = render(
+      <UserSelector
+        currentUser={aliceUndefinedPins}
+        allUsers={[aliceUndefinedPins, bob]}
+        viewingUserId={null}
+        onSelectUser={jest.fn()}
+      />
+    );
+    expect(container.firstChild).toBeNull();
+  });
+
+  it("does NOT render a tab for a user that is not pinned", () => {
     const charlie: typeof bob = {
       ...bob,
       id: "u3",
@@ -161,39 +181,19 @@ describe("UserSelector", () => {
         onSelectUser={jest.fn()}
       />
     );
-    expect(screen.queryByRole("button", { name: "Charlie Brown" })).toBeNull();
-    expect(screen.getByRole("button", { name: "Bob Jones" })).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Charlie Brown" })).toBeNull();
+    expect(screen.getByRole("tab", { name: "Bob Jones" })).toBeInTheDocument();
   });
 
-  it("renders no pinned buttons when pinnedUserIds is empty", () => {
-    const aliceNoPins: typeof alice = {
-      ...alice,
-      profile: { ...alice.profile, pinnedUserIds: [] },
-    };
+  it("renders a tablist with aria-label when pinned users exist", () => {
     render(
       <UserSelector
-        currentUser={aliceNoPins}
-        allUsers={[aliceNoPins, bob]}
+        currentUser={alice}
+        allUsers={[alice, bob]}
         viewingUserId={null}
         onSelectUser={jest.fn()}
       />
     );
-    expect(screen.getAllByRole("button")).toHaveLength(1);
-  });
-
-  it("renders no pinned buttons when pinnedUserIds is undefined", () => {
-    const aliceUndefinedPins: typeof alice = {
-      ...alice,
-      profile: { ...alice.profile, pinnedUserIds: undefined },
-    };
-    render(
-      <UserSelector
-        currentUser={aliceUndefinedPins}
-        allUsers={[aliceUndefinedPins, bob]}
-        viewingUserId={null}
-        onSelectUser={jest.fn()}
-      />
-    );
-    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(screen.getByRole("tablist")).toBeInTheDocument();
   });
 });

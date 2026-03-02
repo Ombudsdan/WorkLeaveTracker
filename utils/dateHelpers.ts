@@ -1,4 +1,5 @@
 import type { LeaveEntry, YearAllowance } from "@/types";
+import { LeaveDuration } from "@/types";
 
 /**
  * Count working days between two ISO date strings (inclusive).
@@ -79,6 +80,20 @@ export function getEntryForDate(date: string, entries: LeaveEntry[]): LeaveEntry
   });
 }
 
+/**
+ * Find all leave entries (up to 2) that cover the given ISO date string.
+ * Returns at most 2 entries — more than 2 overlapping entries are not supported.
+ */
+export function getEntriesForDate(date: string, entries: LeaveEntry[]): LeaveEntry[] {
+  const matches = entries.filter((e) => {
+    const s = new Date(e.startDate);
+    const en = new Date(e.endDate);
+    const d = new Date(date);
+    return d >= s && d <= en;
+  });
+  return matches.slice(0, 2);
+}
+
 /** Returns true if the date falls on one of the user's non-working days */
 export function isNonWorkingDay(date: string, nonWorkingDays: number[]): boolean {
   return nonWorkingDays.includes(new Date(date).getDay());
@@ -87,4 +102,35 @@ export function isNonWorkingDay(date: string, nonWorkingDays: number[]): boolean
 /** Format a Date to YYYY-MM-DD */
 export function toIsoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
+}
+
+/**
+ * Normalise the duration of a leave entry to a `LeaveDuration` value.
+ *
+ * Handles three data generations:
+ *  1. New entries: use the `duration` field directly.
+ *  2. Old entries with `halfDay`/`halfDayPeriod` fields.
+ *  3. Legacy entries with no half-day information → `Full`.
+ */
+export function getEntryDuration(entry: LeaveEntry): LeaveDuration {
+  if (entry.duration) return entry.duration;
+  if (entry.halfDay) {
+    return entry.halfDayPeriod === "am" ? LeaveDuration.HalfMorning : LeaveDuration.HalfAfternoon;
+  }
+  return LeaveDuration.Full;
+}
+
+/**
+ * Count the number of days an entry consumes, respecting half-days.
+ * Half-day entries always count as 0.5 regardless of the date range.
+ * Full-day entries use countWorkingDays.
+ */
+export function countEntryDays(
+  entry: LeaveEntry,
+  nonWorkingDays: number[],
+  bankHolidays: string[]
+): number {
+  const duration = getEntryDuration(entry);
+  if (duration !== LeaveDuration.Full) return 0.5;
+  return countWorkingDays(entry.startDate, entry.endDate, nonWorkingDays, bankHolidays);
 }

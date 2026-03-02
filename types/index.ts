@@ -13,8 +13,28 @@ export enum LeaveStatus {
 export enum LeaveType {
   Holiday = "holiday",
   Sick = "sick",
+  /** @deprecated No longer offered in the UI; kept for backward-compatibility with existing data */
   Other = "other",
 }
+
+/** Duration of a leave entry. Replaces the deprecated halfDay/halfDayPeriod fields. */
+export enum LeaveDuration {
+  Full = "full",
+  HalfMorning = "halfMorning",
+  HalfAfternoon = "halfAfternoon",
+}
+
+/** A UK bank holiday with its name, used for display and country-specific filtering. */
+export interface BankHolidayEntry {
+  date: string;
+  title: string;
+}
+
+/**
+ * UK country division used to select the correct regional bank holidays.
+ * Matches the division keys returned by the UK government bank holidays API.
+ */
+export type UkCountry = "england-and-wales" | "scotland" | "northern-ireland";
 
 export interface LeaveEntry {
   id: string;
@@ -23,6 +43,12 @@ export interface LeaveEntry {
   status: LeaveStatus;
   type: LeaveType;
   notes?: string;
+  /** Duration of the leave entry. Use this in preference to the deprecated fields below. */
+  duration?: LeaveDuration;
+  /** @deprecated Use duration instead */
+  halfDay?: boolean;
+  /** @deprecated Use duration instead */
+  halfDayPeriod?: "am" | "pm";
 }
 
 export interface UserAllowance {
@@ -38,6 +64,11 @@ export interface YearAllowance extends UserAllowance {
   company: string;
   /** 1-12, e.g. 1 for Jan, 4 for Apr — defines when this holiday year starts */
   holidayStartMonth: number;
+  /**
+   * Whether this allowance is currently active for the user.
+   * Defaults to true. Set to false when the user changes company mid-period.
+   */
+  active?: boolean;
 }
 
 export interface UserProfile {
@@ -48,6 +79,12 @@ export interface UserProfile {
   nonWorkingDays: number[];
   /** IDs of up to 3 other users pinned in the dashboard user selector */
   pinnedUserIds?: string[];
+  /** IDs of users to whom I have sent a pending connection request */
+  pendingPinRequestsSent?: string[];
+  /** IDs of users who have sent me a pending connection request */
+  pendingPinRequestsReceived?: string[];
+  /** UK country for country-specific bank holidays */
+  country?: UkCountry;
 }
 
 export interface AppUser {
