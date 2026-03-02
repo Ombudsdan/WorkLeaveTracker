@@ -38,7 +38,7 @@ describe("LeaveOptionPicker — rendering", () => {
     expect(screen.getByText("Type")).toBeInTheDocument();
   });
 
-  it("renders a button for each option", () => {
+  it("renders a button for each option (Holiday and Sick — Other is deprecated)", () => {
     renderInProvider(
       <LeaveOptionPicker
         id="type"
@@ -50,7 +50,7 @@ describe("LeaveOptionPicker — rendering", () => {
     );
     expect(screen.getByRole("button", { name: "Holiday" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Sick" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Other" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Other" })).toBeNull();
   });
 
   it("all buttons are aria-pressed=false when no value is selected", () => {

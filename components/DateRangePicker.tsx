@@ -11,6 +11,11 @@ interface DateRangePickerProps {
   endDate: string;
   onStartChange: (date: string) => void;
   onEndChange: (date: string) => void;
+  /**
+   * When true, clicking a day selects a single date (start and end are set to the same
+   * value). No "Now select an end date" hint is shown. Intended for half-day leave.
+   */
+  halfDayMode?: boolean;
 }
 
 export default function DateRangePicker({
@@ -19,6 +24,7 @@ export default function DateRangePicker({
   endDate,
   onStartChange,
   onEndChange,
+  halfDayMode = false,
 }: DateRangePickerProps) {
   const { getError, setError, clearError, registerValidator } = useFormValidation();
   const error = getError(id);
@@ -65,6 +71,13 @@ export default function DateRangePicker({
   }
 
   function handleDayClick(dateStr: string) {
+    if (halfDayMode) {
+      // Single-date mode: set both start and end to the same day
+      onStartChange(dateStr);
+      onEndChange(dateStr);
+      clearError(id);
+      return;
+    }
     if (!startDate || (startDate && endDate)) {
       // Start a fresh selection
       onStartChange(dateStr);
@@ -81,18 +94,29 @@ export default function DateRangePicker({
     <div>
       {/* Selected range summary */}
       <div className="flex gap-4 mb-2 text-sm">
-        <div>
-          <span className="text-gray-500">From: </span>
-          <span className={startDate ? "font-medium text-gray-900" : "text-gray-400"}>
-            {startDate || "—"}
-          </span>
-        </div>
-        <div>
-          <span className="text-gray-500">To: </span>
-          <span className={endDate ? "font-medium text-gray-900" : "text-gray-400"}>
-            {endDate || "—"}
-          </span>
-        </div>
+        {halfDayMode ? (
+          <div>
+            <span className="text-gray-500">Date: </span>
+            <span className={startDate ? "font-medium text-gray-900" : "text-gray-400"}>
+              {startDate || "—"}
+            </span>
+          </div>
+        ) : (
+          <>
+            <div>
+              <span className="text-gray-500">From: </span>
+              <span className={startDate ? "font-medium text-gray-900" : "text-gray-400"}>
+                {startDate || "—"}
+              </span>
+            </div>
+            <div>
+              <span className="text-gray-500">To: </span>
+              <span className={endDate ? "font-medium text-gray-900" : "text-gray-400"}>
+                {endDate || "—"}
+              </span>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Calendar */}
@@ -171,7 +195,7 @@ export default function DateRangePicker({
       </div>
 
       {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
-      {isPickingEnd && !error && (
+      {!halfDayMode && isPickingEnd && !error && (
         <p className="text-indigo-600 text-xs mt-1">Now select an end date</p>
       )}
     </div>

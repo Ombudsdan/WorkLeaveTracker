@@ -13,6 +13,7 @@ export enum LeaveStatus {
 export enum LeaveType {
   Holiday = "holiday",
   Sick = "sick",
+  /** @deprecated No longer offered in the UI; kept for backward-compatibility with existing data */
   Other = "other",
 }
 
@@ -23,6 +24,10 @@ export interface LeaveEntry {
   status: LeaveStatus;
   type: LeaveType;
   notes?: string;
+  /** True when the entry covers only half a working day */
+  halfDay?: boolean;
+  /** Which half of the day — only meaningful when halfDay is true */
+  halfDayPeriod?: "am" | "pm";
 }
 
 export interface UserAllowance {

@@ -102,3 +102,17 @@ export function isNonWorkingDay(date: string, nonWorkingDays: number[]): boolean
 export function toIsoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
+
+/**
+ * Count the number of days an entry consumes, respecting half-days.
+ * Half-day entries always count as 0.5 regardless of the date range.
+ * Full-day entries use countWorkingDays.
+ */
+export function countEntryDays(
+  entry: LeaveEntry,
+  nonWorkingDays: number[],
+  bankHolidays: string[]
+): number {
+  if (entry.halfDay) return 0.5;
+  return countWorkingDays(entry.startDate, entry.endDate, nonWorkingDays, bankHolidays);
+}

@@ -1,7 +1,7 @@
 "use client";
 import type { LeaveEntry, PublicUser } from "@/types";
 import { STATUS_COLORS } from "@/variables/colours";
-import { countWorkingDays } from "@/utils/dateHelpers";
+import { countEntryDays } from "@/utils/dateHelpers";
 import { Pencil, Trash2 } from "lucide-react";
 
 interface LeaveListProps {
@@ -44,14 +44,14 @@ export default function LeaveList({
       ) : (
         <div className="space-y-2">
           {sorted.map((entry) => {
-            const days = countWorkingDays(
-              entry.startDate,
-              entry.endDate,
-              user.profile.nonWorkingDays,
-              bankHolidays
-            );
+            const days = countEntryDays(entry, user.profile.nonWorkingDays, bankHolidays);
+            const daysLabel = days === 0.5 ? "0.5d" : `${days}d`;
             const statusLabel = entry.status.charAt(0).toUpperCase() + entry.status.slice(1);
-            const noteText = entry.notes ?? "–";
+            const baseNote = entry.notes ?? "–";
+            const noteText =
+              entry.halfDay && entry.notes
+                ? `${entry.notes} (${entry.halfDayPeriod?.toUpperCase() ?? ""})`
+                : baseNote;
             return (
               <div
                 key={entry.id}
@@ -66,7 +66,7 @@ export default function LeaveList({
                 <div className="flex items-center justify-between mt-1">
                   <span>
                     {formatDateRange(entry.startDate, entry.endDate)}{" "}
-                    <span className="opacity-70">({days}d)</span>
+                    <span className="opacity-70">({daysLabel})</span>
                   </span>
                   {isOwnProfile && (
                     <div className="flex gap-1.5 shrink-0">

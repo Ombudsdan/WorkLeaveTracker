@@ -429,3 +429,108 @@ describe("CalendarView — leave popover on click", () => {
     expect(onDelete).toHaveBeenCalledWith("e-del");
   });
 });
+
+describe("CalendarView — sick leave colour", () => {
+  it("renders sick leave entry with red background in the grid cell", () => {
+    const entry = {
+      id: "e-sick",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Sick,
+    };
+    const { container } = render(
+      <CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />
+    );
+    // Should have a red-200 cell in the grid
+    expect(container.querySelector(".bg-red-200")).toBeInTheDocument();
+  });
+
+  it("shows 'Sick' in the calendar legend", () => {
+    render(<CalendarView user={alice} bankHolidays={[]} />);
+    expect(screen.getByText("Sick")).toBeInTheDocument();
+  });
+});
+
+describe("CalendarView — half-day cells", () => {
+  it("renders an AM half-day entry in the top half of the cell", () => {
+    const entry = {
+      id: "e-am",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      halfDay: true,
+      halfDayPeriod: "am" as const,
+      notes: "Dentist",
+    };
+    render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
+    // The notes should appear with "(AM)" appended
+    expect(screen.getByText("Dentist (AM)")).toBeInTheDocument();
+  });
+
+  it("appends (PM) to the note text for PM half-day entries", () => {
+    const entry = {
+      id: "e-pm",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      halfDay: true,
+      halfDayPeriod: "pm" as const,
+      notes: "Physio",
+    };
+    render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
+    expect(screen.getByText("Physio (PM)")).toBeInTheDocument();
+  });
+
+  it("shows two half-days on the same day as split cells (AM top, PM bottom)", () => {
+    const amEntry = {
+      id: "e-am2",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      halfDay: true,
+      halfDayPeriod: "am" as const,
+      notes: "Morning",
+    };
+    const pmEntry = {
+      id: "e-pm2",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Planned,
+      type: LeaveType.Holiday,
+      halfDay: true,
+      halfDayPeriod: "pm" as const,
+      notes: "Afternoon",
+    };
+    render(
+      <CalendarView user={{ ...alice, entries: [amEntry, pmEntry] }} bankHolidays={[]} />
+    );
+    // Both notes visible
+    expect(screen.getByText("Morning (AM)")).toBeInTheDocument();
+    expect(screen.getByText("Afternoon (PM)")).toBeInTheDocument();
+  });
+});
+
+describe("CalendarView — half-day popover shows 0.5 working days", () => {
+  it("shows 0.5 working day(s) for a half-day entry in the popover", async () => {
+    const user = setup();
+    const entry = {
+      id: "e-hd-pop",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      halfDay: true,
+      halfDayPeriod: "am" as const,
+      notes: "Half day AM",
+    };
+    render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
+    // Click the day cell (9 is inside the coloured half-day cell area)
+    await user.click(screen.getByText("Half day AM (AM)"));
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    expect(screen.getByText(/0\.5 working day/i)).toBeInTheDocument();
+  });
+});

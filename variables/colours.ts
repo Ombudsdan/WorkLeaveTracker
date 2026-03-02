@@ -1,4 +1,4 @@
-import { LeaveStatus } from "@/types";
+import { LeaveStatus, LeaveType } from "@/types";
 
 /** Tailwind classes for leave entry card borders and backgrounds */
 export const STATUS_COLORS: Record<LeaveStatus, string> = {
@@ -14,12 +14,15 @@ export const STATUS_DOT: Record<LeaveStatus, string> = {
   [LeaveStatus.Approved]: "bg-green-500",
 };
 
-/** Tailwind classes for calendar day cell backgrounds */
+/** Tailwind classes for calendar day cell backgrounds (keyed by status) */
 export const CALENDAR_COLORS: Record<LeaveStatus, string> = {
   [LeaveStatus.Planned]: "bg-yellow-200 text-yellow-800",
   [LeaveStatus.Requested]: "bg-blue-200 text-blue-800",
   [LeaveStatus.Approved]: "bg-green-200 text-green-800",
 };
+
+/** Calendar cell class for sick-leave entries (overrides status colour) */
+export const CALENDAR_CELL_SICK_LEAVE = "bg-red-200 text-red-800";
 
 /** Calendar cell class for UK bank holidays */
 export const CALENDAR_CELL_BANK_HOLIDAY = "bg-purple-100 text-purple-700";
@@ -29,3 +32,12 @@ export const CALENDAR_CELL_NON_WORKING = "bg-gray-100 text-gray-400";
 
 /** Calendar cell class for a standard working day with no leave */
 export const CALENDAR_CELL_DEFAULT = "hover:bg-gray-50 text-gray-700";
+
+/**
+ * Returns the calendar colour class for a leave entry.
+ * Sick-leave entries always use the red sick-leave colour regardless of status.
+ */
+export function getCalendarEntryClass(entry: { status: LeaveStatus; type: LeaveType }): string {
+  if (entry.type === LeaveType.Sick) return CALENDAR_CELL_SICK_LEAVE;
+  return CALENDAR_COLORS[entry.status];
+}

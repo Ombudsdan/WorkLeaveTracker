@@ -37,27 +37,36 @@ describe("EditLeaveModal — rendering", () => {
     expect(screen.getByLabelText("End Date")).toHaveValue("2026-03-13");
   });
 
-  it("pre-fills Status with the entry's status", () => {
+  it("pre-selects the entry's status pill as aria-pressed=true", () => {
     renderModal(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={jest.fn()} />);
-    expect(screen.getByLabelText("Status")).toHaveValue(LeaveStatus.Planned);
+    expect(screen.getByRole("button", { name: "Planned" })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("pre-fills Reason with the entry's notes", () => {
     renderModal(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={jest.fn()} />);
-    expect(screen.getByLabelText("Reason (optional)")).toHaveValue("Skiing");
+    expect(screen.getByLabelText("Reason")).toHaveValue("Skiing");
   });
 
   it("handles missing notes gracefully (defaults to empty string)", () => {
     const entryNoNotes = { ...entry, notes: undefined };
     renderModal(<EditLeaveModal entry={entryNoNotes} onClose={jest.fn()} onSave={jest.fn()} />);
-    expect(screen.getByLabelText("Reason (optional)")).toHaveValue("");
+    expect(screen.getByLabelText("Reason")).toHaveValue("");
   });
 
-  it("renders all status options in the Status select", () => {
+  it("renders all status option pills", () => {
     renderModal(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={jest.fn()} />);
-    expect(screen.getByRole("option", { name: /Planned/i })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: /Requested/i })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: /Approved/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Planned" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Requested" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Approved" })).toBeInTheDocument();
+  });
+
+  it("hides the status pills for sick-leave entries", () => {
+    const sickEntry = { ...entry, type: LeaveType.Sick };
+    renderModal(<EditLeaveModal entry={sickEntry} onClose={jest.fn()} onSave={jest.fn()} />);
+    expect(screen.queryByRole("button", { name: "Planned" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Requested" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Approved" })).toBeNull();
+    expect(screen.getByText(/automatically set to/i)).toBeInTheDocument();
   });
 });
 
@@ -77,10 +86,10 @@ describe("EditLeaveModal — onSave", () => {
     );
   });
 
-  it("calls onSave with updated status when the user changes Status", async () => {
+  it("calls onSave with updated status when the user clicks an Approved pill", async () => {
     const onSave = jest.fn();
     renderModal(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={onSave} />);
-    await userEvent.selectOptions(screen.getByLabelText("Status"), LeaveStatus.Approved);
+    await userEvent.click(screen.getByRole("button", { name: "Approved" }));
     await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ status: LeaveStatus.Approved }));
   });
@@ -91,13 +100,21 @@ describe("EditLeaveModal — onSave", () => {
     await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ id: "e1" }));
   });
+
+  it("forces Approved status for sick leave regardless of any clicks", async () => {
+    const sickEntry = { ...entry, type: LeaveType.Sick, status: LeaveStatus.Requested };
+    const onSave = jest.fn();
+    renderModal(<EditLeaveModal entry={sickEntry} onClose={jest.fn()} onSave={onSave} />);
+    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ status: LeaveStatus.Approved }));
+  });
 });
 
 describe("EditLeaveModal — reason update", () => {
   it("calls onSave with updated reason when the reason field is changed (stored as notes)", async () => {
     const onSave = jest.fn();
     renderModal(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={onSave} />);
-    const reasonField = screen.getByLabelText("Reason (optional)");
+    const reasonField = screen.getByLabelText("Reason");
     await userEvent.clear(reasonField);
     await userEvent.type(reasonField, "Updated note");
     await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));

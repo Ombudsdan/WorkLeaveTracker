@@ -265,3 +265,56 @@ describe("LeaveList — with entries", () => {
     expect(screen.getByText("(4d)")).toBeInTheDocument();
   });
 });
+
+describe("LeaveList — half-day entries", () => {
+  const halfDayEntry: LeaveEntry = {
+    id: "e3",
+    startDate: "2026-03-09",
+    endDate: "2026-03-09",
+    status: LeaveStatus.Approved,
+    type: LeaveType.Holiday,
+    notes: "Dentist",
+    halfDay: true,
+    halfDayPeriod: "am",
+  };
+
+  it("shows '(0.5d)' for a half-day entry", () => {
+    render(
+      <LeaveList
+        user={{ ...alice, entries: [halfDayEntry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    expect(screen.getByText("(0.5d)")).toBeInTheDocument();
+  });
+
+  it("appends (AM) to the reason for an AM half-day entry", () => {
+    render(
+      <LeaveList
+        user={{ ...alice, entries: [halfDayEntry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    expect(screen.getByText("Dentist (AM)")).toBeInTheDocument();
+  });
+
+  it("appends (PM) to the reason for a PM half-day entry", () => {
+    const pmEntry: LeaveEntry = { ...halfDayEntry, id: "e4", halfDayPeriod: "pm", notes: "Physio" };
+    render(
+      <LeaveList
+        user={{ ...alice, entries: [pmEntry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    expect(screen.getByText("Physio (PM)")).toBeInTheDocument();
+  });
+});

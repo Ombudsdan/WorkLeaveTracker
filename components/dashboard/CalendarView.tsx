@@ -2,11 +2,11 @@
 import { useState, useEffect, useRef } from "react";
 import type { LeaveEntry, PublicUser } from "@/types";
 import {
-  CALENDAR_COLORS,
   CALENDAR_CELL_BANK_HOLIDAY,
   CALENDAR_CELL_NON_WORKING,
   CALENDAR_CELL_DEFAULT,
   STATUS_COLORS,
+  getCalendarEntryClass,
 } from "@/variables/colours";
 import { MONTH_NAMES_SHORT, DAY_NAMES_SHORT } from "@/variables/calendar";
 import {
@@ -15,9 +15,66 @@ import {
   getEntriesForDate,
   isNonWorkingDay,
   toIsoDate,
-  countWorkingDays,
+  countEntryDays,
 } from "@/utils/dateHelpers";
 import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, X } from "lucide-react";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+type CellLayout =
+  | { kind: "empty" }
+  | { kind: "full"; entry: LeaveEntry }
+  | { kind: "top"; entry: LeaveEntry }
+  | { kind: "bottom"; entry: LeaveEntry }
+  | { kind: "split"; top: LeaveEntry; bottom: LeaveEntry };
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function getNoteLabel(entry: LeaveEntry): string {
+  const base = entry.notes ?? "";
+  if (!entry.halfDay) return base;
+  const suffix = entry.halfDayPeriod === "am" ? " (AM)" : " (PM)";
+  return base ? `${base}${suffix}` : suffix.trim();
+}
+
+function getCellLayout(entries: LeaveEntry[]): CellLayout {
+  if (entries.length === 0) return { kind: "empty" };
+
+  if (entries.length === 1) {
+    const e = entries[0];
+    if (!e.halfDay) return { kind: "full", entry: e };
+    return e.halfDayPeriod === "am" ? { kind: "top", entry: e } : { kind: "bottom", entry: e };
+  }
+
+  // Two entries — order: AM on top, PM on bottom (for half-days)
+  const [a, b] = entries;
+  const aIsAm = a.halfDay && a.halfDayPeriod === "am";
+  const bIsAm = b.halfDay && b.halfDayPeriod === "am";
+  const aIsPm = a.halfDay && a.halfDayPeriod === "pm";
+
+  let top: LeaveEntry;
+  let bottom: LeaveEntry;
+
+  if (aIsAm && !bIsAm) {
+    top = a; bottom = b;
+  } else if (bIsAm && !aIsAm) {
+    top = b; bottom = a;
+  } else if (aIsPm) {
+    top = b; bottom = a;
+  } else {
+    top = a; bottom = b;
+  }
+
+  return { kind: "split", top, bottom };
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 
 export default function CalendarView({
   user,
@@ -51,7 +108,6 @@ export default function CalendarView({
   }, [popover]);
 
   function handleCellClick(entry: LeaveEntry, cellEl: HTMLElement) {
-    // Toggle off if already showing this entry
     if (popover?.entry.id === entry.id) {
       setPopover(null);
       return;
@@ -59,7 +115,6 @@ export default function CalendarView({
     const rect = cellEl.getBoundingClientRect();
     const calRect = calendarRef.current?.getBoundingClientRect();
     if (!calRect) return;
-    // Position relative to the calendar container
     const top = rect.bottom - calRect.top + 6;
     const left = Math.min(rect.left - calRect.left, calRect.width - 220);
     setPopover({ entry, top, left });
@@ -71,6 +126,157 @@ export default function CalendarView({
     if (startDate === endDate) return start;
     const end = new Date(endDate).toLocaleDateString("en-GB", opts);
     return `${start} – ${end}`;
+  }
+
+  function renderCell(day: number) {
+    const dateStr = `${calendarYear}-${String(calendarMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const entries = getEntriesForDate(dateStr, user.entries);
+    const isBankHoliday = bankHolidays.includes(dateStr);
+    const isNWD = isNonWorkingDay(dateStr, user.profile.nonWorkingDays);
+    const isToday = dateStr === todayStr;
+    const layout = getCellLayout(entries);
+
+    const defaultClass =
+      entries.length === 0
+        ? isBankHoliday
+          ? CALENDAR_CELL_BANK_HOLIDAY
+          : isNWD
+          ? CALENDAR_CELL_NON_WORKING
+          : CALENDAR_CELL_DEFAULT
+        : "";
+
+    const todayRing = isToday ? "ring-2 ring-indigo-500" : "";
+
+    if (layout.kind === "empty") {
+      return (
+        <div
+          key={day}
+          className={`relative aspect-square rounded-lg overflow-hidden text-xs font-medium transition cursor-default ${defaultClass} ${todayRing}`}
+        >
+          <div className="h-full flex flex-col items-center justify-center">
+            <span>{day}</span>
+            {isBankHoliday && (
+              <span className="text-purple-400 text-[8px] leading-none">BH</span>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    if (layout.kind === "full") {
+      const e = layout.entry;
+      const label = getNoteLabel(e);
+      return (
+        <div
+          key={day}
+          className={`relative aspect-square rounded-lg overflow-hidden text-xs font-medium transition cursor-pointer ${getCalendarEntryClass(e)} ${todayRing}`}
+          onClick={(ev) => handleCellClick(e, ev.currentTarget as HTMLElement)}
+          title={label}
+        >
+          <div className="h-full flex flex-col items-center justify-center">
+            <span>{day}</span>
+            {label && (
+              <span className="text-[7px] leading-tight truncate w-full text-center px-0.5 opacity-80">
+                {label}
+              </span>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    if (layout.kind === "top") {
+      const e = layout.entry;
+      const label = getNoteLabel(e);
+      return (
+        <div
+          key={day}
+          className={`relative aspect-square rounded-lg overflow-hidden text-xs font-medium transition cursor-pointer ${todayRing}`}
+          title={label}
+        >
+          <div className="flex flex-col h-full">
+            <div
+              className={`flex-1 flex items-center justify-center overflow-hidden px-0.5 ${getCalendarEntryClass(e)}`}
+              onClick={(ev) => handleCellClick(e, ev.currentTarget as HTMLElement)}
+            >
+              {label && (
+                <span className="text-[7px] leading-tight text-center truncate w-full">{label}</span>
+              )}
+            </div>
+            <div className={`flex-1 flex items-center justify-center ${defaultClass || CALENDAR_CELL_DEFAULT}`} />
+          </div>
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <span className="w-4 h-4 rounded-full bg-white/90 flex items-center justify-center text-[9px] font-bold text-gray-700 shadow-sm">
+              {day}
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    if (layout.kind === "bottom") {
+      const e = layout.entry;
+      const label = getNoteLabel(e);
+      return (
+        <div
+          key={day}
+          className={`relative aspect-square rounded-lg overflow-hidden text-xs font-medium transition cursor-pointer ${todayRing}`}
+          title={label}
+        >
+          <div className="flex flex-col h-full">
+            <div className={`flex-1 flex items-center justify-center ${defaultClass || CALENDAR_CELL_DEFAULT}`} />
+            <div
+              className={`flex-1 flex items-center justify-center overflow-hidden px-0.5 ${getCalendarEntryClass(e)}`}
+              onClick={(ev) => handleCellClick(e, ev.currentTarget as HTMLElement)}
+            >
+              {label && (
+                <span className="text-[7px] leading-tight text-center truncate w-full">{label}</span>
+              )}
+            </div>
+          </div>
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <span className="w-4 h-4 rounded-full bg-white/90 flex items-center justify-center text-[9px] font-bold text-gray-700 shadow-sm">
+              {day}
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    // split
+    const { top: topEntry, bottom: botEntry } = layout;
+    const topLabel = getNoteLabel(topEntry);
+    const botLabel = getNoteLabel(botEntry);
+    return (
+      <div
+        key={day}
+        className={`relative aspect-square rounded-lg overflow-hidden text-xs font-medium transition ${todayRing}`}
+      >
+        <div className="flex flex-col h-full">
+          <div
+            className={`flex-1 flex items-center justify-center overflow-hidden px-0.5 cursor-pointer ${getCalendarEntryClass(topEntry)}`}
+            onClick={(e) => handleCellClick(topEntry, e.currentTarget as HTMLElement)}
+          >
+            {topLabel && (
+              <span className="text-[7px] leading-tight text-center truncate w-full">{topLabel}</span>
+            )}
+          </div>
+          <div
+            className={`flex-1 flex items-center justify-center overflow-hidden px-0.5 cursor-pointer ${getCalendarEntryClass(botEntry)}`}
+            onClick={(e) => handleCellClick(botEntry, e.currentTarget as HTMLElement)}
+          >
+            {botLabel && (
+              <span className="text-[7px] leading-tight text-center truncate w-full">{botLabel}</span>
+            )}
+          </div>
+        </div>
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <span className="w-4 h-4 rounded-full bg-white/90 flex items-center justify-center text-[9px] font-bold text-gray-700 shadow-sm">
+            {day}
+          </span>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -121,87 +327,7 @@ export default function CalendarView({
         {Array.from({ length: firstDay }).map((_, index) => (
           <div key={`empty-${index}`} />
         ))}
-        {Array.from({ length: daysInMonth }).map((_, index) => {
-          const day = index + 1;
-          const cell = getCellProps(day);
-          const hasTwo = cell.entries.length === 2;
-          const hasOne = cell.entries.length === 1;
-          const isClickable = cell.entries.length > 0;
-          return (
-            <div
-              key={day}
-              className={`relative aspect-square rounded-lg overflow-hidden text-xs font-medium transition
-                ${cell.isToday ? "ring-2 ring-indigo-500" : ""}
-                ${hasTwo ? "" : cell.cellClass}
-                ${isClickable ? "cursor-pointer" : "cursor-default"}`}
-              title={cell.entries.map((e) => e.notes).filter(Boolean).join(" / ")}
-              onClick={
-                isClickable
-                  ? (e) => handleCellClick(cell.entries[0], e.currentTarget as HTMLElement)
-                  : undefined
-              }
-            >
-              {hasTwo && cell.entries[0] && cell.entries[1] ? (
-                /* Two overlapping entries — split the cell top/bottom */
-                <div
-                  className="flex flex-col h-full"
-                  onClick={(e) => {
-                    // Allow clicking each half independently
-                    e.stopPropagation();
-                  }}
-                >
-                  {/* Top half — entry 0 */}
-                  <div
-                    className={`flex-1 flex items-center justify-center overflow-hidden px-0.5 ${CALENDAR_COLORS[cell.entries[0].status]}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCellClick(cell.entries[0], e.currentTarget as HTMLElement);
-                    }}
-                  >
-                    {cell.entries[0].notes ? (
-                      <span className="text-[7px] leading-tight text-center truncate w-full">
-                        {cell.entries[0].notes}
-                      </span>
-                    ) : null}
-                  </div>
-                  {/* Day number circle — centred over the split */}
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <span className="w-4 h-4 rounded-full bg-white/90 flex items-center justify-center text-[9px] font-bold text-gray-700 shadow-sm">
-                      {day}
-                    </span>
-                  </div>
-                  {/* Bottom half — entry 1 */}
-                  <div
-                    className={`flex-1 flex items-center justify-center overflow-hidden px-0.5 ${CALENDAR_COLORS[cell.entries[1].status]}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCellClick(cell.entries[1], e.currentTarget as HTMLElement);
-                    }}
-                  >
-                    {cell.entries[1].notes ? (
-                      <span className="text-[7px] leading-tight text-center truncate w-full">
-                        {cell.entries[1].notes}
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-              ) : (
-                /* Single entry or no entry */
-                <div className="h-full flex flex-col items-center justify-center">
-                  <span>{day}</span>
-                  {hasOne && cell.entries[0].notes && (
-                    <span className="text-[7px] leading-tight truncate w-full text-center px-0.5 opacity-80">
-                      {cell.entries[0].notes}
-                    </span>
-                  )}
-                  {cell.isBankHoliday && cell.entries.length === 0 && (
-                    <span className="text-purple-400 text-[8px] leading-none">BH</span>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
+        {Array.from({ length: daysInMonth }).map((_, index) => renderCell(index + 1))}
       </div>
 
       {/* Legend */}
@@ -214,6 +340,9 @@ export default function CalendarView({
         </span>
         <span className="flex items-center gap-1">
           <span className="w-3 h-3 rounded bg-yellow-200" /> Planned
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded bg-red-200" /> Sick
         </span>
         <span className="flex items-center gap-1">
           <span className="w-3 h-3 rounded bg-purple-100" /> Bank Holiday
@@ -244,20 +373,20 @@ export default function CalendarView({
           </div>
 
           <p className="font-medium text-gray-800 mb-1 pr-4">
-            {popover.entry.notes ?? "No description"}
+            {getNoteLabel(popover.entry) || "No description"}
           </p>
 
           <p className="text-gray-500 mb-1">
             {formatDateRange(popover.entry.startDate, popover.entry.endDate)}
+            {popover.entry.halfDay && (
+              <span className="ml-1 text-indigo-600 font-medium">
+                ({popover.entry.halfDayPeriod?.toUpperCase()})
+              </span>
+            )}
           </p>
 
           <p className="text-gray-500 mb-2">
-            {countWorkingDays(
-              popover.entry.startDate,
-              popover.entry.endDate,
-              user.profile.nonWorkingDays,
-              bankHolidays
-            )}{" "}
+            {countEntryDays(popover.entry, user.profile.nonWorkingDays, bankHolidays)}{" "}
             working day(s)
           </p>
 
@@ -288,27 +417,6 @@ export default function CalendarView({
     </div>
   );
 
-  function getCellProps(day: number): CalendarCellProps {
-    const dateStr = `${calendarYear}-${String(calendarMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    const entries = getEntriesForDate(dateStr, user.entries);
-    const isBankHoliday = bankHolidays.includes(dateStr);
-    const isNWD = isNonWorkingDay(dateStr, user.profile.nonWorkingDays);
-    const isToday = dateStr === todayStr;
-    const cellClass = resolveCellClass(entries[0], isBankHoliday, isNWD);
-    return { dateStr, entries, isBankHoliday, cellClass, isToday };
-  }
-
-  function resolveCellClass(
-    entry: LeaveEntry | undefined,
-    isBankHoliday: boolean,
-    isNonWorking: boolean
-  ): string {
-    if (entry) return CALENDAR_COLORS[entry.status];
-    if (isBankHoliday) return CALENDAR_CELL_BANK_HOLIDAY;
-    if (isNonWorking) return CALENDAR_CELL_NON_WORKING;
-    return CALENDAR_CELL_DEFAULT;
-  }
-
   function prevMonth() {
     if (calendarMonth === 0) {
       setCalendarMonth(11);
@@ -332,14 +440,6 @@ interface PopoverState {
   entry: LeaveEntry;
   top: number;
   left: number;
-}
-
-interface CalendarCellProps {
-  dateStr: string;
-  entries: LeaveEntry[];
-  isBankHoliday: boolean;
-  cellClass: string;
-  isToday: boolean;
 }
 
 interface CalendarViewProps {

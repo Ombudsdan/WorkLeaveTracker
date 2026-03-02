@@ -1,12 +1,12 @@
 "use client";
 import { useState } from "react";
-import { LeaveStatus } from "@/types";
+import { LeaveStatus, LeaveType } from "@/types";
 import type { LeaveEntry } from "@/types";
 import { LEAVE_STATUS_ORDER, LEAVE_STATUS_LABELS } from "@/variables/leaveConfig";
 import FormField from "@/components/FormField";
-import FormSelect from "@/components/FormSelect";
+import LeaveOptionPicker from "@/components/LeaveOptionPicker";
 import Button from "@/components/Button";
-import { FormValidationProvider } from "@/contexts/FormValidationContext";
+import { FormValidationProvider, useFormValidation } from "@/contexts/FormValidationContext";
 
 export default function EditLeaveModal({ entry, onClose, onSave }: EditLeaveModalProps) {
   return (
@@ -17,15 +17,41 @@ export default function EditLeaveModal({ entry, onClose, onSave }: EditLeaveModa
 }
 
 function EditLeaveModalInner({ entry, onClose, onSave }: EditLeaveModalProps) {
+  const { triggerAllValidations } = useFormValidation();
   const [startDate, setStartDate] = useState(entry.startDate);
   const [endDate, setEndDate] = useState(entry.endDate);
   const [status, setStatus] = useState<LeaveStatus>(entry.status);
   const [notes, setNotes] = useState(entry.notes ?? "");
+  const [halfDayPeriod, setHalfDayPeriod] = useState<"am" | "pm" | "">(
+    entry.halfDayPeriod ?? ""
+  );
+
+  const isSick = entry.type === LeaveType.Sick;
+  const isHalfDay = entry.halfDay ?? false;
 
   const statusOptions = LEAVE_STATUS_ORDER.map((leaveStatus) => ({
     value: leaveStatus,
     label: LEAVE_STATUS_LABELS[leaveStatus],
   }));
+
+  const halfDayPeriodOptions = [
+    { value: "am" as const, label: "AM" },
+    { value: "pm" as const, label: "PM" },
+  ];
+
+  function handleSave() {
+    const valid = triggerAllValidations();
+    if (!valid) return;
+    const resolvedStatus = isSick ? LeaveStatus.Approved : status;
+    onSave({
+      ...entry,
+      startDate,
+      endDate,
+      status: resolvedStatus,
+      notes,
+      ...(isHalfDay && { halfDayPeriod: halfDayPeriod as "am" | "pm" }),
+    });
+  }
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
@@ -50,20 +76,45 @@ function EditLeaveModalInner({ entry, onClose, onSave }: EditLeaveModalProps) {
               required
             />
           </div>
-          <FormSelect
-            id="edit-status"
-            label="Status"
-            value={status}
-            onChange={(v) => setStatus(v)}
-            options={statusOptions}
-          />
+
+          {/* Reason — required */}
           <FormField
             id="edit-reason"
-            label="Reason (optional)"
+            label="Reason"
             value={notes}
             onChange={(v) => setNotes(v)}
             placeholder="e.g. Beach holiday"
+            required
           />
+
+          {/* AM/PM picker for half-day entries */}
+          {isHalfDay && (
+            <LeaveOptionPicker
+              id="edit-halfDayPeriod"
+              label="Time of day"
+              options={halfDayPeriodOptions}
+              value={halfDayPeriod}
+              onChange={(v) => setHalfDayPeriod(v)}
+              required="Please select AM or PM"
+            />
+          )}
+
+          {/* Status pills — hidden for sick leave */}
+          {!isSick && (
+            <LeaveOptionPicker
+              id="edit-status"
+              label="Status"
+              options={statusOptions}
+              value={status}
+              onChange={(v) => setStatus(v)}
+              required
+            />
+          )}
+          {isSick && (
+            <p className="text-xs text-gray-400">
+              Status is automatically set to <strong>Approved</strong> for sick leave.
+            </p>
+          )}
         </div>
         <div className="flex gap-2 mt-5">
           <Button variant="primary" fullWidth onClick={handleSave}>
@@ -76,10 +127,6 @@ function EditLeaveModalInner({ entry, onClose, onSave }: EditLeaveModalProps) {
       </div>
     </div>
   );
-
-  function handleSave() {
-    onSave({ ...entry, startDate, endDate, status, notes });
-  }
 }
 
 interface EditLeaveModalProps {

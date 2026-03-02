@@ -45,15 +45,25 @@ describe("SummaryCard — basic display", () => {
     expect(screen.getByText(/31 Dec 2026/)).toBeInTheDocument();
   });
 
-  it("shows the total allowance", () => {
+  it("shows the total allowance in the breakdown", async () => {
+    const user = setup();
     render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
-    // "25 days" can appear for both Total Allowance and Remaining; getAllByText handles this
-    expect(screen.getAllByText("25 days").length).toBeGreaterThanOrEqual(1);
+    await user.click(screen.getByRole("button", { name: /view breakdown/i }));
+    expect(screen.getByText("Total")).toBeInTheDocument();
   });
 
-  it("shows 0% used when there are no entries", () => {
+  it("shows the donut SVG always (not just in breakdown)", () => {
+    const { container } = render(
+      <SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />
+    );
+    expect(container.querySelector("svg")).toBeInTheDocument();
+  });
+
+  it("shows the status key rows (Approved, Requested, Planned) by default", () => {
     render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
-    expect(screen.getByText("0% used")).toBeInTheDocument();
+    expect(screen.getByText("Approved")).toBeInTheDocument();
+    expect(screen.getByText("Requested")).toBeInTheDocument();
+    expect(screen.getByText("Planned")).toBeInTheDocument();
   });
 
   it("does not show the Read-only badge for own profile", () => {
@@ -83,111 +93,81 @@ describe("SummaryCard — with approved entries", () => {
 
   it("counts 5 approved days for a Mon–Fri entry", () => {
     render(<SummaryCard user={userWithEntries} bankHolidays={[]} isOwnProfile={true} />);
-    // "5 days" appears for the Approved row
     expect(screen.getAllByText("5 days").length).toBeGreaterThan(0);
   });
 
-  it("shows the correct remaining days", () => {
-    render(<SummaryCard user={userWithEntries} bankHolidays={[]} isOwnProfile={true} />);
-    expect(screen.getByText("20 days")).toBeInTheDocument();
+  it("shows the correct remaining days in the center of the donut (via SVG)", async () => {
+    const { container } = render(
+      <SummaryCard user={userWithEntries} bankHolidays={[]} isOwnProfile={true} />
+    );
+    const svg = container.querySelector("svg") as SVGElement;
+    expect(svg).toBeInTheDocument();
+    // The center text should contain the remaining days (20)
+    expect(svg.textContent).toContain("20");
   });
 
-  it("shows the used percentage", () => {
+  it("shows remaining days in the breakdown", async () => {
+    const user = setup();
     render(<SummaryCard user={userWithEntries} bankHolidays={[]} isOwnProfile={true} />);
-    expect(screen.getByText("20% used")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /view breakdown/i }));
+    expect(screen.getByText("20 days")).toBeInTheDocument();
   });
 });
 
-describe("SummaryCard — progress bar width", () => {
-  it("renders 0% width when no days used", () => {
+describe("SummaryCard — dual-ring donut", () => {
+  it("renders the SVG donut chart by default (no click required)", () => {
     const { container } = render(
       <SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />
     );
-    const bar = container.querySelector(".bg-indigo-500") as HTMLElement;
-    expect(bar).toBeInTheDocument();
-    expect(bar.style.width).toBe("0%");
+    expect(container.querySelector("svg")).toBeInTheDocument();
   });
 
-  it("caps width at 100% even when days exceed allowance", () => {
-    const over: PublicUser = {
-      ...alice,
-      yearAllowances: [
-        { year: 2026, company: "Acme", holidayStartMonth: 1, core: 1, bought: 0, carried: 0 },
-      ],
-      entries: [
-        {
-          id: "e2",
-          startDate: "2026-03-09",
-          endDate: "2026-03-20",
-          status: LeaveStatus.Approved,
-          type: LeaveType.Holiday,
-        },
-      ],
-    };
-    const { container } = render(<SummaryCard user={over} bankHolidays={[]} isOwnProfile={true} />);
-    const bar = container.querySelector(".bg-indigo-500") as HTMLElement;
-    expect(bar.style.width).toBe("100%");
-  });
-
-  it("shows 0% when total allowance is zero (avoid division by zero)", () => {
-    const zero: PublicUser = {
-      ...alice,
-      yearAllowances: [
-        { year: 2026, company: "Acme", holidayStartMonth: 1, core: 0, bought: 0, carried: 0 },
-      ],
-    };
-    render(<SummaryCard user={zero} bankHolidays={[]} isOwnProfile={true} />);
-    // Should show "0% used" not NaN
-    expect(screen.getByText("0% used")).toBeInTheDocument();
+  it("shows remaining days in the donut center", () => {
+    const { container } = render(
+      <SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />
+    );
+    const svgText = container.querySelector("svg")?.textContent;
+    expect(svgText).toContain("25"); // 25 remaining when no entries
   });
 });
 
 describe("SummaryCard — no year allowances (legacy/missing data)", () => {
-  it("shows 0% used when user has no year allowances", () => {
+  it("renders without error when user has no year allowances", () => {
     render(
       <SummaryCard user={{ ...alice, yearAllowances: [] }} bankHolidays={[]} isOwnProfile={true} />
     );
-    expect(screen.getByText("0% used")).toBeInTheDocument();
+    // Just ensure it renders without throwing
+    expect(screen.getByText("Alice Smith")).toBeInTheDocument();
   });
 });
 
-describe("SummaryCard — allowance breakdown popover", () => {
-  it("does not show the breakdown panel initially", () => {
+describe("SummaryCard — allowance breakdown toggle", () => {
+  it("does not show Core Days initially", () => {
     render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
-    expect(screen.queryByText("Allowance Breakdown")).toBeNull();
+    expect(screen.queryByText("Core Days")).toBeNull();
   });
 
-  it("shows the breakdown panel after clicking 'Total Allowance'", async () => {
+  it("shows Core Days after clicking 'View breakdown'", async () => {
     const user = setup();
     render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
-    await user.click(screen.getByRole("button", { name: /total allowance/i }));
-    expect(screen.getByText("Allowance Breakdown")).toBeInTheDocument();
-  });
-
-  it("shows Core Days and Total in the breakdown", async () => {
-    const user = setup();
-    render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
-    await user.click(screen.getByRole("button", { name: /total allowance/i }));
+    await user.click(screen.getByRole("button", { name: /view breakdown/i }));
     expect(screen.getByText("Core Days")).toBeInTheDocument();
-    // At least one "+0" (bought or carried shown in breakdown)
-    expect(screen.getAllByText("+0").length).toBeGreaterThanOrEqual(1);
   });
 
-  it("closes the breakdown panel when the close button is clicked", async () => {
+  it("shows Bought and Carried Over in the breakdown", async () => {
     const user = setup();
     render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
-    await user.click(screen.getByRole("button", { name: /total allowance/i }));
-    expect(screen.getByText("Allowance Breakdown")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Close breakdown" }));
-    expect(screen.queryByText("Allowance Breakdown")).toBeNull();
+    await user.click(screen.getByRole("button", { name: /view breakdown/i }));
+    expect(screen.getByText("Bought")).toBeInTheDocument();
+    expect(screen.getByText("Carried Over")).toBeInTheDocument();
   });
 
-  it("renders the SVG donut chart when breakdown is open", async () => {
+  it("hides breakdown after clicking 'Hide breakdown'", async () => {
     const user = setup();
-    const { container } = render(
-      <SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />
-    );
-    await user.click(screen.getByRole("button", { name: /total allowance/i }));
-    expect(container.querySelector("svg")).toBeInTheDocument();
+    render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
+    await user.click(screen.getByRole("button", { name: /view breakdown/i }));
+    expect(screen.getByText("Core Days")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /hide breakdown/i }));
+    expect(screen.queryByText("Core Days")).toBeNull();
   });
 });
