@@ -20,11 +20,7 @@ export default function UserSelector({
   ];
 
   return (
-    <div
-      className="flex mb-0 border-b border-gray-200"
-      role="tablist"
-      aria-label="Calendar view"
-    >
+    <div className="flex mb-0 border-b border-gray-200" role="tablist" aria-label="Calendar view">
       {tabs.map((tab) => {
         const isActive = tab.id === viewingUserId;
         return (

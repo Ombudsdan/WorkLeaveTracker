@@ -126,4 +126,3 @@ describe("NavBar — connections badge", () => {
     expect(screen.queryByText(/^\d+$/)).toBeNull();
   });
 });
-

@@ -149,9 +149,7 @@ export default function ProfilePage() {
   const activeYa = getActiveYearAllowance(yearAllowances);
   const currentHolidayYear = activeYa?.year ?? new Date().getFullYear();
   /** Active companies across all allowances — used as combobox suggestions */
-  const existingCompanies = [
-    ...new Set(yearAllowances.map((ya) => ya.company).filter(Boolean)),
-  ];
+  const existingCompanies = [...new Set(yearAllowances.map((ya) => ya.company).filter(Boolean))];
 
   return (
     <div className="min-h-screen bg-gray-50">

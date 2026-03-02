@@ -76,7 +76,9 @@ function PinUserModalContent({
           `A connection request has already been sent to ${found.profile.firstName} ${found.profile.lastName}.`
         );
       } else if (result.error === "Already connected") {
-        setSearchError(`${found.profile.firstName} ${found.profile.lastName} is already connected.`);
+        setSearchError(
+          `${found.profile.firstName} ${found.profile.lastName} is already connected.`
+        );
       } else {
         setSearchError(result.error ?? "Failed to send request. Please try again.");
       }

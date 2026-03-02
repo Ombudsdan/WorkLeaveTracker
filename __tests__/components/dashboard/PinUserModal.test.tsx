@@ -54,35 +54,17 @@ afterEach(() => {
 
 describe("PinUserModal — rendering", () => {
   it("renders the heading", () => {
-    render(
-      <PinUserModal
-        otherUsers={[alice, bob]}
-        pinnedUserIds={[]}
-        onClose={jest.fn()}
-      />
-    );
+    render(<PinUserModal otherUsers={[alice, bob]} pinnedUserIds={[]} onClose={jest.fn()} />);
     expect(screen.getByRole("heading", { name: "Send Connection Request" })).toBeInTheDocument();
   });
 
   it("renders the email input", () => {
-    render(
-      <PinUserModal
-        otherUsers={[alice, bob]}
-        pinnedUserIds={[]}
-        onClose={jest.fn()}
-      />
-    );
+    render(<PinUserModal otherUsers={[alice, bob]} pinnedUserIds={[]} onClose={jest.fn()} />);
     expect(screen.getByLabelText("Email address")).toBeInTheDocument();
   });
 
   it("renders the Send Request and Close buttons", () => {
-    render(
-      <PinUserModal
-        otherUsers={[alice, bob]}
-        pinnedUserIds={[]}
-        onClose={jest.fn()}
-      />
-    );
+    render(<PinUserModal otherUsers={[alice, bob]} pinnedUserIds={[]} onClose={jest.fn()} />);
     expect(screen.getByRole("button", { name: /send request/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /close/i })).toBeInTheDocument();
   });
@@ -90,51 +72,27 @@ describe("PinUserModal — rendering", () => {
 
 describe("PinUserModal — search", () => {
   it("shows error when searching with an empty email", async () => {
-    render(
-      <PinUserModal
-        otherUsers={[alice, bob]}
-        pinnedUserIds={[]}
-        onClose={jest.fn()}
-      />
-    );
+    render(<PinUserModal otherUsers={[alice, bob]} pinnedUserIds={[]} onClose={jest.fn()} />);
     await userEvent.click(screen.getByRole("button", { name: /send request/i }));
     expect(screen.getByText("Please enter an email address.")).toBeInTheDocument();
   });
 
   it("shows error when an invalid email format is entered", async () => {
-    render(
-      <PinUserModal
-        otherUsers={[alice, bob]}
-        pinnedUserIds={[]}
-        onClose={jest.fn()}
-      />
-    );
+    render(<PinUserModal otherUsers={[alice, bob]} pinnedUserIds={[]} onClose={jest.fn()} />);
     await userEvent.type(screen.getByLabelText("Email address"), "notanemail");
     await userEvent.click(screen.getByRole("button", { name: /send request/i }));
     expect(screen.getByText(/valid email address/i)).toBeInTheDocument();
   });
 
   it("shows error when no user is found with the entered email", async () => {
-    render(
-      <PinUserModal
-        otherUsers={[alice, bob]}
-        pinnedUserIds={[]}
-        onClose={jest.fn()}
-      />
-    );
+    render(<PinUserModal otherUsers={[alice, bob]} pinnedUserIds={[]} onClose={jest.fn()} />);
     await userEvent.type(screen.getByLabelText("Email address"), "nobody@example.com");
     await userEvent.click(screen.getByRole("button", { name: /send request/i }));
     expect(screen.getByText("No user found with that email address.")).toBeInTheDocument();
   });
 
   it("calls sendPinRequest with the matched user's id", async () => {
-    render(
-      <PinUserModal
-        otherUsers={[alice, bob]}
-        pinnedUserIds={[]}
-        onClose={jest.fn()}
-      />
-    );
+    render(<PinUserModal otherUsers={[alice, bob]} pinnedUserIds={[]} onClose={jest.fn()} />);
     await userEvent.type(screen.getByLabelText("Email address"), "alice@example.com");
     await userEvent.click(screen.getByRole("button", { name: /send request/i }));
     await waitFor(() => expect(mockSendPinRequest).toHaveBeenCalledWith("u1"));
@@ -156,28 +114,14 @@ describe("PinUserModal — search", () => {
   });
 
   it("shows success message after request is sent", async () => {
-    render(
-      <PinUserModal
-        otherUsers={[alice, bob]}
-        pinnedUserIds={[]}
-        onClose={jest.fn()}
-      />
-    );
+    render(<PinUserModal otherUsers={[alice, bob]} pinnedUserIds={[]} onClose={jest.fn()} />);
     await userEvent.type(screen.getByLabelText("Email address"), "alice@example.com");
     await userEvent.click(screen.getByRole("button", { name: /send request/i }));
-    await waitFor(() =>
-      expect(screen.getByText(/connection request sent/i)).toBeInTheDocument()
-    );
+    await waitFor(() => expect(screen.getByText(/connection request sent/i)).toBeInTheDocument());
   });
 
   it("shows error when the user is already connected (pinnedUserIds)", async () => {
-    render(
-      <PinUserModal
-        otherUsers={[alice, bob]}
-        pinnedUserIds={["u1"]}
-        onClose={jest.fn()}
-      />
-    );
+    render(<PinUserModal otherUsers={[alice, bob]} pinnedUserIds={["u1"]} onClose={jest.fn()} />);
     await userEvent.type(screen.getByLabelText("Email address"), "alice@example.com");
     await userEvent.click(screen.getByRole("button", { name: /send request/i }));
     expect(screen.getByText(/already connected/i)).toBeInTheDocument();
@@ -211,13 +155,7 @@ describe("PinUserModal — search", () => {
   });
 
   it("is case-insensitive when matching email", async () => {
-    render(
-      <PinUserModal
-        otherUsers={[alice, bob]}
-        pinnedUserIds={[]}
-        onClose={jest.fn()}
-      />
-    );
+    render(<PinUserModal otherUsers={[alice, bob]} pinnedUserIds={[]} onClose={jest.fn()} />);
     await userEvent.type(screen.getByLabelText("Email address"), "ALICE@EXAMPLE.COM");
     await userEvent.click(screen.getByRole("button", { name: /send request/i }));
     await waitFor(() => expect(mockSendPinRequest).toHaveBeenCalledWith("u1"));
@@ -225,13 +163,7 @@ describe("PinUserModal — search", () => {
 
   it("shows an error message when sendPinRequest returns an error", async () => {
     mockSendPinRequest.mockResolvedValue({ ok: false, error: "Request already sent" });
-    render(
-      <PinUserModal
-        otherUsers={[alice, bob]}
-        pinnedUserIds={[]}
-        onClose={jest.fn()}
-      />
-    );
+    render(<PinUserModal otherUsers={[alice, bob]} pinnedUserIds={[]} onClose={jest.fn()} />);
     await userEvent.type(screen.getByLabelText("Email address"), "alice@example.com");
     await userEvent.click(screen.getByRole("button", { name: /send request/i }));
     await waitFor(() =>
@@ -243,13 +175,7 @@ describe("PinUserModal — search", () => {
 describe("PinUserModal — close", () => {
   it("calls onClose when the Close button is clicked", async () => {
     const onClose = jest.fn();
-    render(
-      <PinUserModal
-        otherUsers={[alice, bob]}
-        pinnedUserIds={[]}
-        onClose={onClose}
-      />
-    );
+    render(<PinUserModal otherUsers={[alice, bob]} pinnedUserIds={[]} onClose={onClose} />);
     await userEvent.click(screen.getByRole("button", { name: /close/i }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });

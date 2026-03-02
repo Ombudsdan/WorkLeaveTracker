@@ -94,10 +94,7 @@ describe("UserSelector", () => {
         onSelectUser={jest.fn()}
       />
     );
-    expect(screen.getByRole("tab", { name: "Bob Jones" })).toHaveAttribute(
-      "aria-selected",
-      "true"
-    );
+    expect(screen.getByRole("tab", { name: "Bob Jones" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("tab", { name: "My Calendar" })).toHaveAttribute(
       "aria-selected",
       "false"

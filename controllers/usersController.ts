@@ -97,4 +97,3 @@ export const usersController = {
     return { ok: false, error: json.error ?? "Failed to respond" };
   },
 };
-

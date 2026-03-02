@@ -142,4 +142,3 @@ interface YearAllowanceModalProps {
   onClose: () => void;
   onSave: (allowance: YearAllowance) => void;
 }
-

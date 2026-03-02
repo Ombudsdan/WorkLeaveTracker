@@ -89,7 +89,10 @@ export default function CalendarView({
               className={`relative aspect-square rounded-lg overflow-hidden text-xs font-medium transition cursor-default
                 ${cell.isToday ? "ring-2 ring-indigo-500" : ""}
                 ${hasTwo ? "" : cell.cellClass}`}
-              title={cell.entries.map((e) => e.notes).filter(Boolean).join(" / ")}
+              title={cell.entries
+                .map((e) => e.notes)
+                .filter(Boolean)
+                .join(" / ")}
             >
               {hasTwo && cell.entries[0] && cell.entries[1] ? (
                 /* Two overlapping entries — split the cell top/bottom */

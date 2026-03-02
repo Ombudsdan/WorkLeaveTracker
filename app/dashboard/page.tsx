@@ -144,8 +144,7 @@ export default function DashboardPage() {
     return start.getFullYear() + 1;
   })();
 
-  const pendingConnectionRequests =
-    (currentUser.profile.pendingPinRequestsReceived ?? []).length;
+  const pendingConnectionRequests = (currentUser.profile.pendingPinRequestsReceived ?? []).length;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -177,10 +176,12 @@ export default function DashboardPage() {
           />
         </div>
 
-        <div className={`bg-white shadow rounded-b-2xl px-4 pt-4 pb-6 mb-6 ${
-          /* Only render the tab panel wrapper when there are pinned users */
-          (currentUser.profile.pinnedUserIds ?? []).length === 0 ? "hidden" : ""
-        }`} />
+        <div
+          className={`bg-white shadow rounded-b-2xl px-4 pt-4 pb-6 mb-6 ${
+            /* Only render the tab panel wrapper when there are pinned users */
+            (currentUser.profile.pinnedUserIds ?? []).length === 0 ? "hidden" : ""
+          }`}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1 space-y-4">
