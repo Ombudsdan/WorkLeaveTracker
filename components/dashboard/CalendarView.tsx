@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import type { LeaveEntry, PublicUser } from "@/types";
-import { LeaveStatus, LeaveType } from "@/types";
+import type { LeaveEntry, PublicUser, BankHolidayEntry } from "@/types";
+import { LeaveStatus, LeaveType, LeaveDuration } from "@/types";
 import {
   CALENDAR_CELL_BANK_HOLIDAY,
   CALENDAR_CELL_NON_WORKING,
@@ -18,6 +18,7 @@ import {
   isNonWorkingDay,
   toIsoDate,
   countEntryDays,
+  getEntryDuration,
 } from "@/utils/dateHelpers";
 import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, X } from "lucide-react";
 
@@ -49,9 +50,18 @@ function statusPriority(entry: LeaveEntry): number {
 
 function getNoteLabel(entry: LeaveEntry): string {
   const base = entry.notes ?? "";
-  if (!entry.halfDay) return base;
-  const suffix = entry.halfDayPeriod === "am" ? " (AM)" : " (PM)";
-  return base ? `${base}${suffix}` : suffix.trim();
+  const dur = getEntryDuration(entry);
+  if (dur === LeaveDuration.HalfMorning) return base ? `${base} (AM)` : "(AM)";
+  if (dur === LeaveDuration.HalfAfternoon) return base ? `${base} (PM)` : "(PM)";
+  return base;
+}
+
+function isAM(entry: LeaveEntry): boolean {
+  return getEntryDuration(entry) === LeaveDuration.HalfMorning;
+}
+
+function isPM(entry: LeaveEntry): boolean {
+  return getEntryDuration(entry) === LeaveDuration.HalfAfternoon;
 }
 
 function getCellLayout(entries: LeaveEntry[]): CellLayout {
@@ -59,16 +69,17 @@ function getCellLayout(entries: LeaveEntry[]): CellLayout {
 
   if (entries.length === 1) {
     const e = entries[0];
-    if (!e.halfDay) return { kind: "full", entry: e };
-    return e.halfDayPeriod === "am" ? { kind: "top", entry: e } : { kind: "bottom", entry: e };
+    const dur = getEntryDuration(e);
+    if (dur === LeaveDuration.Full) return { kind: "full", entry: e };
+    return dur === LeaveDuration.HalfMorning ? { kind: "top", entry: e } : { kind: "bottom", entry: e };
   }
 
   // Two entries — determine top/bottom placement
   const [a, b] = entries;
-  const aIsAm = a.halfDay && a.halfDayPeriod === "am";
-  const aIsPm = a.halfDay && a.halfDayPeriod === "pm";
-  const bIsAm = b.halfDay && b.halfDayPeriod === "am";
-  const bIsPm = b.halfDay && b.halfDayPeriod === "pm";
+  const aIsAm = isAM(a);
+  const aIsPm = isPM(a);
+  const bIsAm = isAM(b);
+  const bIsPm = isPM(b);
 
   // One is AM half-day, the other is PM half-day or full-day → AM goes top
   if (aIsAm && !bIsAm) return { kind: "split", top: a, bottom: b };
@@ -107,6 +118,10 @@ export default function CalendarView({
   const daysInMonth = getDaysInMonth(calendarYear, calendarMonth);
   const firstDay = getFirstDayOfMonth(calendarYear, calendarMonth);
 
+  // Build lookup maps for bank holiday dates and names
+  const bankHolidayDates = bankHolidays.map((bh) => bh.date);
+  const bankHolidayNames = new Map(bankHolidays.map((bh) => [bh.date, bh.title]));
+
   // Close popover when clicking outside the calendar
   useEffect(() => {
     function handleOutsideClick(e: MouseEvent) {
@@ -144,7 +159,8 @@ export default function CalendarView({
   function renderCell(day: number) {
     const dateStr = `${calendarYear}-${String(calendarMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const entries = getEntriesForDate(dateStr, user.entries);
-    const isBankHoliday = bankHolidays.includes(dateStr);
+    const isBankHoliday = bankHolidayDates.includes(dateStr);
+    const bankHolidayName = bankHolidayNames.get(dateStr);
     const isNWD = isNonWorkingDay(dateStr, user.profile.nonWorkingDays);
     const isToday = dateStr === todayStr;
     const layout = getCellLayout(entries);
@@ -169,7 +185,9 @@ export default function CalendarView({
           <div className="h-full flex flex-col items-center justify-center">
             <span>{day}</span>
             {isBankHoliday && (
-              <span className="text-purple-400 text-[8px] leading-none">BH</span>
+              <span className="text-purple-400 text-[8px] leading-none truncate w-full text-center px-0.5">
+                {bankHolidayName ?? "BH"}
+              </span>
             )}
           </div>
         </div>
@@ -405,9 +423,12 @@ export default function CalendarView({
           </p>
 
           <p className="text-gray-500 mb-2">
-            {popover.entry.halfDay
-              ? `Half day (${popover.entry.halfDayPeriod?.toUpperCase()})`
-              : `${countEntryDays(popover.entry, user.profile.nonWorkingDays, bankHolidays)} working day(s)`}
+            {(() => {
+              const dur = getEntryDuration(popover.entry);
+              if (dur === LeaveDuration.HalfMorning) return "Half day (AM)";
+              if (dur === LeaveDuration.HalfAfternoon) return "Half day (PM)";
+              return `${countEntryDays(popover.entry, user.profile.nonWorkingDays, bankHolidayDates)} working day(s)`;
+            })()}
           </p>
 
           {isOwnProfile && (onEdit || onDelete) && (
@@ -464,7 +485,7 @@ interface PopoverState {
 
 interface CalendarViewProps {
   user: PublicUser;
-  bankHolidays: string[];
+  bankHolidays: BankHolidayEntry[];
   isOwnProfile?: boolean;
   onAdd?: () => void;
   onEdit?: (entry: LeaveEntry) => void;

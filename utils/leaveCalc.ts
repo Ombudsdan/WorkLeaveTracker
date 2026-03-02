@@ -1,9 +1,10 @@
-import { LeaveStatus, LeaveType } from "@/types";
+import { LeaveStatus, LeaveType, LeaveDuration } from "@/types";
 import type { PublicUser } from "@/types";
 import {
   countWorkingDays,
   getHolidayYearBounds,
   getActiveYearAllowance,
+  getEntryDuration,
 } from "@/utils/dateHelpers";
 
 export interface LeaveSummary {
@@ -42,7 +43,7 @@ export function calcLeaveSummary(user: PublicUser, bankHolidays: string[]): Leav
     const ee = new Date(entry.endDate);
     if (ee < start || es > end) continue;
 
-    const days = entry.halfDay
+    const days = getEntryDuration(entry) !== LeaveDuration.Full
       ? 0.5
       : countWorkingDays(
           entry.startDate,

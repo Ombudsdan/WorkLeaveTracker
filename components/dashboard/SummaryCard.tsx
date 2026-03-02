@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { LeaveStatus } from "@/types";
-import type { PublicUser } from "@/types";
+import type { PublicUser, BankHolidayEntry } from "@/types";
 import { STATUS_DOT } from "@/variables/colours";
 import { calcLeaveSummary } from "@/utils/leaveCalc";
 import { getHolidayYearBounds, getActiveYearAllowance } from "@/utils/dateHelpers";
@@ -9,7 +9,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface SummaryCardProps {
   user: PublicUser;
-  bankHolidays: string[];
+  bankHolidays: BankHolidayEntry[];
   isOwnProfile: boolean;
 }
 
@@ -128,7 +128,8 @@ function SingleRingDonut({
 
 export default function SummaryCard({ user, bankHolidays, isOwnProfile }: SummaryCardProps) {
   const [showBreakdown, setShowBreakdown] = useState(false);
-  const summary = calcLeaveSummary(user, bankHolidays);
+  const bankHolidayDates = bankHolidays.map((bh) => bh.date);
+  const summary = calcLeaveSummary(user, bankHolidayDates);
   const activeYa = getActiveYearAllowance(user.yearAllowances);
   const { start: hyStart, end: hyEnd } = getHolidayYearBounds(activeYa?.holidayStartMonth ?? 1);
 

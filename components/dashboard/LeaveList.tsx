@@ -1,13 +1,13 @@
 "use client";
-import type { LeaveEntry, PublicUser } from "@/types";
-import { LeaveType } from "@/types";
+import type { LeaveEntry, PublicUser, BankHolidayEntry } from "@/types";
+import { LeaveType, LeaveDuration } from "@/types";
 import { STATUS_COLORS, SICK_LEAVE_CARD_COLORS } from "@/variables/colours";
-import { countEntryDays } from "@/utils/dateHelpers";
+import { countEntryDays, getEntryDuration } from "@/utils/dateHelpers";
 import { Pencil, Trash2 } from "lucide-react";
 
 interface LeaveListProps {
   user: PublicUser;
-  bankHolidays: string[];
+  bankHolidays: BankHolidayEntry[];
   isOwnProfile: boolean;
   onEdit: (entry: LeaveEntry) => void;
   onDelete: (id: string) => void;
@@ -28,6 +28,7 @@ export default function LeaveList({
   onEdit,
   onDelete,
 }: LeaveListProps) {
+  const bankHolidayDates = bankHolidays.map((bh) => bh.date);
   const sorted = [...user.entries].sort((a, b) => a.startDate.localeCompare(b.startDate));
 
   const title = isOwnProfile ? "My Leave" : `${user.profile.firstName}\u2019s Leave`;
@@ -45,13 +46,13 @@ export default function LeaveList({
       ) : (
         <div className="space-y-2">
           {sorted.map((entry) => {
-            const days = countEntryDays(entry, user.profile.nonWorkingDays, bankHolidays);
-            const daysLabel =
-              entry.halfDay
-                ? entry.halfDayPeriod
-                  ? `0.5d ${entry.halfDayPeriod.toUpperCase()}`
-                  : "0.5d"
-                : `${days}d`;
+            const dur = getEntryDuration(entry);
+            const isHalf = dur !== LeaveDuration.Full;
+            const periodLabel =
+              dur === LeaveDuration.HalfMorning ? "AM" :
+              dur === LeaveDuration.HalfAfternoon ? "PM" : "";
+            const days = countEntryDays(entry, user.profile.nonWorkingDays, bankHolidayDates);
+            const daysLabel = isHalf ? `0.5d ${periodLabel}` : `${days}d`;
             const isSick = entry.type === LeaveType.Sick;
             const statusLabel = isSick
               ? "Sick"
@@ -59,8 +60,8 @@ export default function LeaveList({
             const cardClass = isSick ? SICK_LEAVE_CARD_COLORS : STATUS_COLORS[entry.status];
             const baseNote = entry.notes ?? "–";
             const noteText =
-              entry.halfDay && entry.notes
-                ? `${entry.notes} (${entry.halfDayPeriod?.toUpperCase() ?? ""})`
+              isHalf && entry.notes
+                ? `${entry.notes} (${periodLabel})`
                 : baseNote;
             return (
               <div

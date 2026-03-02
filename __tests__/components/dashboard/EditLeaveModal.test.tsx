@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import React from "react";
 import { FormValidationProvider } from "@/contexts/FormValidationContext";
 import EditLeaveModal from "@/components/dashboard/EditLeaveModal";
-import { LeaveStatus, LeaveType } from "@/types";
+import { LeaveStatus, LeaveType, LeaveDuration } from "@/types";
 import type { LeaveEntry } from "@/types";
 
 // Fix "today" so calendar tests are deterministic
@@ -188,8 +188,7 @@ describe("EditLeaveModal — half-day editing", () => {
     status: LeaveStatus.Approved,
     type: LeaveType.Holiday,
     notes: "Dentist",
-    halfDay: true,
-    halfDayPeriod: "am",
+    duration: LeaveDuration.HalfMorning,
   };
 
   it("pre-selects Half Day AM Duration button for an AM half-day entry", () => {
@@ -199,8 +198,23 @@ describe("EditLeaveModal — half-day editing", () => {
   });
 
   it("pre-selects Half Day PM Duration button for a PM half-day entry", () => {
-    const pmEntry = { ...halfDayEntry, halfDayPeriod: "pm" as const };
+    const pmEntry = { ...halfDayEntry, duration: LeaveDuration.HalfAfternoon };
     renderModal(<EditLeaveModal entry={pmEntry} onClose={jest.fn()} onSave={jest.fn()} />);
+    expect(screen.getByRole("button", { name: "Half Day PM" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("also pre-selects correctly for legacy halfDay/halfDayPeriod entries", () => {
+    const legacyEntry: LeaveEntry = {
+      id: "e-legacy",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      notes: "Legacy",
+      halfDay: true,
+      halfDayPeriod: "pm",
+    };
+    renderModal(<EditLeaveModal entry={legacyEntry} onClose={jest.fn()} onSave={jest.fn()} />);
     expect(screen.getByRole("button", { name: "Half Day PM" })).toHaveAttribute("aria-pressed", "true");
   });
 
@@ -209,17 +223,17 @@ describe("EditLeaveModal — half-day editing", () => {
     expect(screen.getByText("2026-03-09")).toBeInTheDocument();
   });
 
-  it("saves with halfDay=true and halfDayPeriod=am for an AM half-day entry", async () => {
+  it("saves with duration=halfMorning for an AM half-day entry", async () => {
     const user = setup();
     const onSave = jest.fn();
     renderModal(<EditLeaveModal entry={halfDayEntry} onClose={jest.fn()} onSave={onSave} />);
     await user.click(screen.getByRole("button", { name: "Save Changes" }));
     expect(onSave).toHaveBeenCalledWith(
-      expect.objectContaining({ halfDay: true, halfDayPeriod: "am" })
+      expect.objectContaining({ duration: LeaveDuration.HalfMorning })
     );
   });
 
-  it("saves with halfDayPeriod=pm when switched to Half Day PM", async () => {
+  it("saves with duration=halfAfternoon when switched to Half Day PM", async () => {
     const user = setup();
     const onSave = jest.fn();
     renderModal(<EditLeaveModal entry={halfDayEntry} onClose={jest.fn()} onSave={onSave} />);
@@ -228,7 +242,7 @@ describe("EditLeaveModal — half-day editing", () => {
     await user.click(screen.getByRole("button", { name: "2026-03-09" }));
     await user.click(screen.getByRole("button", { name: "Save Changes" }));
     expect(onSave).toHaveBeenCalledWith(
-      expect.objectContaining({ halfDay: true, halfDayPeriod: "pm" })
+      expect.objectContaining({ duration: LeaveDuration.HalfAfternoon })
     );
   });
 

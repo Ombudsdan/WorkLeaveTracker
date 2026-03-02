@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { LeaveStatus, LeaveType } from "@/types";
+import { LeaveStatus, LeaveType, LeaveDuration } from "@/types";
 import type { LeaveEntry } from "@/types";
 import {
   LEAVE_STATUS_ORDER,
@@ -13,6 +13,7 @@ import DateRangePicker from "@/components/DateRangePicker";
 import LeaveOptionPicker from "@/components/LeaveOptionPicker";
 import Button from "@/components/Button";
 import { useFormValidation } from "@/contexts/FormValidationContext";
+import { getEntryDuration } from "@/utils/dateHelpers";
 
 export type DurationType = "full" | "am" | "pm";
 
@@ -22,10 +23,23 @@ export const DURATION_OPTIONS: { value: DurationType; label: string }[] = [
   { value: "pm", label: "Half Day PM" },
 ];
 
-/** Derive the DurationType from an existing LeaveEntry */
+/** Map DurationType UI value to the canonical LeaveDuration enum */
+const DURATION_TYPE_TO_ENUM: Record<DurationType, LeaveDuration> = {
+  full: LeaveDuration.Full,
+  am: LeaveDuration.HalfMorning,
+  pm: LeaveDuration.HalfAfternoon,
+};
+
+/** Map LeaveDuration enum back to the DurationType used in the form */
+function durationEnumToType(d: LeaveDuration): DurationType {
+  if (d === LeaveDuration.HalfMorning) return "am";
+  if (d === LeaveDuration.HalfAfternoon) return "pm";
+  return "full";
+}
+
+/** Derive the DurationType from an existing LeaveEntry (handles legacy data) */
 export function durationFromEntry(entry: LeaveEntry): DurationType {
-  if (!entry.halfDay) return "full";
-  return entry.halfDayPeriod === "am" ? "am" : "pm";
+  return durationEnumToType(getEntryDuration(entry));
 }
 
 export interface LeaveFormInitial {
@@ -120,10 +134,7 @@ export default function LeaveForm({
       status: resolvedStatus,
       type: type as LeaveType,
       notes,
-      ...(isHalfDay && {
-        halfDay: true,
-        halfDayPeriod: duration as "am" | "pm",
-      }),
+      duration: DURATION_TYPE_TO_ENUM[duration],
     });
   }
 

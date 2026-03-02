@@ -298,7 +298,7 @@ describe("AddLeaveModal — half-day toggle", () => {
     expect(screen.queryByText("Time of day")).toBeNull();
   });
 
-  it("saves a Half Day AM entry with halfDay=true and halfDayPeriod=am", async () => {
+  it("saves a Half Day AM entry with duration=halfMorning", async () => {
     const user = setup();
     const onSave = jest.fn();
     renderModal(<AddLeaveModal onClose={jest.fn()} onSave={onSave} />);
@@ -310,8 +310,7 @@ describe("AddLeaveModal — half-day toggle", () => {
     await user.click(screen.getByRole("button", { name: "Save" }));
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({
-        halfDay: true,
-        halfDayPeriod: "am",
+        duration: "halfMorning",
         startDate: "2026-03-09",
         endDate: "2026-03-09",
         notes: "Dentist",
@@ -319,7 +318,7 @@ describe("AddLeaveModal — half-day toggle", () => {
     );
   });
 
-  it("saves a Half Day PM entry with halfDay=true and halfDayPeriod=pm", async () => {
+  it("saves a Half Day PM entry with duration=halfAfternoon", async () => {
     const user = setup();
     const onSave = jest.fn();
     renderModal(<AddLeaveModal onClose={jest.fn()} onSave={onSave} />);
@@ -331,8 +330,7 @@ describe("AddLeaveModal — half-day toggle", () => {
     await user.click(screen.getByRole("button", { name: "Save" }));
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({
-        halfDay: true,
-        halfDayPeriod: "pm",
+        duration: "halfAfternoon",
         startDate: "2026-03-09",
         endDate: "2026-03-09",
         notes: "Physio",
@@ -340,7 +338,7 @@ describe("AddLeaveModal — half-day toggle", () => {
     );
   });
 
-  it("does not include halfDay in the saved entry for Full day(s)", async () => {
+  it("saves a full-day entry with duration=full", async () => {
     const user = setup();
     const onSave = jest.fn();
     renderModal(<AddLeaveModal onClose={jest.fn()} onSave={onSave} />);
@@ -351,8 +349,7 @@ describe("AddLeaveModal — half-day toggle", () => {
     await user.click(screen.getByRole("button", { name: /Planned/i }));
     await user.click(screen.getByRole("button", { name: "Save" }));
     const call = onSave.mock.calls[0][0];
-    expect(call.halfDay).toBeUndefined();
-    expect(call.halfDayPeriod).toBeUndefined();
+    expect(call.duration).toBe("full");
   });
 });
 

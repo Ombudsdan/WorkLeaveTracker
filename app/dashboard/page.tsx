@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import type { PublicUser, LeaveEntry } from "@/types";
+import type { PublicUser, LeaveEntry, BankHolidayEntry } from "@/types";
 import NavBar from "@/components/NavBar";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import SessionExpiredScreen from "@/components/SessionExpiredScreen";
@@ -28,7 +28,7 @@ export default function DashboardPage() {
 
   const [currentUser, setCurrentUser] = useState<PublicUser | null>(null);
   const [allUsers, setAllUsers] = useState<PublicUser[]>([]);
-  const [bankHolidays, setBankHolidays] = useState<string[]>([]);
+  const [bankHolidays, setBankHolidays] = useState<BankHolidayEntry[]>([]);
   const [viewingUserId, setViewingUserId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingEntry, setEditingEntry] = useState<LeaveEntry | null>(null);
@@ -68,17 +68,18 @@ export default function DashboardPage() {
         for (let attempt = 0; attempt <= 4; attempt++) {
           if (attempt > 0)
             await new Promise<void>((r) => setTimeout(r, DASHBOARD_RETRY_DELAY_MS * attempt));
-          const [rawUsers, holidays] = await Promise.all([
-            usersController.fetchAll(),
-            holidaysController.fetchBankHolidays(),
-          ]);
+          const rawUsers = await usersController.fetchAll();
           if (cancelled) return;
-          const result = applyUserData(
-            Array.isArray(rawUsers) ? rawUsers : [],
-            holidays,
-            sessionEmail,
-            sessionId
+          const users = Array.isArray(rawUsers) ? rawUsers : [];
+          // Find the current user so we can request their country's bank holidays
+          const me = users.find(
+            (u) =>
+              (sessionId != null && u.id === sessionId) ||
+              (sessionEmail != null && u.profile.email === sessionEmail)
           );
+          const holidays = await holidaysController.fetchBankHolidays(me?.profile.country);
+          if (cancelled) return;
+          const result = applyUserData(users, holidays, sessionEmail, sessionId);
           // Keep loading=true if we're redirecting so we never flash the error UI.
           if (result === "redirected") return;
           if (result === "found") break;
@@ -241,7 +242,7 @@ export default function DashboardPage() {
    */
   function applyUserData(
     users: PublicUser[],
-    holidays: string[],
+    holidays: BankHolidayEntry[],
     sessionEmail: string | null | undefined,
     sessionId: string | null | undefined
   ): "redirected" | "found" | "not_found" {

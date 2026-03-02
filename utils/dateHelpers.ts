@@ -1,4 +1,5 @@
 import type { LeaveEntry, YearAllowance } from "@/types";
+import { LeaveDuration } from "@/types";
 
 /**
  * Count working days between two ISO date strings (inclusive).
@@ -104,6 +105,22 @@ export function toIsoDate(date: Date): string {
 }
 
 /**
+ * Normalise the duration of a leave entry to a `LeaveDuration` value.
+ *
+ * Handles three data generations:
+ *  1. New entries: use the `duration` field directly.
+ *  2. Old entries with `halfDay`/`halfDayPeriod` fields.
+ *  3. Legacy entries with no half-day information → `Full`.
+ */
+export function getEntryDuration(entry: LeaveEntry): LeaveDuration {
+  if (entry.duration) return entry.duration;
+  if (entry.halfDay) {
+    return entry.halfDayPeriod === "am" ? LeaveDuration.HalfMorning : LeaveDuration.HalfAfternoon;
+  }
+  return LeaveDuration.Full;
+}
+
+/**
  * Count the number of days an entry consumes, respecting half-days.
  * Half-day entries always count as 0.5 regardless of the date range.
  * Full-day entries use countWorkingDays.
@@ -113,6 +130,7 @@ export function countEntryDays(
   nonWorkingDays: number[],
   bankHolidays: string[]
 ): number {
-  if (entry.halfDay) return 0.5;
+  const duration = getEntryDuration(entry);
+  if (duration !== LeaveDuration.Full) return 0.5;
   return countWorkingDays(entry.startDate, entry.endDate, nonWorkingDays, bankHolidays);
 }

@@ -17,6 +17,25 @@ export enum LeaveType {
   Other = "other",
 }
 
+/** Duration of a leave entry. Replaces the deprecated halfDay/halfDayPeriod fields. */
+export enum LeaveDuration {
+  Full = "full",
+  HalfMorning = "halfMorning",
+  HalfAfternoon = "halfAfternoon",
+}
+
+/** A UK bank holiday with its name, used for display and country-specific filtering. */
+export interface BankHolidayEntry {
+  date: string;
+  title: string;
+}
+
+/**
+ * UK country division used to select the correct regional bank holidays.
+ * Matches the division keys returned by the UK government bank holidays API.
+ */
+export type UkCountry = "england-and-wales" | "scotland" | "northern-ireland";
+
 export interface LeaveEntry {
   id: string;
   startDate: string;
@@ -24,9 +43,11 @@ export interface LeaveEntry {
   status: LeaveStatus;
   type: LeaveType;
   notes?: string;
-  /** True when the entry covers only half a working day */
+  /** Duration of the leave entry. Use this in preference to the deprecated fields below. */
+  duration?: LeaveDuration;
+  /** @deprecated Use duration instead */
   halfDay?: boolean;
-  /** Which half of the day — only meaningful when halfDay is true */
+  /** @deprecated Use duration instead */
   halfDayPeriod?: "am" | "pm";
 }
 
@@ -62,6 +83,8 @@ export interface UserProfile {
   pendingPinRequestsSent?: string[];
   /** IDs of users who have sent me a pending connection request */
   pendingPinRequestsReceived?: string[];
+  /** UK country for country-specific bank holidays */
+  country?: UkCountry;
 }
 
 export interface AppUser {

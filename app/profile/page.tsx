@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, type FormEvent } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import type { PublicUser, YearAllowance } from "@/types";
+import type { PublicUser, YearAllowance, UkCountry } from "@/types";
 import { CheckCircle, Check } from "lucide-react";
 import NavBar from "@/components/NavBar";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -17,6 +17,12 @@ import { usersController } from "@/controllers/usersController";
 import YearAllowanceModal from "@/components/dashboard/YearAllowanceModal";
 import { getActiveYearAllowance } from "@/utils/dateHelpers";
 
+const UK_COUNTRIES: { value: UkCountry; label: string }[] = [
+  { value: "england-and-wales", label: "England & Wales" },
+  { value: "scotland", label: "Scotland" },
+  { value: "northern-ireland", label: "Northern Ireland" },
+];
+
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
 /** How long to wait before retrying when the user record is not found. */
 const PROFILE_RETRY_DELAY_MS = 400;
@@ -30,6 +36,7 @@ export default function ProfilePage() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [workingDays, setWorkingDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [country, setCountry] = useState<UkCountry | "">("");
   const [yearAllowances, setYearAllowances] = useState<YearAllowance[]>([]);
   const [allUsers, setAllUsers] = useState<PublicUser[]>([]);
   const [pinnedUserIds, setPinnedUserIds] = useState<string[]>([]);
@@ -187,6 +194,33 @@ export default function ProfilePage() {
               />
               <FormField id="email" label="Email" type="email" value={email} readOnly />
             </div>
+          </section>
+
+          {/* UK Country */}
+          <section>
+            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">
+              Bank Holidays Region
+            </h3>
+            <div className="flex gap-2 flex-wrap">
+              {UK_COUNTRIES.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setCountry(country === opt.value ? "" : opt.value)}
+                  aria-pressed={country === opt.value}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition cursor-pointer ${
+                    country === opt.value
+                      ? "bg-indigo-600 text-white border-indigo-600"
+                      : "bg-white text-gray-700 border-gray-300 hover:border-indigo-400 hover:text-indigo-600"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-gray-400 mt-1">
+              Select your region to show the correct UK bank holidays
+            </p>
           </section>
 
           {/* Working week */}
@@ -383,6 +417,7 @@ export default function ProfilePage() {
       email,
       nonWorkingDays,
       pinnedUserIds,
+      ...(country && { country }),
     });
 
     if (!updated) {
@@ -450,5 +485,6 @@ export default function ProfilePage() {
     setWorkingDays(ALL_DAYS.filter((d) => !me.profile.nonWorkingDays.includes(d)));
     setYearAllowances(me.yearAllowances ?? []);
     setPinnedUserIds(me.profile.pinnedUserIds ?? []);
+    setCountry(me.profile.country ?? "");
   }
 }

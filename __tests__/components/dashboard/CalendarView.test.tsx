@@ -1,8 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import CalendarView from "@/components/dashboard/CalendarView";
-import { LeaveStatus, LeaveType } from "@/types";
-import type { PublicUser } from "@/types";
+import { LeaveStatus, LeaveType, LeaveDuration } from "@/types";
+import type { PublicUser, BankHolidayEntry } from "@/types";
 
 // Fix "today" so tests are deterministic
 beforeEach(() => {
@@ -32,6 +32,11 @@ const alice: PublicUser = {
   ],
   entries: [],
 };
+
+/** Helper to wrap a date string into the BankHolidayEntry shape expected by the component */
+function bh(date: string, title = "Bank Holiday"): BankHolidayEntry {
+  return { date, title };
+}
 
 describe("CalendarView — header and navigation", () => {
   it("renders the current month and year initially", () => {
@@ -147,17 +152,22 @@ describe("CalendarView — leave entry display", () => {
 
 describe("CalendarView — bank holiday indicator", () => {
   it("applies the bank holiday class to a bank holiday cell with no entry", () => {
-    const { container } = render(<CalendarView user={alice} bankHolidays={["2026-03-02"]} />);
+    const { container } = render(<CalendarView user={alice} bankHolidays={[bh("2026-03-02")]} />);
     // bg-purple-100 is CALENDAR_CELL_BANK_HOLIDAY
     expect(container.querySelector(".bg-purple-100")).toBeInTheDocument();
   });
 
-  it("shows the 'BH' label on a bank holiday cell with no entry", () => {
-    render(<CalendarView user={alice} bankHolidays={["2026-03-02"]} />);
+  it("shows the bank holiday name on a bank holiday cell with no entry", () => {
+    render(<CalendarView user={alice} bankHolidays={[bh("2026-03-02", "Spring Bank Holiday")]} />);
+    expect(screen.getByText("Spring Bank Holiday")).toBeInTheDocument();
+  });
+
+  it("falls back to 'BH' when the bank holiday entry has no title", () => {
+    render(<CalendarView user={alice} bankHolidays={[{ date: "2026-03-02", title: "BH" }]} />);
     expect(screen.getByText("BH")).toBeInTheDocument();
   });
 
-  it("does NOT show the 'BH' label when the bank holiday date has a leave entry", () => {
+  it("does NOT show the bank holiday name when the bank holiday date has a leave entry", () => {
     const userWithEntry: PublicUser = {
       ...alice,
       entries: [
@@ -170,8 +180,8 @@ describe("CalendarView — bank holiday indicator", () => {
         },
       ],
     };
-    render(<CalendarView user={userWithEntry} bankHolidays={["2026-03-02"]} />);
-    expect(screen.queryByText("BH")).toBeNull();
+    render(<CalendarView user={userWithEntry} bankHolidays={[bh("2026-03-02", "Spring Bank Holiday")]} />);
+    expect(screen.queryByText("Spring Bank Holiday")).toBeNull();
   });
 });
 
@@ -460,8 +470,7 @@ describe("CalendarView — half-day cells", () => {
       endDate: "2026-03-09",
       status: LeaveStatus.Approved,
       type: LeaveType.Holiday,
-      halfDay: true,
-      halfDayPeriod: "am" as const,
+      duration: LeaveDuration.HalfMorning,
       notes: "Dentist",
     };
     render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
@@ -476,12 +485,26 @@ describe("CalendarView — half-day cells", () => {
       endDate: "2026-03-09",
       status: LeaveStatus.Approved,
       type: LeaveType.Holiday,
-      halfDay: true,
-      halfDayPeriod: "pm" as const,
+      duration: LeaveDuration.HalfAfternoon,
       notes: "Physio",
     };
     render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
     expect(screen.getByText("Physio (PM)")).toBeInTheDocument();
+  });
+
+  it("also handles legacy halfDay/halfDayPeriod fields for backward compat", () => {
+    const entry = {
+      id: "e-legacy",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      halfDay: true,
+      halfDayPeriod: "am" as const,
+      notes: "Legacy AM",
+    };
+    render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
+    expect(screen.getByText("Legacy AM (AM)")).toBeInTheDocument();
   });
 
   it("shows two half-days on the same day as split cells (AM top, PM bottom)", () => {
@@ -491,8 +514,7 @@ describe("CalendarView — half-day cells", () => {
       endDate: "2026-03-09",
       status: LeaveStatus.Approved,
       type: LeaveType.Holiday,
-      halfDay: true,
-      halfDayPeriod: "am" as const,
+      duration: LeaveDuration.HalfMorning,
       notes: "Morning",
     };
     const pmEntry = {
@@ -501,8 +523,7 @@ describe("CalendarView — half-day cells", () => {
       endDate: "2026-03-09",
       status: LeaveStatus.Planned,
       type: LeaveType.Holiday,
-      halfDay: true,
-      halfDayPeriod: "pm" as const,
+      duration: LeaveDuration.HalfAfternoon,
       notes: "Afternoon",
     };
     render(
@@ -523,8 +544,7 @@ describe("CalendarView — half-day popover shows duration label", () => {
       endDate: "2026-03-09",
       status: LeaveStatus.Approved,
       type: LeaveType.Holiday,
-      halfDay: true,
-      halfDayPeriod: "am" as const,
+      duration: LeaveDuration.HalfMorning,
       notes: "Half day AM",
     };
     render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
@@ -541,8 +561,7 @@ describe("CalendarView — half-day popover shows duration label", () => {
       endDate: "2026-03-09",
       status: LeaveStatus.Approved,
       type: LeaveType.Holiday,
-      halfDay: true,
-      halfDayPeriod: "pm" as const,
+      duration: LeaveDuration.HalfAfternoon,
       notes: "Half day PM",
     };
     render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
@@ -576,8 +595,7 @@ describe("CalendarView — getCellLayout full-day + half-day placement", () => {
       endDate: "2026-03-09",
       status: LeaveStatus.Approved,
       type: LeaveType.Holiday,
-      halfDay: true,
-      halfDayPeriod: "am" as const,
+      duration: LeaveDuration.HalfMorning,
       notes: "AM",
     };
     const fullDay = {
@@ -603,8 +621,7 @@ describe("CalendarView — getCellLayout full-day + half-day placement", () => {
       endDate: "2026-03-09",
       status: LeaveStatus.Approved,
       type: LeaveType.Holiday,
-      halfDay: true,
-      halfDayPeriod: "pm" as const,
+      duration: LeaveDuration.HalfAfternoon,
       notes: "PM",
     };
     const fullDay = {
@@ -661,8 +678,7 @@ describe("CalendarView — getCellLayout status priority ordering", () => {
       endDate: "2026-03-09",
       status: LeaveStatus.Requested,
       type: LeaveType.Holiday,
-      halfDay: true,
-      halfDayPeriod: "am" as const,
+      duration: LeaveDuration.HalfMorning,
       notes: "RequestedAM",
     };
     const planned = {
@@ -671,8 +687,7 @@ describe("CalendarView — getCellLayout status priority ordering", () => {
       endDate: "2026-03-09",
       status: LeaveStatus.Planned,
       type: LeaveType.Holiday,
-      halfDay: true,
-      halfDayPeriod: "am" as const,
+      duration: LeaveDuration.HalfMorning,
       notes: "PlannedAM",
     };
     const { container } = render(
