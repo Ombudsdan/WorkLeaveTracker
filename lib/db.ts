@@ -61,7 +61,7 @@ function getKvToken(): string | undefined {
 }
 
 /** Returns true when Vercel KV is configured and should be used. */
-function useKv(): boolean {
+function isKvEnabled(): boolean {
   return Boolean(getKvUrl() && getKvToken());
 }
 
@@ -103,7 +103,7 @@ async function kvSmembers(key: string): Promise<string[]> {
 // ---------------------------------------------------------------------------
 
 export async function findUserByEmail(email: string): Promise<AppUser | undefined> {
-  if (useKv()) {
+  if (isKvEnabled()) {
     const id = await kvGet<string>(`email:${email}`);
     if (!id) return undefined;
     return (await kvGet<AppUser>(`user:${id}`)) ?? undefined;
@@ -112,14 +112,14 @@ export async function findUserByEmail(email: string): Promise<AppUser | undefine
 }
 
 export async function findUserById(id: string): Promise<AppUser | undefined> {
-  if (useKv()) {
+  if (isKvEnabled()) {
     return (await kvGet<AppUser>(`user:${id}`)) ?? undefined;
   }
   return readDbFile().users.find((u) => u.id === id);
 }
 
 export async function listAllUsers(): Promise<AppUser[]> {
-  if (useKv()) {
+  if (isKvEnabled()) {
     const ids = await kvSmembers("user_ids");
     const users = await Promise.all(ids.map((id) => kvGet<AppUser>(`user:${id}`)));
     return users.filter((u): u is AppUser => u !== null);
@@ -128,7 +128,7 @@ export async function listAllUsers(): Promise<AppUser[]> {
 }
 
 export async function updateUser(id: string, updates: Partial<AppUser>): Promise<AppUser | null> {
-  if (useKv()) {
+  if (isKvEnabled()) {
     const existing = await kvGet<AppUser>(`user:${id}`);
     if (!existing) return null;
     const updated: AppUser = { ...existing, ...updates };
@@ -144,7 +144,7 @@ export async function updateUser(id: string, updates: Partial<AppUser>): Promise
 }
 
 export async function addUser(user: AppUser): Promise<void> {
-  if (useKv()) {
+  if (isKvEnabled()) {
     await kvSet(`user:${user.id}`, user);
     await kvSet(`email:${user.profile.email}`, user.id);
     await kvSadd("user_ids", user.id);
@@ -156,7 +156,7 @@ export async function addUser(user: AppUser): Promise<void> {
 }
 
 export async function addEntry(userId: string, entry: LeaveEntry): Promise<boolean> {
-  if (useKv()) {
+  if (isKvEnabled()) {
     const user = await kvGet<AppUser>(`user:${userId}`);
     if (!user) return false;
     user.entries.push(entry);
@@ -176,7 +176,7 @@ export async function updateEntry(
   entryId: string,
   updates: Partial<LeaveEntry>
 ): Promise<boolean> {
-  if (useKv()) {
+  if (isKvEnabled()) {
     const user = await kvGet<AppUser>(`user:${userId}`);
     if (!user) return false;
     const idx = user.entries.findIndex((e) => e.id === entryId);
@@ -196,7 +196,7 @@ export async function updateEntry(
 }
 
 export async function deleteEntry(userId: string, entryId: string): Promise<boolean> {
-  if (useKv()) {
+  if (isKvEnabled()) {
     const user = await kvGet<AppUser>(`user:${userId}`);
     if (!user) return false;
     const before = user.entries.length;
