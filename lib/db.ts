@@ -96,10 +96,7 @@ export async function listAllUsers(): Promise<AppUser[]> {
   return readDbFile().users;
 }
 
-export async function updateUser(
-  id: string,
-  updates: Partial<AppUser>
-): Promise<AppUser | null> {
+export async function updateUser(id: string, updates: Partial<AppUser>): Promise<AppUser | null> {
   if (useKv()) {
     const existing = await kvGet<AppUser>(`user:${id}`);
     if (!existing) return null;
