@@ -196,3 +196,32 @@ describe("SummaryCard — breakdown Remaining row readability", () => {
     expect(parentDiv?.className).toContain("text-gray-900");
   });
 });
+
+describe("SummaryCard — donut uses total allowance as ring denominator", () => {
+  it("does not fill the full ring when only some leave is used (gray track remains visible)", () => {
+    // Alice has 25 days total, 5 approved — ring should show 5/25 = 20% colored
+    // The gray track circle should still be present (not covered by a full-segment circle)
+    const userWith5Days: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e-test",
+          startDate: "2026-03-09",
+          endDate: "2026-03-13",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    const { container } = render(
+      <SummaryCard user={userWith5Days} bankHolidays={[]} isOwnProfile={true} />
+    );
+    const svg = container.querySelector("svg");
+    expect(svg).toBeInTheDocument();
+    // The track circle should be present; path segments should not fill 100%
+    // (a full 100% segment renders as a circle, partial as a path)
+    const paths = svg!.querySelectorAll("path");
+    // 5/25 = 20%, so the approved segment is a path (< 100%)
+    expect(paths.length).toBeGreaterThan(0);
+  });
+});

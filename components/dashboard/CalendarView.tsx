@@ -1,12 +1,13 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import type { LeaveEntry, PublicUser } from "@/types";
-import { LeaveStatus } from "@/types";
+import { LeaveStatus, LeaveType } from "@/types";
 import {
   CALENDAR_CELL_BANK_HOLIDAY,
   CALENDAR_CELL_NON_WORKING,
   CALENDAR_CELL_DEFAULT,
   STATUS_COLORS,
+  SICK_LEAVE_CARD_COLORS,
   getCalendarEntryClass,
 } from "@/variables/colours";
 import { MONTH_NAMES_SHORT, DAY_NAMES_SHORT } from "@/variables/calendar";
@@ -297,7 +298,7 @@ export default function CalendarView({
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={prevMonth}
-          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600"
+          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer"
           aria-label="Previous month"
         >
           <ChevronLeft size={18} />
@@ -309,7 +310,7 @@ export default function CalendarView({
           {isOwnProfile && onAdd && (
             <button
               onClick={onAdd}
-              className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-4 py-1.5 rounded-lg hover:bg-indigo-700 transition font-medium"
+              className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-4 py-1.5 rounded-lg hover:bg-indigo-700 transition font-medium cursor-pointer"
             >
               <Plus size={14} />
               Add Leave
@@ -317,7 +318,7 @@ export default function CalendarView({
           )}
           <button
             onClick={nextMonth}
-            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600"
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer"
             aria-label="Next month"
           >
             <ChevronRight size={18} />
@@ -373,16 +374,27 @@ export default function CalendarView({
         >
           <button
             onClick={() => setPopover(null)}
-            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 cursor-pointer"
             aria-label="Close"
           >
             <X size={12} />
           </button>
 
-          {/* Status badge */}
-          <div className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold mb-2 border ${STATUS_COLORS[popover.entry.status]}`}>
-            {popover.entry.status.charAt(0).toUpperCase() + popover.entry.status.slice(1)}
-          </div>
+          {/* Status / type badge */}
+          {(() => {
+            const isSick = popover.entry.type === LeaveType.Sick;
+            const badgeClass = isSick
+              ? SICK_LEAVE_CARD_COLORS
+              : STATUS_COLORS[popover.entry.status];
+            const badgeLabel = isSick
+              ? "Sick Leave"
+              : popover.entry.status.charAt(0).toUpperCase() + popover.entry.status.slice(1);
+            return (
+              <div className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold mb-2 border ${badgeClass}`}>
+                {badgeLabel}
+              </div>
+            );
+          })()}
 
           <p className="font-medium text-gray-800 mb-1 pr-4">
             {getNoteLabel(popover.entry) || "No description"}
@@ -390,16 +402,12 @@ export default function CalendarView({
 
           <p className="text-gray-500 mb-1">
             {formatDateRange(popover.entry.startDate, popover.entry.endDate)}
-            {popover.entry.halfDay && (
-              <span className="ml-1 text-indigo-600 font-medium">
-                ({popover.entry.halfDayPeriod?.toUpperCase()})
-              </span>
-            )}
           </p>
 
           <p className="text-gray-500 mb-2">
-            {countEntryDays(popover.entry, user.profile.nonWorkingDays, bankHolidays)}{" "}
-            working day(s)
+            {popover.entry.halfDay
+              ? `Half day (${popover.entry.halfDayPeriod?.toUpperCase()})`
+              : `${countEntryDays(popover.entry, user.profile.nonWorkingDays, bankHolidays)} working day(s)`}
           </p>
 
           {isOwnProfile && (onEdit || onDelete) && (
@@ -407,7 +415,7 @@ export default function CalendarView({
               {onEdit && (
                 <button
                   onClick={() => { onEdit(popover.entry); setPopover(null); }}
-                  className="flex items-center gap-1 text-indigo-600 hover:text-indigo-800 font-medium"
+                  className="flex items-center gap-1 text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer"
                   aria-label="Edit"
                 >
                   <Pencil size={11} /> Edit
@@ -416,7 +424,7 @@ export default function CalendarView({
               {onDelete && (
                 <button
                   onClick={() => { onDelete(popover.entry.id); setPopover(null); }}
-                  className="flex items-center gap-1 text-red-500 hover:text-red-700 font-medium"
+                  className="flex items-center gap-1 text-red-500 hover:text-red-700 font-medium cursor-pointer"
                   aria-label="Delete"
                 >
                   <Trash2 size={11} /> Delete

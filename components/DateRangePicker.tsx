@@ -127,7 +127,7 @@ export default function DateRangePicker({
             type="button"
             onClick={prevMonth}
             aria-label="Previous month"
-            className="p-1 rounded hover:bg-gray-100 text-gray-600"
+            className="p-1 rounded hover:bg-gray-100 text-gray-600 cursor-pointer"
           >
             <ChevronLeft size={14} />
           </button>
@@ -138,7 +138,7 @@ export default function DateRangePicker({
             type="button"
             onClick={nextMonth}
             aria-label="Next month"
-            className="p-1 rounded hover:bg-gray-100 text-gray-600"
+            className="p-1 rounded hover:bg-gray-100 text-gray-600 cursor-pointer"
           >
             <ChevronRight size={14} />
           </button>

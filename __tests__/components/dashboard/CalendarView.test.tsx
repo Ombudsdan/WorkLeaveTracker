@@ -514,8 +514,8 @@ describe("CalendarView — half-day cells", () => {
   });
 });
 
-describe("CalendarView — half-day popover shows 0.5 working days", () => {
-  it("shows 0.5 working day(s) for a half-day entry in the popover", async () => {
+describe("CalendarView — half-day popover shows duration label", () => {
+  it("shows 'Half day (AM)' for an AM half-day entry in the popover", async () => {
     const user = setup();
     const entry = {
       id: "e-hd-pop",
@@ -528,10 +528,43 @@ describe("CalendarView — half-day popover shows 0.5 working days", () => {
       notes: "Half day AM",
     };
     render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
-    // Click the day cell (9 is inside the coloured half-day cell area)
     await user.click(screen.getByText("Half day AM (AM)"));
     expect(screen.getByRole("tooltip")).toBeInTheDocument();
-    expect(screen.getByText(/0\.5 working day/i)).toBeInTheDocument();
+    expect(screen.getByText("Half day (AM)")).toBeInTheDocument();
+  });
+
+  it("shows 'Half day (PM)' for a PM half-day entry in the popover", async () => {
+    const user = setup();
+    const entry = {
+      id: "e-hd-pop-pm",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      halfDay: true,
+      halfDayPeriod: "pm" as const,
+      notes: "Half day PM",
+    };
+    render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
+    await user.click(screen.getByText("Half day PM (PM)"));
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    expect(screen.getByText("Half day (PM)")).toBeInTheDocument();
+  });
+
+  it("shows working day count for a full-day entry in the popover", async () => {
+    const user = setup();
+    const entry = {
+      id: "e-full-pop",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      notes: "Full day",
+    };
+    render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
+    await user.click(screen.getByText("9"));
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    expect(screen.getByText(/working day/i)).toBeInTheDocument();
   });
 });
 
@@ -649,5 +682,57 @@ describe("CalendarView — getCellLayout status priority ordering", () => {
     expect(screen.getByText("PlannedAM (AM)")).toBeInTheDocument();
     const allText = container.textContent ?? "";
     expect(allText.indexOf("RequestedAM")).toBeLessThan(allText.indexOf("PlannedAM"));
+  });
+});
+
+describe("CalendarView — sick leave popover badge", () => {
+  it("shows 'Sick Leave' badge in the popover for a sick-leave entry", async () => {
+    const user = setup();
+    const entry = {
+      id: "e-sick-pop",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Sick,
+      notes: "Sick day",
+    };
+    render(
+      <CalendarView
+        user={{ ...alice, entries: [entry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    await user.click(screen.getByText("9"));
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    expect(screen.getByText("Sick Leave")).toBeInTheDocument();
+  });
+
+  it("does NOT show 'Approved' badge for a sick-leave entry", async () => {
+    const user = setup();
+    const entry = {
+      id: "e-sick-pop2",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Sick,
+      notes: "Cold",
+    };
+    render(
+      <CalendarView
+        user={{ ...alice, entries: [entry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    await user.click(screen.getByText("9"));
+    // The badge should say "Sick Leave", not "Approved"
+    const tooltip = screen.getByRole("tooltip");
+    expect(tooltip).not.toHaveTextContent("Approved");
+    expect(tooltip).toHaveTextContent("Sick Leave");
   });
 });

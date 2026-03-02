@@ -1,6 +1,7 @@
 "use client";
 import type { LeaveEntry, PublicUser } from "@/types";
-import { STATUS_COLORS } from "@/variables/colours";
+import { LeaveType } from "@/types";
+import { STATUS_COLORS, SICK_LEAVE_CARD_COLORS } from "@/variables/colours";
 import { countEntryDays } from "@/utils/dateHelpers";
 import { Pencil, Trash2 } from "lucide-react";
 
@@ -46,7 +47,11 @@ export default function LeaveList({
           {sorted.map((entry) => {
             const days = countEntryDays(entry, user.profile.nonWorkingDays, bankHolidays);
             const daysLabel = days === 0.5 ? "0.5d" : `${days}d`;
-            const statusLabel = entry.status.charAt(0).toUpperCase() + entry.status.slice(1);
+            const isSick = entry.type === LeaveType.Sick;
+            const statusLabel = isSick
+              ? "Sick"
+              : entry.status.charAt(0).toUpperCase() + entry.status.slice(1);
+            const cardClass = isSick ? SICK_LEAVE_CARD_COLORS : STATUS_COLORS[entry.status];
             const baseNote = entry.notes ?? "–";
             const noteText =
               entry.halfDay && entry.notes
@@ -55,7 +60,7 @@ export default function LeaveList({
             return (
               <div
                 key={entry.id}
-                className={`border rounded-lg p-2 text-xs ${STATUS_COLORS[entry.status]}`}
+                className={`border rounded-lg p-2 text-xs ${cardClass}`}
               >
                 {/* Line 1: Reason (left) | Status (right) */}
                 <div className="flex items-center justify-between">
@@ -73,14 +78,14 @@ export default function LeaveList({
                       <button
                         onClick={() => onEdit(entry)}
                         aria-label="Edit"
-                        className="hover:opacity-70"
+                        className="hover:opacity-70 cursor-pointer"
                       >
                         <Pencil size={12} />
                       </button>
                       <button
                         onClick={() => onDelete(entry.id)}
                         aria-label="Delete"
-                        className="hover:opacity-70 text-red-600"
+                        className="hover:opacity-70 text-red-600 cursor-pointer"
                       >
                         <Trash2 size={12} />
                       </button>

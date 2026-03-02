@@ -318,3 +318,54 @@ describe("LeaveList — half-day entries", () => {
     expect(screen.getByText("Physio (PM)")).toBeInTheDocument();
   });
 });
+
+describe("LeaveList — sick leave entries", () => {
+  const sickEntry: LeaveEntry = {
+    id: "e-sick",
+    startDate: "2026-03-10",
+    endDate: "2026-03-10",
+    status: LeaveStatus.Approved,
+    type: LeaveType.Sick,
+    notes: "Cold",
+  };
+
+  it("shows sick leave entries in the list", () => {
+    render(
+      <LeaveList
+        user={{ ...alice, entries: [sickEntry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    expect(screen.getByText("Cold")).toBeInTheDocument();
+  });
+
+  it("shows 'Sick' label (not 'Approved') for a sick-leave entry", () => {
+    render(
+      <LeaveList
+        user={{ ...alice, entries: [sickEntry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    expect(screen.getByText("Sick")).toBeInTheDocument();
+    expect(screen.queryByText("Approved")).toBeNull();
+  });
+
+  it("renders sick entry with red card styling (bg-red-100)", () => {
+    const { container } = render(
+      <LeaveList
+        user={{ ...alice, entries: [sickEntry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    expect(container.querySelector(".bg-red-100")).toBeInTheDocument();
+  });
+});

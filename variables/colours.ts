@@ -21,6 +21,9 @@ export const CALENDAR_COLORS: Record<LeaveStatus, string> = {
   [LeaveStatus.Approved]: "bg-green-200 text-green-800",
 };
 
+/** Tailwind classes for sick-leave entries in card/list/badge context (border + bg) */
+export const SICK_LEAVE_CARD_COLORS = "bg-red-100 text-red-800 border-red-300";
+
 /** Calendar cell class for sick-leave entries (overrides status colour) */
 export const CALENDAR_CELL_SICK_LEAVE = "bg-red-200 text-red-800";
 

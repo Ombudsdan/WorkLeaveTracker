@@ -134,13 +134,13 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
 
   const remaining = Math.max(0, summary.remaining);
 
-  // Single ring: approved → requested → planned (ordered as specified)
+  // Single ring: approved → requested → planned; denominator is total allowance
+  // so the gray track naturally shows the remaining unused portion
   const ringSegments: DonutSegment[] = [
     { value: summary.approved, color: DONUT_COLORS.approved },
     { value: summary.requested, color: DONUT_COLORS.requested },
     { value: summary.planned, color: DONUT_COLORS.planned },
   ];
-  const ringTotal = summary.approved + summary.requested + summary.planned;
 
   const statusRows: { label: string; status: LeaveStatus; count: number }[] = [
     { label: "Approved", status: LeaveStatus.Approved, count: summary.approved },
@@ -191,7 +191,7 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
       <div className="flex items-center gap-4 mb-4">
         <SingleRingDonut
           segments={ringSegments}
-          total={ringTotal || 1}
+          total={summary.total || 1}
           centerValue={remaining}
         />
         <div className="flex-1 space-y-1.5">
@@ -211,7 +211,7 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
       <button
         type="button"
         onClick={() => setShowBreakdown((v) => !v)}
-        className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+        className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors cursor-pointer"
         aria-expanded={showBreakdown}
       >
         {showBreakdown ? <ChevronUp size={12} /> : <ChevronDown size={12} />}

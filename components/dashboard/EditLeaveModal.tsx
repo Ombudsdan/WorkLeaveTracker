@@ -58,24 +58,37 @@ function EditLeaveModalInner({ entry, onClose, onSave }: EditLeaveModalProps) {
       <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
         <h3 className="font-bold text-gray-800 mb-4">Edit Leave</h3>
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          {isHalfDay ? (
+            /* Half-day edit: single date + AM/PM picker */
             <FormField
-              id="edit-startDate"
-              label="Start Date"
+              id="edit-date"
+              label="Date"
               type="date"
               value={startDate}
-              onChange={(v) => setStartDate(v)}
+              onChange={(v) => { setStartDate(v); setEndDate(v); }}
               required
             />
-            <FormField
-              id="edit-endDate"
-              label="End Date"
-              type="date"
-              value={endDate}
-              onChange={(v) => setEndDate(v)}
-              required
-            />
-          </div>
+          ) : (
+            /* Full-day edit: start + end date grid */
+            <div className="grid grid-cols-2 gap-3">
+              <FormField
+                id="edit-startDate"
+                label="Start Date"
+                type="date"
+                value={startDate}
+                onChange={(v) => setStartDate(v)}
+                required
+              />
+              <FormField
+                id="edit-endDate"
+                label="End Date"
+                type="date"
+                value={endDate}
+                onChange={(v) => setEndDate(v)}
+                required
+              />
+            </div>
+          )}
 
           {/* Reason — required */}
           <FormField

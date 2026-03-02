@@ -145,3 +145,65 @@ describe("EditLeaveModal — onClose", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("EditLeaveModal — half-day editing", () => {
+  const halfDayEntry: LeaveEntry = {
+    id: "e-hd",
+    startDate: "2026-03-09",
+    endDate: "2026-03-09",
+    status: LeaveStatus.Approved,
+    type: LeaveType.Holiday,
+    notes: "Dentist",
+    halfDay: true,
+    halfDayPeriod: "am",
+  };
+
+  it("shows a single 'Date' field (not Start/End) for half-day entries", () => {
+    renderModal(<EditLeaveModal entry={halfDayEntry} onClose={jest.fn()} onSave={jest.fn()} />);
+    expect(screen.getByLabelText("Date")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Start Date")).toBeNull();
+    expect(screen.queryByLabelText("End Date")).toBeNull();
+  });
+
+  it("pre-fills the Date field with the entry's date for half-day entries", () => {
+    renderModal(<EditLeaveModal entry={halfDayEntry} onClose={jest.fn()} onSave={jest.fn()} />);
+    expect(screen.getByLabelText("Date")).toHaveValue("2026-03-09");
+  });
+
+  it("shows the AM/PM picker for half-day entries", () => {
+    renderModal(<EditLeaveModal entry={halfDayEntry} onClose={jest.fn()} onSave={jest.fn()} />);
+    expect(screen.getByRole("button", { name: "AM" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "PM" })).toBeInTheDocument();
+  });
+
+  it("pre-selects the correct half-day period pill", () => {
+    renderModal(<EditLeaveModal entry={halfDayEntry} onClose={jest.fn()} onSave={jest.fn()} />);
+    expect(screen.getByRole("button", { name: "AM" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "PM" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("saves with updated halfDayPeriod when AM/PM is changed", async () => {
+    const onSave = jest.fn();
+    renderModal(<EditLeaveModal entry={halfDayEntry} onClose={jest.fn()} onSave={onSave} />);
+    await userEvent.click(screen.getByRole("button", { name: "PM" }));
+    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ halfDayPeriod: "pm", halfDay: true })
+    );
+  });
+
+  it("saves with the same startDate and endDate for half-day entries", async () => {
+    const onSave = jest.fn();
+    renderModal(<EditLeaveModal entry={halfDayEntry} onClose={jest.fn()} onSave={onSave} />);
+    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+    const saved = onSave.mock.calls[0][0];
+    expect(saved.startDate).toBe(saved.endDate);
+  });
+
+  it("shows Start Date and End Date fields for full-day entries", () => {
+    renderModal(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={jest.fn()} />);
+    expect(screen.getByLabelText("Start Date")).toBeInTheDocument();
+    expect(screen.getByLabelText("End Date")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Date")).toBeNull();
+  });
+});
