@@ -58,7 +58,7 @@ export default function ConnectionsPage() {
           <div className="bg-amber-50 border border-amber-300 text-amber-800 rounded-xl px-4 py-3 text-sm">
             Your profile could not be loaded. Please{" "}
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => router.refresh()}
               className="underline font-medium hover:text-amber-900"
             >
               refresh the page

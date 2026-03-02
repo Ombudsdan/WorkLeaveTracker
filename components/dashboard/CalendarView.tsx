@@ -91,7 +91,7 @@ export default function CalendarView({
                 ${hasTwo ? "" : cell.cellClass}`}
               title={cell.entries.map((e) => e.notes).filter(Boolean).join(" / ")}
             >
-              {hasTwo ? (
+              {hasTwo && cell.entries[0] && cell.entries[1] ? (
                 /* Two overlapping entries — split the cell top/bottom */
                 <div className="flex flex-col h-full">
                   <div

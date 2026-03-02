@@ -72,7 +72,7 @@ export async function POST(request: Request) {
   // If this is a confirmed company change, deactivate the old allowance for this year
   const yearAllowances = user.yearAllowances.map((a) => {
     if (a.year === year && a.active !== false && forceCompanyChange) {
-      return { ...a, active: false as const };
+      return { ...a, active: false };
     }
     return a;
   });
