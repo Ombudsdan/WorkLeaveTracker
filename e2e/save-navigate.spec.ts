@@ -442,17 +442,16 @@ test.describe("Registration and first-time setup journey", () => {
     await page.getByPlaceholder("you@example.com").fill("charlie@example.com");
     await page.locator('input[type="password"]').fill("password123");
     await page.getByRole("button", { name: "Sign In" }).click();
-    // Redirected to /setup (no yearAllowances yet)
-    await page.waitForURL(/\/(setup|dashboard)/);
+    // New users: login → /dashboard (loading) → /setup (dashboard detects no
+    // yearAllowances and redirects).  Wait for the final /setup URL.
+    await page.waitForURL(/\/setup/);
 
-    if (page.url().includes("/setup")) {
-      // Complete the setup form
-      const coreField = page.getByLabel("Core Days");
-      await coreField.clear();
-      await coreField.fill("25");
-      await page.getByRole("button", { name: /save/i }).click();
-      await page.waitForURL(/\/dashboard/);
-    }
+    // Complete the setup form
+    const coreField = page.getByLabel("Core Days");
+    await coreField.clear();
+    await coreField.fill("25");
+    await page.getByRole("button", { name: /save/i }).click();
+    await page.waitForURL(/\/dashboard/);
 
     // Dashboard must load without the error banner
     await page.getByRole("button", { name: "Sign Out" }).waitFor({ state: "visible" });
@@ -473,15 +472,15 @@ test.describe("Registration and first-time setup journey", () => {
     await page.getByPlaceholder("you@example.com").fill("dana@example.com");
     await page.locator('input[type="password"]').fill("password123");
     await page.getByRole("button", { name: "Sign In" }).click();
-    await page.waitForURL(/\/(setup|dashboard)/);
+    // New users: login → /dashboard (loading) → /setup (dashboard detects no
+    // yearAllowances and redirects).  Wait for the final /setup URL.
+    await page.waitForURL(/\/setup/);
 
-    if (page.url().includes("/setup")) {
-      const coreField = page.getByLabel("Core Days");
-      await coreField.clear();
-      await coreField.fill("25");
-      await page.getByRole("button", { name: /save/i }).click();
-      await page.waitForURL(/\/dashboard/);
-    }
+    const coreField = page.getByLabel("Core Days");
+    await coreField.clear();
+    await coreField.fill("25");
+    await page.getByRole("button", { name: /save/i }).click();
+    await page.waitForURL(/\/dashboard/);
 
     await page.getByRole("button", { name: "Sign Out" }).waitFor({ state: "visible" });
     await expect(page.getByText(/your profile could not be loaded/i)).not.toBeVisible();
