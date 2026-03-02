@@ -278,7 +278,7 @@ describe("LeaveList — half-day entries", () => {
     halfDayPeriod: "am",
   };
 
-  it("shows '(0.5d)' for a half-day entry", () => {
+  it("shows '(0.5d AM)' for an AM half-day entry", () => {
     render(
       <LeaveList
         user={{ ...alice, entries: [halfDayEntry] }}
@@ -288,7 +288,7 @@ describe("LeaveList — half-day entries", () => {
         onDelete={jest.fn()}
       />
     );
-    expect(screen.getByText("(0.5d)")).toBeInTheDocument();
+    expect(screen.getByText("(0.5d AM)")).toBeInTheDocument();
   });
 
   it("appends (AM) to the reason for an AM half-day entry", () => {

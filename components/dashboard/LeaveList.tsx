@@ -46,7 +46,12 @@ export default function LeaveList({
         <div className="space-y-2">
           {sorted.map((entry) => {
             const days = countEntryDays(entry, user.profile.nonWorkingDays, bankHolidays);
-            const daysLabel = days === 0.5 ? "0.5d" : `${days}d`;
+            const daysLabel =
+              entry.halfDay
+                ? entry.halfDayPeriod
+                  ? `0.5d ${entry.halfDayPeriod.toUpperCase()}`
+                  : "0.5d"
+                : `${days}d`;
             const isSick = entry.type === LeaveType.Sick;
             const statusLabel = isSick
               ? "Sick"

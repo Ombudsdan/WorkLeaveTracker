@@ -6,6 +6,20 @@ import EditLeaveModal from "@/components/dashboard/EditLeaveModal";
 import { LeaveStatus, LeaveType } from "@/types";
 import type { LeaveEntry } from "@/types";
 
+// Fix "today" so calendar tests are deterministic
+beforeEach(() => {
+  jest.useFakeTimers();
+  jest.setSystemTime(new Date("2026-03-15"));
+});
+
+afterEach(() => {
+  jest.useRealTimers();
+});
+
+function setup() {
+  return userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+}
+
 const entry: LeaveEntry = {
   id: "e1",
   startDate: "2026-03-09",
@@ -27,19 +41,24 @@ describe("EditLeaveModal — rendering", () => {
     expect(screen.getByRole("heading", { name: "Edit Leave" })).toBeInTheDocument();
   });
 
-  it("pre-fills Start Date with the entry's start date", () => {
+  it("pre-selects Full day(s) Duration button for a full-day entry", () => {
     renderModal(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={jest.fn()} />);
-    expect(screen.getByLabelText("Start Date")).toHaveValue("2026-03-09");
+    expect(screen.getByRole("button", { name: "Full day(s)" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Half Day AM" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Half Day PM" })).toHaveAttribute("aria-pressed", "false");
   });
 
-  it("pre-fills End Date with the entry's end date", () => {
+  it("shows the entry start and end dates in the DateRangePicker summary", () => {
     renderModal(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={jest.fn()} />);
-    expect(screen.getByLabelText("End Date")).toHaveValue("2026-03-13");
+    // DateRangePicker renders "From: 2026-03-09" and "To: 2026-03-13" as text nodes
+    expect(screen.getByText("2026-03-09")).toBeInTheDocument();
+    expect(screen.getByText("2026-03-13")).toBeInTheDocument();
   });
 
-  it("pre-selects the entry's status pill as aria-pressed=true", () => {
+  it("pre-selects the entry's type pill", () => {
     renderModal(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={jest.fn()} />);
-    expect(screen.getByRole("button", { name: "Planned" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Holiday" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Sick" })).toHaveAttribute("aria-pressed", "false");
   });
 
   it("pre-fills Reason with the entry's notes", () => {
@@ -53,7 +72,12 @@ describe("EditLeaveModal — rendering", () => {
     expect(screen.getByLabelText("Reason")).toHaveValue("");
   });
 
-  it("renders all status option pills", () => {
+  it("pre-selects the entry's status pill as aria-pressed=true", () => {
+    renderModal(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={jest.fn()} />);
+    expect(screen.getByRole("button", { name: "Planned" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("renders all status option pills for non-sick entries", () => {
     renderModal(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={jest.fn()} />);
     expect(screen.getByRole("button", { name: "Planned" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Requested" })).toBeInTheDocument();
@@ -68,13 +92,20 @@ describe("EditLeaveModal — rendering", () => {
     expect(screen.queryByRole("button", { name: "Approved" })).toBeNull();
     expect(screen.getByText(/automatically set to/i)).toBeInTheDocument();
   });
+
+  it("renders the Save Changes and Cancel buttons", () => {
+    renderModal(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={jest.fn()} />);
+    expect(screen.getByRole("button", { name: "Save Changes" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+  });
 });
 
 describe("EditLeaveModal — onSave", () => {
   it("calls onSave with the original entry data when Save Changes is clicked immediately", async () => {
+    const user = setup();
     const onSave = jest.fn();
     renderModal(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={onSave} />);
-    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+    await user.click(screen.getByRole("button", { name: "Save Changes" }));
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({
         id: "e1",
@@ -87,61 +118,64 @@ describe("EditLeaveModal — onSave", () => {
   });
 
   it("calls onSave with updated status when the user clicks an Approved pill", async () => {
+    const user = setup();
     const onSave = jest.fn();
     renderModal(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={onSave} />);
-    await userEvent.click(screen.getByRole("button", { name: "Approved" }));
-    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+    await user.click(screen.getByRole("button", { name: "Approved" }));
+    await user.click(screen.getByRole("button", { name: "Save Changes" }));
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ status: LeaveStatus.Approved }));
   });
 
   it("preserves the original entry id in the saved result", async () => {
+    const user = setup();
     const onSave = jest.fn();
     renderModal(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={onSave} />);
-    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+    await user.click(screen.getByRole("button", { name: "Save Changes" }));
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ id: "e1" }));
   });
 
   it("forces Approved status for sick leave regardless of any clicks", async () => {
+    const user = setup();
     const sickEntry = { ...entry, type: LeaveType.Sick, status: LeaveStatus.Requested };
     const onSave = jest.fn();
     renderModal(<EditLeaveModal entry={sickEntry} onClose={jest.fn()} onSave={onSave} />);
-    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+    await user.click(screen.getByRole("button", { name: "Save Changes" }));
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ status: LeaveStatus.Approved }));
   });
 });
 
 describe("EditLeaveModal — reason update", () => {
-  it("calls onSave with updated reason when the reason field is changed (stored as notes)", async () => {
+  it("calls onSave with updated reason when the reason field is changed", async () => {
+    const user = setup();
     const onSave = jest.fn();
     renderModal(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={onSave} />);
     const reasonField = screen.getByLabelText("Reason");
-    await userEvent.clear(reasonField);
-    await userEvent.type(reasonField, "Updated note");
-    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+    await user.clear(reasonField);
+    await user.type(reasonField, "Updated note");
+    await user.click(screen.getByRole("button", { name: "Save Changes" }));
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ notes: "Updated note" }));
   });
 
-  it("calls onSave with updated dates when the date fields are changed", async () => {
+  it("calls onSave with updated dates when dates are re-selected in the calendar", async () => {
+    const user = setup();
     const onSave = jest.fn();
     renderModal(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={onSave} />);
-    const startField = screen.getByLabelText("Start Date");
-    const endField = screen.getByLabelText("End Date");
-    await userEvent.clear(startField);
-    await userEvent.type(startField, "2026-04-07");
-    await userEvent.clear(endField);
-    await userEvent.type(endField, "2026-04-07");
-    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+    // Click day 10 to start a new selection, then day 11 as end
+    await user.click(screen.getByRole("button", { name: "2026-03-10" }));
+    await user.click(screen.getByRole("button", { name: "2026-03-11" }));
+    await user.click(screen.getByRole("button", { name: "Save Changes" }));
     expect(onSave).toHaveBeenCalledWith(
-      expect.objectContaining({ startDate: "2026-04-07", endDate: "2026-04-07" })
+      expect.objectContaining({ startDate: "2026-03-10", endDate: "2026-03-11" })
     );
   });
 });
 
 describe("EditLeaveModal — onClose", () => {
   it("calls onClose when the Cancel button is clicked", async () => {
+    const user = setup();
     const onClose = jest.fn();
     renderModal(<EditLeaveModal entry={entry} onClose={onClose} onSave={jest.fn()} />);
-    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
@@ -158,52 +192,52 @@ describe("EditLeaveModal — half-day editing", () => {
     halfDayPeriod: "am",
   };
 
-  it("shows a single 'Date' field (not Start/End) for half-day entries", () => {
+  it("pre-selects Half Day AM Duration button for an AM half-day entry", () => {
     renderModal(<EditLeaveModal entry={halfDayEntry} onClose={jest.fn()} onSave={jest.fn()} />);
-    expect(screen.getByLabelText("Date")).toBeInTheDocument();
-    expect(screen.queryByLabelText("Start Date")).toBeNull();
-    expect(screen.queryByLabelText("End Date")).toBeNull();
+    expect(screen.getByRole("button", { name: "Half Day AM" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Full day(s)" })).toHaveAttribute("aria-pressed", "false");
   });
 
-  it("pre-fills the Date field with the entry's date for half-day entries", () => {
-    renderModal(<EditLeaveModal entry={halfDayEntry} onClose={jest.fn()} onSave={jest.fn()} />);
-    expect(screen.getByLabelText("Date")).toHaveValue("2026-03-09");
+  it("pre-selects Half Day PM Duration button for a PM half-day entry", () => {
+    const pmEntry = { ...halfDayEntry, halfDayPeriod: "pm" as const };
+    renderModal(<EditLeaveModal entry={pmEntry} onClose={jest.fn()} onSave={jest.fn()} />);
+    expect(screen.getByRole("button", { name: "Half Day PM" })).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("shows the AM/PM picker for half-day entries", () => {
+  it("shows the half-day date in the DateRangePicker summary", () => {
     renderModal(<EditLeaveModal entry={halfDayEntry} onClose={jest.fn()} onSave={jest.fn()} />);
-    expect(screen.getByRole("button", { name: "AM" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "PM" })).toBeInTheDocument();
+    expect(screen.getByText("2026-03-09")).toBeInTheDocument();
   });
 
-  it("pre-selects the correct half-day period pill", () => {
-    renderModal(<EditLeaveModal entry={halfDayEntry} onClose={jest.fn()} onSave={jest.fn()} />);
-    expect(screen.getByRole("button", { name: "AM" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "PM" })).toHaveAttribute("aria-pressed", "false");
-  });
-
-  it("saves with updated halfDayPeriod when AM/PM is changed", async () => {
+  it("saves with halfDay=true and halfDayPeriod=am for an AM half-day entry", async () => {
+    const user = setup();
     const onSave = jest.fn();
     renderModal(<EditLeaveModal entry={halfDayEntry} onClose={jest.fn()} onSave={onSave} />);
-    await userEvent.click(screen.getByRole("button", { name: "PM" }));
-    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+    await user.click(screen.getByRole("button", { name: "Save Changes" }));
     expect(onSave).toHaveBeenCalledWith(
-      expect.objectContaining({ halfDayPeriod: "pm", halfDay: true })
+      expect.objectContaining({ halfDay: true, halfDayPeriod: "am" })
     );
   });
 
-  it("saves with the same startDate and endDate for half-day entries", async () => {
+  it("saves with halfDayPeriod=pm when switched to Half Day PM", async () => {
+    const user = setup();
     const onSave = jest.fn();
     renderModal(<EditLeaveModal entry={halfDayEntry} onClose={jest.fn()} onSave={onSave} />);
-    await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
-    const saved = onSave.mock.calls[0][0];
-    expect(saved.startDate).toBe(saved.endDate);
+    await user.click(screen.getByRole("button", { name: "Half Day PM" }));
+    // Re-select the date (duration change clears dates)
+    await user.click(screen.getByRole("button", { name: "2026-03-09" }));
+    await user.click(screen.getByRole("button", { name: "Save Changes" }));
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ halfDay: true, halfDayPeriod: "pm" })
+    );
   });
 
-  it("shows Start Date and End Date fields for full-day entries", () => {
-    renderModal(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={jest.fn()} />);
-    expect(screen.getByLabelText("Start Date")).toBeInTheDocument();
-    expect(screen.getByLabelText("End Date")).toBeInTheDocument();
-    expect(screen.queryByLabelText("Date")).toBeNull();
+  it("preserves type and notes when Duration is changed", async () => {
+    const user = setup();
+    renderModal(<EditLeaveModal entry={halfDayEntry} onClose={jest.fn()} onSave={jest.fn()} />);
+    // Change duration — type and notes should still be present
+    await user.click(screen.getByRole("button", { name: "Full day(s)" }));
+    expect(screen.getByRole("button", { name: "Holiday" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByLabelText("Reason")).toHaveValue("Dentist");
   });
 });
