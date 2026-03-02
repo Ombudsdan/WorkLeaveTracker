@@ -2,12 +2,11 @@ import fs from "fs";
 import path from "path";
 import type { Database, AppUser, LeaveEntry } from "@/types";
 
-// On Vercel, the deployment directory is read-only; /tmp is the only writable
-// location. Note: /tmp is ephemeral per Lambda instance, so data is
-// re-initialised from data.example.json on each cold start.
-const DB_PATH = process.env.VERCEL
-  ? path.join("/tmp", "data.json")
-  : path.join(process.cwd(), "data", "data.json");
+// ---------------------------------------------------------------------------
+// File-based storage (local development fallback)
+// ---------------------------------------------------------------------------
+
+const DB_PATH = path.join(process.cwd(), "data", "data.json");
 const EXAMPLE_PATH = path.join(process.cwd(), "data", "data.example.json");
 
 /**
@@ -25,72 +24,165 @@ function ensureDbExists(): void {
   }
 }
 
-export function readDb(): Database {
+function readDbFile(): Database {
   ensureDbExists();
   const raw = fs.readFileSync(DB_PATH, "utf-8");
   return JSON.parse(raw) as Database;
 }
 
-export function writeDb(db: Database): void {
+function writeDbFile(db: Database): void {
   fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2), "utf-8");
 }
 
-export function findUserByEmail(email: string): AppUser | undefined {
-  const db = readDb();
-  return db.users.find((u) => u.profile.email === email);
+// ---------------------------------------------------------------------------
+// Vercel KV helpers
+// ---------------------------------------------------------------------------
+// KV key layout:
+//   user:{id}          → AppUser JSON          (one key per user)
+//   email:{email}      → user id string        (email → id index)
+//   user_ids           → Redis SET of all ids  (for listing all users)
+
+/** Returns true when Vercel KV is configured and should be used. */
+function useKv(): boolean {
+  return Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
 }
 
-export function findUserById(id: string): AppUser | undefined {
-  const db = readDb();
-  return db.users.find((u) => u.id === id);
+async function kvGet<T>(key: string): Promise<T | null> {
+  const { kv } = await import("@vercel/kv");
+  return kv.get<T>(key);
 }
 
-export function updateUser(id: string, updates: Partial<AppUser>): AppUser | null {
-  const db = readDb();
+async function kvSet(key: string, value: unknown): Promise<void> {
+  const { kv } = await import("@vercel/kv");
+  await kv.set(key, value);
+}
+
+async function kvSadd(key: string, member: string): Promise<void> {
+  const { kv } = await import("@vercel/kv");
+  await kv.sadd(key, member);
+}
+
+async function kvSmembers(key: string): Promise<string[]> {
+  const { kv } = await import("@vercel/kv");
+  return (await kv.smembers(key)) as string[];
+}
+
+// ---------------------------------------------------------------------------
+// Public API — all functions are async so callers work with both backends
+// ---------------------------------------------------------------------------
+
+export async function findUserByEmail(email: string): Promise<AppUser | undefined> {
+  if (useKv()) {
+    const id = await kvGet<string>(`email:${email}`);
+    if (!id) return undefined;
+    return (await kvGet<AppUser>(`user:${id}`)) ?? undefined;
+  }
+  return readDbFile().users.find((u) => u.profile.email === email);
+}
+
+export async function findUserById(id: string): Promise<AppUser | undefined> {
+  if (useKv()) {
+    return (await kvGet<AppUser>(`user:${id}`)) ?? undefined;
+  }
+  return readDbFile().users.find((u) => u.id === id);
+}
+
+export async function listAllUsers(): Promise<AppUser[]> {
+  if (useKv()) {
+    const ids = await kvSmembers("user_ids");
+    const users = await Promise.all(ids.map((id) => kvGet<AppUser>(`user:${id}`)));
+    return users.filter((u): u is AppUser => u !== null);
+  }
+  return readDbFile().users;
+}
+
+export async function updateUser(
+  id: string,
+  updates: Partial<AppUser>
+): Promise<AppUser | null> {
+  if (useKv()) {
+    const existing = await kvGet<AppUser>(`user:${id}`);
+    if (!existing) return null;
+    const updated: AppUser = { ...existing, ...updates };
+    await kvSet(`user:${id}`, updated);
+    return updated;
+  }
+  const db = readDbFile();
   const idx = db.users.findIndex((u) => u.id === id);
   if (idx === -1) return null;
   db.users[idx] = { ...db.users[idx], ...updates };
-  writeDb(db);
+  writeDbFile(db);
   return db.users[idx];
 }
 
-export function addUser(user: AppUser): void {
-  const db = readDb();
+export async function addUser(user: AppUser): Promise<void> {
+  if (useKv()) {
+    await kvSet(`user:${user.id}`, user);
+    await kvSet(`email:${user.profile.email}`, user.id);
+    await kvSadd("user_ids", user.id);
+    return;
+  }
+  const db = readDbFile();
   db.users.push(user);
-  writeDb(db);
+  writeDbFile(db);
 }
 
-export function addEntry(userId: string, entry: LeaveEntry): boolean {
-  const db = readDb();
+export async function addEntry(userId: string, entry: LeaveEntry): Promise<boolean> {
+  if (useKv()) {
+    const user = await kvGet<AppUser>(`user:${userId}`);
+    if (!user) return false;
+    user.entries.push(entry);
+    await kvSet(`user:${userId}`, user);
+    return true;
+  }
+  const db = readDbFile();
   const user = db.users.find((u) => u.id === userId);
   if (!user) return false;
   user.entries.push(entry);
-  writeDb(db);
+  writeDbFile(db);
   return true;
 }
 
-export function updateEntry(
+export async function updateEntry(
   userId: string,
   entryId: string,
   updates: Partial<LeaveEntry>
-): boolean {
-  const db = readDb();
+): Promise<boolean> {
+  if (useKv()) {
+    const user = await kvGet<AppUser>(`user:${userId}`);
+    if (!user) return false;
+    const idx = user.entries.findIndex((e) => e.id === entryId);
+    if (idx === -1) return false;
+    user.entries[idx] = { ...user.entries[idx], ...updates };
+    await kvSet(`user:${userId}`, user);
+    return true;
+  }
+  const db = readDbFile();
   const user = db.users.find((u) => u.id === userId);
   if (!user) return false;
   const idx = user.entries.findIndex((e) => e.id === entryId);
   if (idx === -1) return false;
   user.entries[idx] = { ...user.entries[idx], ...updates };
-  writeDb(db);
+  writeDbFile(db);
   return true;
 }
 
-export function deleteEntry(userId: string, entryId: string): boolean {
-  const db = readDb();
+export async function deleteEntry(userId: string, entryId: string): Promise<boolean> {
+  if (useKv()) {
+    const user = await kvGet<AppUser>(`user:${userId}`);
+    if (!user) return false;
+    const before = user.entries.length;
+    user.entries = user.entries.filter((e) => e.id !== entryId);
+    if (user.entries.length === before) return false;
+    await kvSet(`user:${userId}`, user);
+    return true;
+  }
+  const db = readDbFile();
   const user = db.users.find((u) => u.id === userId);
   if (!user) return false;
   const before = user.entries.length;
   user.entries = user.entries.filter((e) => e.id !== entryId);
   if (user.entries.length === before) return false;
-  writeDb(db);
+  writeDbFile(db);
   return true;
 }

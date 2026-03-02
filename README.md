@@ -33,27 +33,32 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 Create a `.env.local` file in the project root based on `.env.example`. The following variables are required:
 
-| Variable          | Description                                                                                                             |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `NEXTAUTH_URL`    | The canonical URL of your site (e.g. `http://localhost:3000` for local dev)                                             |
-| `NEXTAUTH_SECRET` | A secret used to sign/encrypt NextAuth tokens. **Required in production.** Generate one with `openssl rand -base64 32`. |
+| Variable             | Description                                                                                                             |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `NEXTAUTH_URL`       | The canonical URL of your site (e.g. `http://localhost:3000` for local dev)                                             |
+| `NEXTAUTH_SECRET`    | A secret used to sign/encrypt NextAuth tokens. **Required in production.** Generate one with `openssl rand -base64 32`. |
+| `KV_REST_API_URL`    | Vercel KV REST endpoint. Set automatically when you link a KV store in the Vercel dashboard. Leave blank for local dev. |
+| `KV_REST_API_TOKEN`  | Vercel KV REST token. Set automatically when you link a KV store in the Vercel dashboard. Leave blank for local dev.    |
 
 ## Data Storage
 
-User data (accounts, leave entries, allowances) is stored in a local JSON file at `data/data.json`.
+User data (accounts, leave entries, allowances) is stored differently depending on the environment.
 
 ### Local development
 
-When running locally, `data/data.json` is read from and written to on every API request. The file is **gitignored** — on a fresh clone, `data/data.example.json` is automatically copied to `data/data.json` on the first API call. You can edit `data.example.json` to seed different demo data.
+When `KV_REST_API_URL` / `KV_REST_API_TOKEN` are **not** set, the app falls back to a local JSON file at `data/data.json`. The file is **gitignored** — on a fresh clone, `data/data.example.json` is automatically copied to `data/data.json` on the first API call. You can edit `data.example.json` to seed different demo data.
 
 ### Deployed to Vercel
 
-Vercel's serverless functions run in a **read-only filesystem** except for `/tmp`. On deployment, data is stored at `/tmp/data.json`. Because `/tmp` is **ephemeral** (it's wiped on cold starts and is not shared between function instances), any data you save will be lost when the Lambda restarts. This means:
+The app uses **Vercel KV** (powered by Upstash Redis) for persistent storage. Data is shared across all serverless function instances and survives deployments and cold starts.
 
-- You may need to re-register your account after a deployment or cold start.
-- Data is **not** persisted across restarts on Vercel with this setup.
+To enable Vercel KV:
 
-This is intentional for the current stage of development. The plan is to swap the `data/db.ts` file-based layer for a free external database service (e.g. PlanetScale, Supabase, or MongoDB Atlas) before the application is used in production. Once a real database is connected, all data will be persistent regardless of environment.
+1. Open your project in the [Vercel dashboard](https://vercel.com/dashboard).
+2. Go to the **Storage** tab and click **Create Database → KV**.
+3. Follow the prompts to create a free KV store and connect it to your project.
+4. Vercel automatically adds `KV_REST_API_URL` and `KV_REST_API_TOKEN` to your project's environment variables. **No manual copying needed.**
+5. Re-deploy (or trigger a new deployment) — the app will now read and write all user data from KV.
 
 > **Note:** `data.json` is gitignored so your personal data is never committed to the repository. Only `data.example.json` (containing demo users) is tracked in version control.
 

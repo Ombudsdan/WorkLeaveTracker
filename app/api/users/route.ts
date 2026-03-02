@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { readDb, updateUser, addUser, findUserByEmail } from "@/lib/db";
+import { listAllUsers, updateUser, addUser, findUserByEmail, findUserById } from "@/lib/db";
 import type { AppUser } from "@/types";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
@@ -11,9 +11,9 @@ export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const db = readDb();
+  const allUsers = await listAllUsers();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const users = db.users.map(({ password: _p, ...rest }) => rest);
+  const users = allUsers.map(({ password: _p, ...rest }) => rest);
   return NextResponse.json(users, {
     headers: { "Cache-Control": "no-store, max-age=0" },
   });
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
-  const existing = findUserByEmail(email);
+  const existing = await findUserByEmail(email);
   if (existing) {
     return NextResponse.json({ error: "Email already registered" }, { status: 409 });
   }
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     entries: [],
   };
 
-  addUser(newUser);
+  await addUser(newUser);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { password: _pw, ...result } = newUser;
@@ -71,9 +71,9 @@ export async function PATCH(request: Request) {
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   // Fall back to email lookup in case the session ID is stale
-  let resolvedUser = readDb().users.find((u) => u.id === userId);
+  let resolvedUser = await findUserById(userId);
   if (!resolvedUser && session.user?.email) {
-    resolvedUser = findUserByEmail(session.user.email);
+    resolvedUser = await findUserByEmail(session.user.email);
   }
   if (!resolvedUser) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -82,7 +82,7 @@ export async function PATCH(request: Request) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { password: _p, id: _i, entries: _e, ...safe } = body;
 
-  const updated = updateUser(resolvedUser.id, safe);
+  const updated = await updateUser(resolvedUser.id, safe);
   if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
