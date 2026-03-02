@@ -34,6 +34,11 @@ describe("NavBar — unauthenticated", () => {
     expect(screen.getByRole("link", { name: "Profile" })).toBeInTheDocument();
   });
 
+  it("renders a Connections navigation link", () => {
+    render(<NavBar activePage="dashboard" />);
+    expect(screen.getByRole("link", { name: /connections/i })).toBeInTheDocument();
+  });
+
   it("does not render Sign Out when there is no session", () => {
     render(<NavBar activePage="dashboard" />);
     expect(screen.queryByRole("button", { name: "Sign Out" })).toBeNull();
@@ -92,4 +97,33 @@ describe("NavBar — activePage styling", () => {
     const link = screen.getByRole("link", { name: "Dashboard" });
     expect(link.className).not.toContain("font-semibold");
   });
+
+  it("applies active (indigo) class to the Connections link when activePage='connections'", () => {
+    render(<NavBar activePage="connections" />);
+    const link = screen.getByRole("link", { name: /connections/i });
+    expect(link.className).toContain("indigo");
+  });
 });
+
+describe("NavBar — connections badge", () => {
+  beforeEach(() => {
+    mockUseSession.mockReturnValue({ data: null });
+  });
+
+  it("does not show a badge when pendingRequestCount is 0", () => {
+    render(<NavBar activePage="dashboard" pendingRequestCount={0} />);
+    expect(screen.queryByText("0")).toBeNull();
+  });
+
+  it("shows the badge count when pendingRequestCount > 0", () => {
+    render(<NavBar activePage="dashboard" pendingRequestCount={3} />);
+    expect(screen.getByText("3")).toBeInTheDocument();
+  });
+
+  it("does not show the badge when pendingRequestCount is not provided", () => {
+    render(<NavBar activePage="dashboard" />);
+    // No numeric badge should be rendered
+    expect(screen.queryByText(/^\d+$/)).toBeNull();
+  });
+});
+

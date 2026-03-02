@@ -38,6 +38,11 @@ export interface YearAllowance extends UserAllowance {
   company: string;
   /** 1-12, e.g. 1 for Jan, 4 for Apr — defines when this holiday year starts */
   holidayStartMonth: number;
+  /**
+   * Whether this allowance is currently active for the user.
+   * Defaults to true. Set to false when the user changes company mid-period.
+   */
+  active?: boolean;
 }
 
 export interface UserProfile {
@@ -48,6 +53,10 @@ export interface UserProfile {
   nonWorkingDays: number[];
   /** IDs of up to 3 other users pinned in the dashboard user selector */
   pinnedUserIds?: string[];
+  /** IDs of users to whom I have sent a pending connection request */
+  pendingPinRequestsSent?: string[];
+  /** IDs of users who have sent me a pending connection request */
+  pendingPinRequestsReceived?: string[];
 }
 
 export interface AppUser {

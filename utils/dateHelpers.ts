@@ -79,6 +79,20 @@ export function getEntryForDate(date: string, entries: LeaveEntry[]): LeaveEntry
   });
 }
 
+/**
+ * Find all leave entries (up to 2) that cover the given ISO date string.
+ * Returns at most 2 entries — more than 2 overlapping entries are not supported.
+ */
+export function getEntriesForDate(date: string, entries: LeaveEntry[]): LeaveEntry[] {
+  const matches = entries.filter((e) => {
+    const s = new Date(e.startDate);
+    const en = new Date(e.endDate);
+    const d = new Date(date);
+    return d >= s && d <= en;
+  });
+  return matches.slice(0, 2);
+}
+
 /** Returns true if the date falls on one of the user's non-working days */
 export function isNonWorkingDay(date: string, nonWorkingDays: number[]): boolean {
   return nonWorkingDays.includes(new Date(date).getDay());

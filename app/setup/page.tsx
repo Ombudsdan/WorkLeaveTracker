@@ -7,6 +7,8 @@ import { FormValidationProvider, useFormValidation } from "@/contexts/FormValida
 import FormField from "@/components/FormField";
 import FormErrorOutlet from "@/components/FormErrorOutlet";
 import Button from "@/components/Button";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import CompanyCombobox from "@/components/CompanyCombobox";
 import { usersController } from "@/controllers/usersController";
 import { DAY_NAMES_SHORT, MONTH_NAMES_LONG } from "@/variables/calendar";
 import { getHolidayYearBounds } from "@/utils/dateHelpers";
@@ -59,9 +61,7 @@ function SetupPageInner() {
   }, [status, session, router]);
 
   if (status === "loading" || checking) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">Loading…</div>
-    );
+    return <LoadingSpinner />;
   }
 
   const { start: hyStart } = getHolidayYearBounds(holidayStartMonth);
@@ -111,22 +111,12 @@ function SetupPageInner() {
               Leave Allowance for {currentHolidayYear}
             </h3>
             <div className="space-y-3">
-              <div>
-                <label
-                  htmlFor="setup-company"
-                  className="block text-sm font-medium text-gray-600 mb-1"
-                >
-                  Company <span className="text-gray-400 font-normal">(optional)</span>
-                </label>
-                <input
-                  id="setup-company"
-                  type="text"
-                  value={company}
-                  onChange={(e) => setCompany(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-indigo-400 focus:outline-none"
-                  placeholder="Acme Ltd"
-                />
-              </div>
+              <CompanyCombobox
+                id="setup-company"
+                label="Company"
+                value={company}
+                onChange={setCompany}
+              />
               <div>
                 <label
                   htmlFor="setup-holidayStartMonth"

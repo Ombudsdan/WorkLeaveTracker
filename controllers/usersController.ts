@@ -23,12 +23,33 @@ export const usersController = {
     return res.json() as Promise<PublicUser>;
   },
 
-  async addYearAllowance(yearAllowance: YearAllowance): Promise<YearAllowance | null> {
+  /**
+   * Add or update a year's allowance.
+   * Returns the saved allowance, or an object with a `conflict` field when a
+   * company-change confirmation is required, or null on network error.
+   */
+  async addYearAllowance(
+    yearAllowance: YearAllowance & { forceCompanyChange?: boolean }
+  ): Promise<YearAllowance | { conflict: true; existingCompany: string; message: string } | null> {
     const res = await fetch("/api/users/allowance", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(yearAllowance),
     });
+    if (res.status === 409) {
+      const json = (await res.json()) as {
+        error: string;
+        existingCompany?: string;
+        message?: string;
+      };
+      if (json.error === "company_change_required") {
+        return {
+          conflict: true,
+          existingCompany: json.existingCompany ?? "",
+          message: json.message ?? "",
+        };
+      }
+    }
     if (!res.ok) return null;
     return res.json() as Promise<YearAllowance>;
   },
@@ -48,4 +69,32 @@ export const usersController = {
     const json = await res.json();
     return { ok: false, error: json.error ?? "Registration failed" };
   },
+
+  /** Send a connection request to another user. */
+  async sendPinRequest(targetUserId: string): Promise<{ ok: boolean; error?: string }> {
+    const res = await fetch("/api/users/pin-request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ targetUserId }),
+    });
+    if (res.ok) return { ok: true };
+    const json = await res.json();
+    return { ok: false, error: json.error ?? "Failed to send request" };
+  },
+
+  /** Accept or decline an incoming connection request. */
+  async respondToPinRequest(
+    requesterId: string,
+    accept: boolean
+  ): Promise<{ ok: boolean; error?: string }> {
+    const res = await fetch("/api/users/pin-request/respond", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ requesterId, accept }),
+    });
+    if (res.ok) return { ok: true };
+    const json = await res.json();
+    return { ok: false, error: json.error ?? "Failed to respond" };
+  },
 };
+

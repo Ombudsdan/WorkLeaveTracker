@@ -180,7 +180,7 @@ it("calls onSave with the updated company when company field is changed", async 
   const user = setup();
   const onSave = jest.fn();
   renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={onSave} />);
-  const companyInput = screen.getByLabelText("Company");
+  const companyInput = screen.getByLabelText(/company/i);
   await user.type(companyInput, "NewCo");
   await user.click(screen.getByRole("button", { name: "Save" }));
   expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ company: "NewCo" }));

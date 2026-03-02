@@ -1,9 +1,11 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import type { PublicUser, LeaveEntry, UserAllowance } from "@/types";
 import NavBar from "@/components/NavBar";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import SessionExpiredScreen from "@/components/SessionExpiredScreen";
 import UserSelector from "@/components/dashboard/UserSelector";
 import SummaryCard from "@/components/dashboard/SummaryCard";
 import AllowanceBreakdown from "@/components/dashboard/AllowanceBreakdown";
@@ -34,8 +36,21 @@ export default function DashboardPage() {
   const [showAllowanceWarningModal, setShowAllowanceWarningModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Track whether the user was previously authenticated in this browser tab so
+  // we can distinguish a genuine "session expired" event from a first visit.
+  const wasAuthenticatedRef = useRef(false);
+
   useEffect(() => {
-    if (status === "unauthenticated") router.push("/login");
+    if (status === "authenticated") {
+      wasAuthenticatedRef.current = true;
+    }
+    if (status === "unauthenticated") {
+      if (!wasAuthenticatedRef.current) {
+        // Never authenticated in this tab — just redirect to login directly.
+        router.push("/login");
+      }
+      // If wasAuthenticated is true the SessionExpiredScreen will be shown below.
+    }
   }, [status, router]);
 
   useEffect(() => {
@@ -86,9 +101,12 @@ export default function DashboardPage() {
   }, [status, session]);
 
   if (status === "loading" || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">Loading…</div>
-    );
+    return <LoadingSpinner />;
+  }
+
+  // Session expired after the user was previously authenticated in this tab
+  if (status === "unauthenticated" && wasAuthenticatedRef.current) {
+    return <SessionExpiredScreen />;
   }
 
   if (!currentUser) {
@@ -126,9 +144,12 @@ export default function DashboardPage() {
     return start.getFullYear() + 1;
   })();
 
+  const pendingConnectionRequests =
+    (currentUser.profile.pendingPinRequestsReceived ?? []).length;
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <NavBar activePage="dashboard" />
+      <NavBar activePage="dashboard" pendingRequestCount={pendingConnectionRequests} />
 
       <main className="max-w-6xl mx-auto py-6 px-4">
         {allowanceWarning && (
@@ -146,12 +167,20 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <UserSelector
-          currentUser={currentUser}
-          allUsers={allUsers}
-          viewingUserId={viewingUserId}
-          onSelectUser={setViewingUserId}
-        />
+        {/* Tab strip + connected panel */}
+        <div className="bg-white rounded-t-2xl shadow">
+          <UserSelector
+            currentUser={currentUser}
+            allUsers={allUsers}
+            viewingUserId={viewingUserId}
+            onSelectUser={setViewingUserId}
+          />
+        </div>
+
+        <div className={`bg-white shadow rounded-b-2xl px-4 pt-4 pb-6 mb-6 ${
+          /* Only render the tab panel wrapper when there are pinned users */
+          (currentUser.profile.pinnedUserIds ?? []).length === 0 ? "hidden" : ""
+        }`} />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1 space-y-4">
@@ -267,13 +296,13 @@ export default function DashboardPage() {
   }
 
   async function handleSaveWarningAllowance(ya: YearAllowance) {
-    const saved = await usersController.addYearAllowance(ya);
-    if (saved) {
+    const result = await usersController.addYearAllowance(ya);
+    if (result && !("conflict" in result)) {
       setShowAllowanceWarningModal(false);
       setCurrentUser((prev) => {
         if (!prev) return prev;
-        const rest = prev.yearAllowances.filter((a) => a.year !== saved.year);
-        return { ...prev, yearAllowances: [...rest, saved].sort((a, b) => a.year - b.year) };
+        const rest = prev.yearAllowances.filter((a) => a.year !== result.year);
+        return { ...prev, yearAllowances: [...rest, result].sort((a, b) => a.year - b.year) };
       });
     }
   }

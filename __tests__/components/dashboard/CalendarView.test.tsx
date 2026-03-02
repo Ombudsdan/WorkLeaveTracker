@@ -214,3 +214,67 @@ describe("CalendarView — add leave button", () => {
     expect(onAdd).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("CalendarView — overlapping leave entries", () => {
+  it("renders both colour classes when two entries overlap on the same day", () => {
+    const userWithOverlap: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e-a",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+        {
+          id: "e-b",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Planned,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    const { container } = render(<CalendarView user={userWithOverlap} bankHolidays={[]} />);
+    // Both green-200 (approved) and yellow-200 (planned) should appear
+    expect(container.querySelector(".bg-green-200")).toBeInTheDocument();
+    expect(container.querySelector(".bg-yellow-200")).toBeInTheDocument();
+  });
+
+  it("shows only the first two entries when three overlap on the same day", () => {
+    const userWithThree: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e-x",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+        {
+          id: "e-y",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Planned,
+          type: LeaveType.Holiday,
+        },
+        {
+          id: "e-z",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Requested,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    const { container } = render(<CalendarView user={userWithThree} bankHolidays={[]} />);
+    // The legend always has one bg-blue-200 span.  A requested entry in the calendar
+    // would add a second one.  With capping at 2 the requested entry is not rendered
+    // so there should only be the one legend swatch.
+    const blueElements = container.querySelectorAll(".bg-blue-200");
+    // Only the legend swatch (1) — no calendar cell for the third entry
+    expect(blueElements.length).toBe(1);
+  });
+});

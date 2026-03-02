@@ -2,10 +2,11 @@
 import { useSession, signOut } from "next-auth/react";
 
 interface NavBarProps {
-  activePage: "dashboard" | "profile";
+  activePage: "dashboard" | "profile" | "connections";
+  pendingRequestCount?: number;
 }
 
-export default function NavBar({ activePage }: NavBarProps) {
+export default function NavBar({ activePage, pendingRequestCount = 0 }: NavBarProps) {
   const { data: session } = useSession();
 
   return (
@@ -31,6 +32,22 @@ export default function NavBar({ activePage }: NavBarProps) {
           }
         >
           Profile
+        </a>
+        <a
+          href="/connections"
+          className={`relative flex items-center gap-1 ${
+            activePage === "connections"
+              ? "text-indigo-700 font-semibold"
+              : "text-gray-600 hover:text-indigo-700"
+          }`}
+          aria-label={`Connections${pendingRequestCount > 0 ? ` (${pendingRequestCount} pending)` : ""}`}
+        >
+          Connections
+          {pendingRequestCount > 0 && (
+            <span className="inline-flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full h-4 min-w-4 px-1 leading-none">
+              {pendingRequestCount}
+            </span>
+          )}
         </a>
         {session && (
           <>

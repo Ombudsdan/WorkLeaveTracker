@@ -11,7 +11,7 @@ import { MONTH_NAMES_SHORT, DAY_NAMES_SHORT } from "@/variables/calendar";
 import {
   getDaysInMonth,
   getFirstDayOfMonth,
-  getEntryForDate,
+  getEntriesForDate,
   isNonWorkingDay,
   toIsoDate,
 } from "@/utils/dateHelpers";
@@ -82,22 +82,46 @@ export default function CalendarView({
         {Array.from({ length: daysInMonth }).map((_, index) => {
           const day = index + 1;
           const cell = getCellProps(day);
+          const hasTwo = cell.entries.length === 2;
           return (
             <div
               key={day}
-              className={`relative aspect-square flex flex-col items-center justify-center rounded-lg text-xs font-medium transition cursor-default
+              className={`relative aspect-square rounded-lg overflow-hidden text-xs font-medium transition cursor-default
                 ${cell.isToday ? "ring-2 ring-indigo-500" : ""}
-                ${cell.cellClass}`}
-              title={cell.entry?.notes}
+                ${hasTwo ? "" : cell.cellClass}`}
+              title={cell.entries.map((e) => e.notes).filter(Boolean).join(" / ")}
             >
-              <span>{day}</span>
-              {cell.entry?.notes && (
-                <span className="text-[7px] leading-tight truncate w-full text-center px-0.5 opacity-80">
-                  {cell.entry.notes}
-                </span>
-              )}
-              {cell.isBankHoliday && !cell.entry && (
-                <span className="text-purple-400 text-[8px] leading-none">BH</span>
+              {hasTwo ? (
+                /* Two overlapping entries — split the cell top/bottom */
+                <div className="flex flex-col h-full">
+                  <div
+                    className={`flex-1 flex items-center justify-center ${CALENDAR_COLORS[cell.entries[0].status]}`}
+                  >
+                    <span className="text-[9px] leading-none">{day}</span>
+                  </div>
+                  <div
+                    className={`flex-1 flex items-center justify-center ${CALENDAR_COLORS[cell.entries[1].status]}`}
+                  >
+                    {cell.entries[1].notes && (
+                      <span className="text-[7px] leading-tight truncate px-0.5 opacity-80">
+                        {cell.entries[1].notes}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                /* Single entry or no entry */
+                <div className="h-full flex flex-col items-center justify-center">
+                  <span>{day}</span>
+                  {cell.entries[0]?.notes && (
+                    <span className="text-[7px] leading-tight truncate w-full text-center px-0.5 opacity-80">
+                      {cell.entries[0].notes}
+                    </span>
+                  )}
+                  {cell.isBankHoliday && cell.entries.length === 0 && (
+                    <span className="text-purple-400 text-[8px] leading-none">BH</span>
+                  )}
+                </div>
               )}
             </div>
           );
@@ -127,12 +151,12 @@ export default function CalendarView({
 
   function getCellProps(day: number): CalendarCellProps {
     const dateStr = `${calendarYear}-${String(calendarMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    const entry = getEntryForDate(dateStr, user.entries);
+    const entries = getEntriesForDate(dateStr, user.entries);
     const isBankHoliday = bankHolidays.includes(dateStr);
     const isNWD = isNonWorkingDay(dateStr, user.profile.nonWorkingDays);
     const isToday = dateStr === todayStr;
-    const cellClass = resolveCellClass(entry, isBankHoliday, isNWD);
-    return { dateStr, entry, isBankHoliday, cellClass, isToday };
+    const cellClass = resolveCellClass(entries[0], isBankHoliday, isNWD);
+    return { dateStr, entries, isBankHoliday, cellClass, isToday };
   }
 
   function resolveCellClass(
@@ -167,7 +191,7 @@ export default function CalendarView({
 
 interface CalendarCellProps {
   dateStr: string;
-  entry: LeaveEntry | undefined;
+  entries: LeaveEntry[];
   isBankHoliday: boolean;
   cellClass: string;
   isToday: boolean;

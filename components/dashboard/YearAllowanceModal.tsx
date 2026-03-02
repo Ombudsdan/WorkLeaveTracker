@@ -3,12 +3,14 @@ import { useState } from "react";
 import type { YearAllowance } from "@/types";
 import FormField from "@/components/FormField";
 import Button from "@/components/Button";
+import CompanyCombobox from "@/components/CompanyCombobox";
 import { FormValidationProvider, useFormValidation } from "@/contexts/FormValidationContext";
 import { MONTH_NAMES_LONG } from "@/variables/calendar";
 
 export default function YearAllowanceModal({
   initialYear,
   existing,
+  existingCompanies,
   onClose,
   onSave,
 }: YearAllowanceModalProps) {
@@ -17,6 +19,7 @@ export default function YearAllowanceModal({
       <YearAllowanceModalInner
         initialYear={initialYear}
         existing={existing}
+        existingCompanies={existingCompanies}
         onClose={onClose}
         onSave={onSave}
       />
@@ -27,6 +30,7 @@ export default function YearAllowanceModal({
 function YearAllowanceModalInner({
   initialYear,
   existing,
+  existingCompanies = [],
   onClose,
   onSave,
 }: YearAllowanceModalProps) {
@@ -53,11 +57,12 @@ function YearAllowanceModalInner({
             max={2100}
             required
           />
-          <FormField
+          <CompanyCombobox
             id="ya-company"
             label="Company"
             value={company}
-            onChange={(v) => setCompany(v)}
+            onChange={setCompany}
+            suggestions={existingCompanies}
           />
           <div>
             <label
@@ -132,6 +137,9 @@ function YearAllowanceModalInner({
 interface YearAllowanceModalProps {
   initialYear?: number;
   existing?: YearAllowance;
+  /** Existing company names to show as suggestions in the combobox */
+  existingCompanies?: string[];
   onClose: () => void;
   onSave: (allowance: YearAllowance) => void;
 }
+
