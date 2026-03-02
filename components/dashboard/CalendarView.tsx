@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import type { LeaveEntry, PublicUser } from "@/types";
+import { LeaveStatus } from "@/types";
 import {
   CALENDAR_CELL_BANK_HOLIDAY,
   CALENDAR_CELL_NON_WORKING,
@@ -34,6 +35,17 @@ type CellLayout =
 // Helpers
 // ---------------------------------------------------------------------------
 
+/** Priority for ordering two entries on the same day: lower = higher priority */
+const STATUS_PRIORITY: Record<LeaveStatus, number> = {
+  [LeaveStatus.Approved]: 0,
+  [LeaveStatus.Requested]: 1,
+  [LeaveStatus.Planned]: 2,
+};
+
+function statusPriority(entry: LeaveEntry): number {
+  return STATUS_PRIORITY[entry.status] ?? 99;
+}
+
 function getNoteLabel(entry: LeaveEntry): string {
   const base = entry.notes ?? "";
   if (!entry.halfDay) return base;
@@ -50,26 +62,26 @@ function getCellLayout(entries: LeaveEntry[]): CellLayout {
     return e.halfDayPeriod === "am" ? { kind: "top", entry: e } : { kind: "bottom", entry: e };
   }
 
-  // Two entries — order: AM on top, PM on bottom (for half-days)
+  // Two entries — determine top/bottom placement
   const [a, b] = entries;
   const aIsAm = a.halfDay && a.halfDayPeriod === "am";
-  const bIsAm = b.halfDay && b.halfDayPeriod === "am";
   const aIsPm = a.halfDay && a.halfDayPeriod === "pm";
+  const bIsAm = b.halfDay && b.halfDayPeriod === "am";
+  const bIsPm = b.halfDay && b.halfDayPeriod === "pm";
 
-  let top: LeaveEntry;
-  let bottom: LeaveEntry;
+  // One is AM half-day, the other is PM half-day or full-day → AM goes top
+  if (aIsAm && !bIsAm) return { kind: "split", top: a, bottom: b };
+  if (bIsAm && !aIsAm) return { kind: "split", top: b, bottom: a };
 
-  if (aIsAm && !bIsAm) {
-    top = a; bottom = b;
-  } else if (bIsAm && !aIsAm) {
-    top = b; bottom = a;
-  } else if (aIsPm) {
-    top = b; bottom = a;
-  } else {
-    top = a; bottom = b;
-  }
+  // One is PM half-day, the other must be full-day (AM already handled above)
+  // → full-day goes top, PM goes bottom
+  if (aIsPm && !bIsPm) return { kind: "split", top: b, bottom: a };
+  if (bIsPm && !aIsPm) return { kind: "split", top: a, bottom: b };
 
-  return { kind: "split", top, bottom };
+  // Both have the same temporal position (both AM, both PM, or both full-day)
+  // → order by status priority (Approved > Requested > Planned), then default order
+  if (statusPriority(a) <= statusPriority(b)) return { kind: "split", top: a, bottom: b };
+  return { kind: "split", top: b, bottom: a };
 }
 
 // ---------------------------------------------------------------------------

@@ -13,17 +13,15 @@ interface SummaryCardProps {
   isOwnProfile: boolean;
 }
 
-// Donut chart segment colors
+// Chart segment colours — match the Tailwind status colours used elsewhere
 const DONUT_COLORS = {
   approved: "#86efac",   // green-300
   requested: "#93c5fd",  // blue-300
   planned: "#fde047",    // yellow-300
-  remaining: "#e5e7eb",  // gray-200
-  used: "#6366f1",       // indigo-500 (inner ring used portion)
 } as const;
 
 // ---------------------------------------------------------------------------
-// Dual-ring donut
+// Single-ring donut (approved → requested → planned, no remaining segment)
 // ---------------------------------------------------------------------------
 
 interface DonutSegment {
@@ -35,8 +33,8 @@ function buildArcPath(
   cx: number,
   cy: number,
   r: number,
-  startAngle: number, // degrees
-  endAngle: number    // degrees
+  startAngle: number,
+  endAngle: number
 ): string {
   const toRad = (deg: number) => (deg * Math.PI) / 180;
   const x1 = cx + r * Math.cos(toRad(startAngle));
@@ -47,104 +45,73 @@ function buildArcPath(
   return `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}`;
 }
 
-function RingPaths({
+function SingleRingDonut({
   segments,
   total,
-  r,
-  strokeWidth,
+  centerValue,
 }: {
   segments: DonutSegment[];
   total: number;
-  r: number;
-  strokeWidth: number;
+  centerValue: number;
 }) {
   const cx = 50;
   const cy = 50;
+  const R = 38;
+  const strokeWidth = 14;
   let cumulativeAngle = -90;
 
-  return (
-    <>
-      {/* Track */}
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f3f4f6" strokeWidth={strokeWidth} />
-      {segments
-        .filter((s) => s.value > 0 && total > 0)
-        .map((seg, i) => {
-          const pct = seg.value / total;
-          const angle = pct * 360;
-          const startAngle = cumulativeAngle;
-          cumulativeAngle += angle;
-          const endAngle = cumulativeAngle;
+  const paths = segments
+    .filter((s) => s.value > 0 && total > 0)
+    .map((seg, i) => {
+      const pct = seg.value / total;
+      const angle = pct * 360;
+      const startAngle = cumulativeAngle;
+      cumulativeAngle += angle;
+      const endAngle = cumulativeAngle;
 
-          if (pct >= 1) {
-            return (
-              <circle
-                key={i}
-                cx={cx}
-                cy={cy}
-                r={r}
-                fill="none"
-                stroke={seg.color}
-                strokeWidth={strokeWidth}
-              />
-            );
-          }
+      if (pct >= 1) {
+        return (
+          <circle
+            key={i}
+            cx={cx}
+            cy={cy}
+            r={R}
+            fill="none"
+            stroke={seg.color}
+            strokeWidth={strokeWidth}
+          />
+        );
+      }
 
-          return (
-            <path
-              key={i}
-              fill="none"
-              stroke={seg.color}
-              strokeWidth={strokeWidth}
-              d={buildArcPath(cx, cy, r, startAngle, endAngle)}
-            />
-          );
-        })}
-    </>
-  );
-}
+      return (
+        <path
+          key={i}
+          fill="none"
+          stroke={seg.color}
+          strokeWidth={strokeWidth}
+          d={buildArcPath(cx, cy, R, startAngle, endAngle)}
+        />
+      );
+    });
 
-function DualRingDonut({
-  outerSegments,
-  innerSegments,
-  outerTotal,
-  innerTotal,
-  centerValue,
-}: {
-  outerSegments: DonutSegment[];
-  innerSegments: DonutSegment[];
-  outerTotal: number;
-  innerTotal: number;
-  centerValue: number;
-}) {
   return (
     <svg viewBox="0 0 100 100" className="w-28 h-28 shrink-0">
-      {/* Inner ring (used %) — R=22, strokeWidth=9 */}
-      <RingPaths
-        segments={innerSegments}
-        total={innerTotal || 1}
-        r={22}
-        strokeWidth={9}
-      />
-      {/* Outer ring (composition) — R=38, strokeWidth=9 */}
-      <RingPaths
-        segments={outerSegments}
-        total={outerTotal || 1}
-        r={38}
-        strokeWidth={9}
-      />
-      {/* Center: remaining days */}
+      {/* Track (gray background ring) */}
+      <circle cx={cx} cy={cy} r={R} fill="none" stroke="#f3f4f6" strokeWidth={strokeWidth} />
+      {paths}
+      {/* Centre: remaining days */}
       <text
         x="50"
         y="46"
         textAnchor="middle"
         dominantBaseline="middle"
-        style={{ fontSize: 14, fontWeight: "bold", fill: "#374151" }}
+        style={{ fontSize: 16, fontWeight: "bold", fill: "#111827" }}
       >
         {centerValue}
       </text>
       <text
         x="50"
-        y="57"
+        y="58"
         textAnchor="middle"
         dominantBaseline="middle"
         style={{ fontSize: 7, fill: "#9ca3af" }}
@@ -167,19 +134,13 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
 
   const remaining = Math.max(0, summary.remaining);
 
-  // Outer ring: composition (approved, requested, planned, remaining)
-  const outerSegments: DonutSegment[] = [
+  // Single ring: approved → requested → planned (ordered as specified)
+  const ringSegments: DonutSegment[] = [
     { value: summary.approved, color: DONUT_COLORS.approved },
     { value: summary.requested, color: DONUT_COLORS.requested },
     { value: summary.planned, color: DONUT_COLORS.planned },
-    { value: remaining, color: DONUT_COLORS.remaining },
   ];
-
-  // Inner ring: total used vs remaining
-  const innerSegments: DonutSegment[] = [
-    { value: summary.used, color: DONUT_COLORS.used },
-    { value: remaining, color: DONUT_COLORS.remaining },
-  ];
+  const ringTotal = summary.approved + summary.requested + summary.planned;
 
   const statusRows: { label: string; status: LeaveStatus; count: number }[] = [
     { label: "Approved", status: LeaveStatus.Approved, count: summary.approved },
@@ -187,7 +148,7 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
     { label: "Planned", status: LeaveStatus.Planned, count: summary.planned },
   ];
 
-  const breakdownRows: { dot?: string; label: string; value: string }[] = [
+  const breakdownRows: { label: string; value: string }[] = [
     { label: "Core Days", value: String(activeYa?.core ?? 0) },
     { label: "Bought", value: `+${activeYa?.bought ?? 0}` },
     { label: "Carried Over", value: `+${activeYa?.carried ?? 0}` },
@@ -226,23 +187,21 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
         })}
       </p>
 
-      {/* Donut + key */}
+      {/* Donut + status key */}
       <div className="flex items-center gap-4 mb-4">
-        <DualRingDonut
-          outerSegments={outerSegments}
-          innerSegments={innerSegments}
-          outerTotal={summary.total || 1}
-          innerTotal={summary.total || 1}
+        <SingleRingDonut
+          segments={ringSegments}
+          total={ringTotal || 1}
           centerValue={remaining}
         />
         <div className="flex-1 space-y-1.5">
           {statusRows.map(({ label, status, count }) => (
             <div key={status} className="flex justify-between text-sm">
-              <span className="flex items-center gap-1.5">
+              <span className="flex items-center gap-1.5 text-gray-800 font-medium">
                 <span className={`w-2 h-2 rounded-full ${STATUS_DOT[status]}`} />
                 {label}
               </span>
-              <span className="text-gray-700 font-medium">{count} days</span>
+              <span className="text-gray-800 font-semibold">{count} days</span>
             </div>
           ))}
         </div>
@@ -262,27 +221,36 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
       {/* Breakdown details */}
       {showBreakdown && (
         <div className="mt-3 space-y-1 border-t border-gray-100 pt-3">
-          {breakdownRows.map(({ label, value }, i) => (
-            <div
-              key={label}
-              className={`flex justify-between text-xs ${
-                i === breakdownRows.length - 2 ? "border-t border-gray-100 pt-1 mt-1 font-semibold text-sm" : ""
-              } ${i === breakdownRows.length - 1 ? "font-bold text-sm" : "text-gray-600"}`}
-            >
-              <span>{label}</span>
-              <span
-                className={
-                  i === breakdownRows.length - 1 && summary.remaining < 0
-                    ? "text-red-600"
-                    : i === breakdownRows.length - 1
-                    ? "text-indigo-700"
-                    : ""
-                }
+          {breakdownRows.map(({ label, value }, i) => {
+            const isUsedSoFar = i === breakdownRows.length - 2;
+            const isRemaining = i === breakdownRows.length - 1;
+            return (
+              <div
+                key={label}
+                className={[
+                  "flex justify-between",
+                  isRemaining
+                    ? "font-bold text-sm text-gray-900 border-t border-gray-100 pt-1 mt-1"
+                    : isUsedSoFar
+                    ? "font-semibold text-sm text-gray-800"
+                    : "text-xs text-gray-600",
+                ].join(" ")}
               >
-                {value}
-              </span>
-            </div>
-          ))}
+                <span>{label}</span>
+                <span
+                  className={
+                    isRemaining
+                      ? summary.remaining < 0
+                        ? "text-red-600"
+                        : "text-indigo-700"
+                      : ""
+                  }
+                >
+                  {value}
+                </span>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

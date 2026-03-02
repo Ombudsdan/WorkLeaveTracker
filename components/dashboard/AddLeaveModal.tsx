@@ -14,6 +14,14 @@ import LeaveOptionPicker from "@/components/LeaveOptionPicker";
 import Button from "@/components/Button";
 import { FormValidationProvider, useFormValidation } from "@/contexts/FormValidationContext";
 
+type DurationType = "full" | "am" | "pm";
+
+const DURATION_OPTIONS: { value: DurationType; label: string }[] = [
+  { value: "full", label: "Full day(s)" },
+  { value: "am", label: "Half Day AM" },
+  { value: "pm", label: "Half Day PM" },
+];
+
 export default function AddLeaveModal({ onClose, onSave }: AddLeaveModalProps) {
   return (
     <FormValidationProvider>
@@ -24,15 +32,15 @@ export default function AddLeaveModal({ onClose, onSave }: AddLeaveModalProps) {
 
 function AddLeaveModalInner({ onClose, onSave }: AddLeaveModalProps) {
   const { triggerAllValidations, hasErrors } = useFormValidation();
-  const [isHalfDay, setIsHalfDay] = useState(false);
+  const [duration, setDuration] = useState<DurationType>("full");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [halfDayPeriod, setHalfDayPeriod] = useState<"am" | "pm" | "">("");
   const [notes, setNotes] = useState("");
   const [type, setType] = useState<LeaveType | "">("");
   const [status, setStatus] = useState<LeaveStatus | "">("");
   const [showTopError, setShowTopError] = useState(false);
 
+  const isHalfDay = duration !== "full";
   const isSick = type === LeaveType.Sick;
 
   const typeOptions = LEAVE_TYPE_ORDER.map((leaveType) => ({
@@ -45,27 +53,21 @@ function AddLeaveModalInner({ onClose, onSave }: AddLeaveModalProps) {
     label: LEAVE_STATUS_LABELS[leaveStatus],
   }));
 
-  const halfDayPeriodOptions = [
-    { value: "am" as const, label: "AM" },
-    { value: "pm" as const, label: "PM" },
-  ];
+  function handleDurationChange(value: DurationType) {
+    setDuration(value);
+    // Reset dates when switching mode so the picker is fresh
+    setStartDate("");
+    setEndDate("");
+  }
 
   function handleTypeChange(v: LeaveType) {
     setType(v);
     if (v === LeaveType.Sick) {
       setStatus(LeaveStatus.Approved);
-    } else if (status === LeaveStatus.Approved && type === LeaveType.Sick) {
-      // Reset status if switching away from sick
+    } else if (type === LeaveType.Sick) {
+      // Reset status when switching away from sick
       setStatus("");
     }
-  }
-
-  function handleHalfDayToggle(value: boolean) {
-    setIsHalfDay(value);
-    // Reset dates and period when toggling mode
-    setStartDate("");
-    setEndDate("");
-    setHalfDayPeriod("");
   }
 
   return (
@@ -82,34 +84,25 @@ function AddLeaveModalInner({ onClose, onSave }: AddLeaveModalProps) {
           </div>
         )}
         <div className="space-y-4">
-          {/* Full day / Half day toggle */}
+          {/* Duration — Full day(s) / Half Day AM / Half Day PM */}
           <div>
             <span className="block text-sm font-medium text-gray-600 mb-2">Duration</span>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => handleHalfDayToggle(false)}
-                aria-pressed={!isHalfDay}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition ${
-                  !isHalfDay
-                    ? "bg-indigo-600 text-white border-indigo-600"
-                    : "bg-white text-gray-700 border-gray-300 hover:border-indigo-400 hover:text-indigo-600"
-                }`}
-              >
-                Full day(s)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleHalfDayToggle(true)}
-                aria-pressed={isHalfDay}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition ${
-                  isHalfDay
-                    ? "bg-indigo-600 text-white border-indigo-600"
-                    : "bg-white text-gray-700 border-gray-300 hover:border-indigo-400 hover:text-indigo-600"
-                }`}
-              >
-                Half day
-              </button>
+            <div className="flex gap-2 flex-wrap">
+              {DURATION_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => handleDurationChange(opt.value)}
+                  aria-pressed={duration === opt.value}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition ${
+                    duration === opt.value
+                      ? "bg-indigo-600 text-white border-indigo-600"
+                      : "bg-white text-gray-700 border-gray-300 hover:border-indigo-400 hover:text-indigo-600"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -123,28 +116,6 @@ function AddLeaveModalInner({ onClose, onSave }: AddLeaveModalProps) {
             halfDayMode={isHalfDay}
           />
 
-          {/* AM/PM picker — only shown in half-day mode after a date is selected */}
-          {isHalfDay && startDate && (
-            <LeaveOptionPicker
-              id="add-halfDayPeriod"
-              label="Time of day"
-              options={halfDayPeriodOptions}
-              value={halfDayPeriod}
-              onChange={(v) => setHalfDayPeriod(v)}
-              required="Please select AM or PM"
-            />
-          )}
-
-          {/* Reason — required, shown before Type */}
-          <FormField
-            id="add-reason"
-            label="Reason"
-            value={notes}
-            onChange={(v) => setNotes(v)}
-            placeholder="e.g. Beach holiday"
-            required
-          />
-
           {/* Type */}
           <LeaveOptionPicker
             id="add-type"
@@ -152,6 +123,16 @@ function AddLeaveModalInner({ onClose, onSave }: AddLeaveModalProps) {
             options={typeOptions}
             value={type}
             onChange={(v) => handleTypeChange(v)}
+            required
+          />
+
+          {/* Reason — required */}
+          <FormField
+            id="add-reason"
+            label="Reason"
+            value={notes}
+            onChange={(v) => setNotes(v)}
+            placeholder="e.g. Beach holiday"
             required
           />
 
@@ -195,7 +176,7 @@ function AddLeaveModalInner({ onClose, onSave }: AddLeaveModalProps) {
       notes,
       ...(isHalfDay && {
         halfDay: true,
-        halfDayPeriod: halfDayPeriod as "am" | "pm",
+        halfDayPeriod: duration as "am" | "pm",
       }),
     });
   }

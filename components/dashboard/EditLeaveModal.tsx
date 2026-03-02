@@ -87,11 +87,11 @@ function EditLeaveModalInner({ entry, onClose, onSave }: EditLeaveModalProps) {
             required
           />
 
-          {/* AM/PM picker for half-day entries */}
+          {/* AM/PM selector for half-day entries */}
           {isHalfDay && (
             <LeaveOptionPicker
               id="edit-halfDayPeriod"
-              label="Time of day"
+              label="Half-day period"
               options={halfDayPeriodOptions}
               value={halfDayPeriod}
               onChange={(v) => setHalfDayPeriod(v)}

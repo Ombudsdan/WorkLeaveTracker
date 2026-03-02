@@ -534,3 +534,120 @@ describe("CalendarView — half-day popover shows 0.5 working days", () => {
     expect(screen.getByText(/0\.5 working day/i)).toBeInTheDocument();
   });
 });
+
+describe("CalendarView — getCellLayout full-day + half-day placement", () => {
+  it("places a full-day entry in the bottom half when the half-day is AM", () => {
+    const amHalfDay = {
+      id: "e-am-h",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      halfDay: true,
+      halfDayPeriod: "am" as const,
+      notes: "AM",
+    };
+    const fullDay = {
+      id: "e-full-h",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Planned,
+      type: LeaveType.Holiday,
+      notes: "Full",
+    };
+    render(
+      <CalendarView user={{ ...alice, entries: [amHalfDay, fullDay] }} bankHolidays={[]} />
+    );
+    // Both entries should be visible
+    expect(screen.getByText("AM (AM)")).toBeInTheDocument();
+    expect(screen.getByText("Full")).toBeInTheDocument();
+  });
+
+  it("places a full-day entry in the top half when the half-day is PM", () => {
+    const pmHalfDay = {
+      id: "e-pm-h",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      halfDay: true,
+      halfDayPeriod: "pm" as const,
+      notes: "PM",
+    };
+    const fullDay = {
+      id: "e-full-h2",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Requested,
+      type: LeaveType.Holiday,
+      notes: "Full",
+    };
+    render(
+      <CalendarView user={{ ...alice, entries: [pmHalfDay, fullDay] }} bankHolidays={[]} />
+    );
+    expect(screen.getByText("PM (PM)")).toBeInTheDocument();
+    expect(screen.getByText("Full")).toBeInTheDocument();
+  });
+});
+
+describe("CalendarView — getCellLayout status priority ordering", () => {
+  it("places the Approved entry above the Planned entry when both are full-day", () => {
+    const approved = {
+      id: "e-appr",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      notes: "ApprovedLeave",
+    };
+    const planned = {
+      id: "e-plan",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Planned,
+      type: LeaveType.Holiday,
+      notes: "PlannedLeave",
+    };
+    const { container } = render(
+      <CalendarView user={{ ...alice, entries: [planned, approved] }} bankHolidays={[]} />
+    );
+    // Both texts should appear in the split cell
+    expect(screen.getByText("ApprovedLeave")).toBeInTheDocument();
+    expect(screen.getByText("PlannedLeave")).toBeInTheDocument();
+    // Approved should appear before Planned in the DOM (top half first)
+    const allText = container.textContent ?? "";
+    const approvedPos = allText.indexOf("ApprovedLeave");
+    const plannedPos = allText.indexOf("PlannedLeave");
+    expect(approvedPos).toBeLessThan(plannedPos);
+  });
+
+  it("places the Requested entry above the Planned entry when both are same AM period", () => {
+    const requested = {
+      id: "e-req-am",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Requested,
+      type: LeaveType.Holiday,
+      halfDay: true,
+      halfDayPeriod: "am" as const,
+      notes: "RequestedAM",
+    };
+    const planned = {
+      id: "e-plan-am",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Planned,
+      type: LeaveType.Holiday,
+      halfDay: true,
+      halfDayPeriod: "am" as const,
+      notes: "PlannedAM",
+    };
+    const { container } = render(
+      <CalendarView user={{ ...alice, entries: [planned, requested] }} bankHolidays={[]} />
+    );
+    expect(screen.getByText("RequestedAM (AM)")).toBeInTheDocument();
+    expect(screen.getByText("PlannedAM (AM)")).toBeInTheDocument();
+    const allText = container.textContent ?? "";
+    expect(allText.indexOf("RequestedAM")).toBeLessThan(allText.indexOf("PlannedAM"));
+  });
+});

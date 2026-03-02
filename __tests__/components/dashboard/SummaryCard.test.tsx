@@ -114,7 +114,7 @@ describe("SummaryCard — with approved entries", () => {
   });
 });
 
-describe("SummaryCard — dual-ring donut", () => {
+describe("SummaryCard — single-ring donut", () => {
   it("renders the SVG donut chart by default (no click required)", () => {
     const { container } = render(
       <SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />
@@ -128,6 +128,18 @@ describe("SummaryCard — dual-ring donut", () => {
     );
     const svgText = container.querySelector("svg")?.textContent;
     expect(svgText).toContain("25"); // 25 remaining when no entries
+  });
+
+  it("renders only one SVG ring (single circle track)", () => {
+    const { container } = render(
+      <SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />
+    );
+    // Single ring: one track circle (gray) — only 1 circle element in the SVG
+    const svg = container.querySelector("svg");
+    expect(svg).toBeInTheDocument();
+    const circles = svg!.querySelectorAll("circle");
+    // There should be exactly 1 circle (the track; segments are paths when value > 0)
+    expect(circles.length).toBe(1);
   });
 });
 
@@ -169,5 +181,18 @@ describe("SummaryCard — allowance breakdown toggle", () => {
     expect(screen.getByText("Core Days")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /hide breakdown/i }));
     expect(screen.queryByText("Core Days")).toBeNull();
+  });
+});
+
+describe("SummaryCard — breakdown Remaining row readability", () => {
+  it("shows Remaining in the breakdown with visible styling (text-gray-900)", async () => {
+    const user = setup();
+    render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
+    await user.click(screen.getByRole("button", { name: /view breakdown/i }));
+    const remaining = screen.getByText("Remaining");
+    // Should have an explicit dark text colour class (text-gray-900 via the parent div)
+    expect(remaining).toBeInTheDocument();
+    const parentDiv = remaining.closest("div");
+    expect(parentDiv?.className).toContain("text-gray-900");
   });
 });
