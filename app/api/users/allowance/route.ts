@@ -19,9 +19,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
-  let user = findUserById(userId);
+  let user = await findUserById(userId);
   if (!user && session.user?.email) {
-    user = findUserByEmail(session.user.email);
+    user = await findUserByEmail(session.user.email);
   }
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   yearAllowances.push(newAllowance);
   yearAllowances.sort((a, b) => a.year - b.year);
 
-  const updated = updateUser(user.id, { yearAllowances });
+  const updated = await updateUser(user.id, { yearAllowances });
   if (!updated) return NextResponse.json({ error: "Update failed" }, { status: 500 });
 
   return NextResponse.json(newAllowance);

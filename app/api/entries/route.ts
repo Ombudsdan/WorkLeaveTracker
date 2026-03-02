@@ -14,9 +14,9 @@ export async function GET() {
   const userId = (session.user as { id?: string }).id;
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  let user = findUserById(userId);
+  let user = await findUserById(userId);
   if (!user && session.user?.email) {
-    user = findUserByEmail(session.user.email);
+    user = await findUserByEmail(session.user.email);
   }
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -32,9 +32,9 @@ export async function POST(request: Request) {
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   // Try ID first; fall back to email lookup in case the session ID is stale
-  let resolvedUser = findUserById(userId);
+  let resolvedUser = await findUserById(userId);
   if (!resolvedUser && session.user?.email) {
-    resolvedUser = findUserByEmail(session.user.email);
+    resolvedUser = await findUserByEmail(session.user.email);
   }
   if (!resolvedUser) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     notes: body.notes,
   };
 
-  const ok = addEntry(resolvedUser.id, entry);
+  const ok = await addEntry(resolvedUser.id, entry);
   if (!ok) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
   return NextResponse.json(entry, { status: 201 });
