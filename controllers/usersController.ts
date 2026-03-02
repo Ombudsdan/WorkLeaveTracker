@@ -7,13 +7,20 @@ export const usersController = {
     return res.json();
   },
 
-  async updateProfile(profile: UserProfile): Promise<boolean> {
+  /**
+   * PATCH the current user's profile.
+   * Returns the full updated user (which includes yearAllowances, entries, etc.)
+   * so the caller can sync local state directly from the response, avoiding a
+   * second fetchAll() round-trip.  Returns null on failure.
+   */
+  async updateProfile(profile: UserProfile): Promise<PublicUser | null> {
     const res = await fetch("/api/users", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ profile }),
     });
-    return res.ok;
+    if (!res.ok) return null;
+    return res.json() as Promise<PublicUser>;
   },
 
   async addYearAllowance(yearAllowance: YearAllowance): Promise<YearAllowance | null> {

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, type FormEvent } from "react";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import type { PublicUser, YearAllowance } from "@/types";
 import { CheckCircle, Check } from "lucide-react";
@@ -17,6 +17,8 @@ import PinUserModal from "@/components/dashboard/PinUserModal";
 import { getActiveYearAllowance } from "@/utils/dateHelpers";
 
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
+/** How long to wait before retrying when the user record is not found. */
+const PROFILE_RETRY_DELAY_MS = 400;
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
@@ -33,6 +35,7 @@ export default function ProfilePage() {
   const [saved, setSaved] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [profileError, setProfileError] = useState(false);
   const [showAllowanceModal, setShowAllowanceModal] = useState(false);
   const [editingAllowance, setEditingAllowance] = useState<YearAllowance | undefined>(undefined);
   const [showPinModal, setShowPinModal] = useState(false);
@@ -53,32 +56,49 @@ export default function ProfilePage() {
     if (status !== "authenticated") return;
     let active = true;
     setLoading(true);
+    setProfileError(false);
     const sessionId = (session?.user as { id?: string })?.id;
-    usersController
-      .fetchAll()
-      .then((result) => {
+
+    async function loadProfile() {
+      // Retry a few times before showing an error — handles the case where the
+      // server-side data is transiently unavailable (e.g. Vercel cold start on
+      // a Lambda instance that hasn't yet received the user's data).
+      // 3 total attempts (initial + 2 retries) before showing an error.
+      for (let attempt = 0; attempt <= 2; attempt++) {
+        if (attempt > 0) await new Promise<void>((r) => setTimeout(r, PROFILE_RETRY_DELAY_MS));
         if (!active) return;
-        setLoading(false);
-        if (!Array.isArray(result)) return;
-        setAllUsers(result);
+        const result = await usersController.fetchAll();
+        if (!active) return;
+        if (!Array.isArray(result)) continue;
         // Prefer ID-based lookup; fall back to email for robustness
         const me =
           (sessionId ? result.find((u) => u.id === sessionId) : undefined) ??
           result.find((u) => u.profile.email === session?.user?.email);
         if (me) {
+          setAllUsers(result);
           applyUserProfile(me);
-        } else {
-          // User not found in DB — the session is likely stale (e.g. the dev
-          // server restarted, regenerating NEXTAUTH_SECRET, or the DB was
-          // reset).  Sign out to clear the stale client-side session so the
-          // user can log back in with a fresh session.
-          signOut({ callbackUrl: "/login" });
+          setLoading(false);
+          return;
         }
-      })
-      .catch(() => {
-        if (!active) return;
+      }
+      // All retries exhausted — show an error state.  We deliberately do NOT
+      // call signOut here: the session JWT may still be valid, and on Vercel
+      // the user's data simply may not be present on this Lambda instance.
+      // Signing out would destroy the valid session and the user would be
+      // unable to log back in on the same Lambda instance.
+      if (active) {
         setLoading(false);
-      });
+        setProfileError(true);
+      }
+    }
+
+    loadProfile().catch(() => {
+      if (active) {
+        setLoading(false);
+        setProfileError(true);
+      }
+    });
+
     return () => {
       active = false;
     };
@@ -86,6 +106,26 @@ export default function ProfilePage() {
 
   if (status === "loading" || loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading…</div>;
+  }
+
+  if (profileError) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <NavBar activePage="profile" />
+        <main className="max-w-2xl mx-auto py-8 px-4">
+          <div className="bg-amber-50 border border-amber-300 text-amber-800 rounded-xl px-4 py-3 text-sm">
+            Your profile could not be loaded. Please{" "}
+            <button
+              onClick={() => window.location.reload()}
+              className="underline font-medium hover:text-amber-900"
+            >
+              refresh the page
+            </button>
+            .
+          </div>
+        </main>
+      </div>
+    );
   }
 
   const activeYa = getActiveYearAllowance(yearAllowances);
@@ -320,7 +360,11 @@ export default function ProfilePage() {
 
     const nonWorkingDays = ALL_DAYS.filter((d) => !workingDays.includes(d));
 
-    const ok = await usersController.updateProfile({
+    // updateProfile now returns the full updated user so we can sync all
+    // local state (including yearAllowances) directly from the PATCH response,
+    // without a separate fetchAll() round-trip that could hit a different
+    // Vercel Lambda instance.
+    const updated = await usersController.updateProfile({
       firstName,
       lastName,
       email,
@@ -328,23 +372,12 @@ export default function ProfilePage() {
       pinnedUserIds,
     });
 
-    if (!ok) {
+    if (!updated) {
       setSubmitError("Failed to save. Please try again.");
     } else {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
-      // Re-sync local state from the server after a successful save.  This
-      // ensures that yearAllowances and pinnedUserIds (which are not part of
-      // the PATCH body) are always up to date, and catches any case where the
-      // client and server state have diverged.
-      const sessionId = (session?.user as { id?: string })?.id;
-      const refreshed = await usersController.fetchAll();
-      if (Array.isArray(refreshed) && refreshed.length > 0) {
-        const me =
-          (sessionId ? refreshed.find((u) => u.id === sessionId) : undefined) ??
-          refreshed.find((u) => u.profile.email === email);
-        if (me) applyUserProfile(me);
-      }
+      applyUserProfile(updated);
     }
   }
 

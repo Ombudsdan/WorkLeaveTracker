@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import type { PublicUser, LeaveEntry, UserAllowance } from "@/types";
 import NavBar from "@/components/NavBar";
@@ -49,11 +49,11 @@ export default function DashboardPage() {
     async function initDashboard() {
       setLoading(true);
       try {
-        // Retry once (after a brief delay) if the user record is not found on
-        // the first attempt — handles the rare case where a preceding write
-        // (e.g. setup page save) hasn't fully persisted yet.
-        for (let attempt = 0; attempt <= 1; attempt++) {
-          if (attempt > 0) await new Promise<void>((r) => setTimeout(r, DASHBOARD_RETRY_DELAY_MS));
+        // 5 total attempts (initial + 4 retries) with increasing delays:
+        // 0ms, 400ms, 800ms, 1200ms, 1600ms between successive attempts.
+        for (let attempt = 0; attempt <= 4; attempt++) {
+          if (attempt > 0)
+            await new Promise<void>((r) => setTimeout(r, DASHBOARD_RETRY_DELAY_MS * attempt));
           const [rawUsers, holidays] = await Promise.all([
             usersController.fetchAll(),
             holidaysController.fetchBankHolidays(),
@@ -103,13 +103,6 @@ export default function DashboardPage() {
               className="underline font-medium hover:text-amber-900"
             >
               refresh the page
-            </button>{" "}
-            or{" "}
-            <button
-              onClick={() => signOut({ callbackUrl: "/login" })}
-              className="underline font-medium hover:text-amber-900"
-            >
-              sign in again
             </button>
             .
           </div>

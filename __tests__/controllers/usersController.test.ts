@@ -45,8 +45,8 @@ describe("usersController.fetchAll", () => {
 describe("usersController.updateProfile", () => {
   const profile = mockUser.profile;
 
-  it("calls PATCH /api/users and returns true on success", async () => {
-    mockFetch(null, true);
+  it("calls PATCH /api/users and returns the updated user on success", async () => {
+    mockFetch(mockUser, true);
     const result = await usersController.updateProfile(profile);
     expect(fetch).toHaveBeenCalledWith(
       "/api/users",
@@ -56,13 +56,13 @@ describe("usersController.updateProfile", () => {
         body: JSON.stringify({ profile }),
       })
     );
-    expect(result).toBe(true);
+    expect(result).toEqual(mockUser);
   });
 
-  it("returns false when the API responds with a non-ok status", async () => {
+  it("returns null when the API responds with a non-ok status", async () => {
     mockFetch(null, false, 500);
     const result = await usersController.updateProfile(profile);
-    expect(result).toBe(false);
+    expect(result).toBeNull();
   });
 });
 
