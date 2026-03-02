@@ -13,6 +13,14 @@ interface SummaryCardProps {
   isOwnProfile: boolean;
 }
 
+// Donut chart segment colors (these are specific to the chart, not the Tailwind cell/status colours)
+const DONUT_COLORS = {
+  approved: "#86efac",  // green-300
+  requested: "#93c5fd", // blue-300
+  planned: "#fde047",   // yellow-300
+  remaining: "#e5e7eb", // gray-200
+} as const;
+
 // ---------------------------------------------------------------------------
 // Donut chart — pure SVG, no external dependencies
 // ---------------------------------------------------------------------------
@@ -112,10 +120,10 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
   // Donut segments: approved (green), requested (blue), planned (yellow), remaining (light gray)
   const remaining = Math.max(0, summary.remaining);
   const donutSegments: DonutSegment[] = [
-    { value: summary.approved, color: "#86efac", label: "Approved" },   // green-300
-    { value: summary.requested, color: "#93c5fd", label: "Requested" }, // blue-300
-    { value: summary.planned, color: "#fde047", label: "Planned" },     // yellow-300
-    { value: remaining, color: "#e5e7eb", label: "Remaining" },         // gray-200
+    { value: summary.approved, color: DONUT_COLORS.approved, label: "Approved" },
+    { value: summary.requested, color: DONUT_COLORS.requested, label: "Requested" },
+    { value: summary.planned, color: DONUT_COLORS.planned, label: "Planned" },
+    { value: remaining, color: DONUT_COLORS.remaining, label: "Remaining" },
   ];
 
   return (
@@ -202,10 +210,10 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
                   <span>{summary.total}</span>
                 </div>
                 <div className="flex items-center gap-1 mt-1 text-[10px] text-gray-400 flex-wrap">
-                  <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded-full bg-green-300 inline-block" /> Approved</span>
-                  <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded-full bg-blue-300 inline-block" /> Requested</span>
-                  <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded-full bg-yellow-300 inline-block" /> Planned</span>
-                  <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded-full bg-gray-200 inline-block" /> Remaining</span>
+                  <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: DONUT_COLORS.approved }} /> Approved</span>
+                  <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: DONUT_COLORS.requested }} /> Requested</span>
+                  <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: DONUT_COLORS.planned }} /> Planned</span>
+                  <span className="flex items-center gap-0.5"><span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: DONUT_COLORS.remaining }} /> Remaining</span>
                 </div>
               </div>
             </div>

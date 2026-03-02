@@ -155,7 +155,7 @@ export default function CalendarView({
                     className={`flex-1 flex items-center justify-center overflow-hidden px-0.5 ${CALENDAR_COLORS[cell.entries[0].status]}`}
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleCellClick(cell.entries[0], (e.currentTarget as HTMLElement).closest("[data-cell]") as HTMLElement || e.currentTarget as HTMLElement);
+                      handleCellClick(cell.entries[0], e.currentTarget as HTMLElement);
                     }}
                   >
                     {cell.entries[0].notes ? (
@@ -175,7 +175,7 @@ export default function CalendarView({
                     className={`flex-1 flex items-center justify-center overflow-hidden px-0.5 ${CALENDAR_COLORS[cell.entries[1].status]}`}
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleCellClick(cell.entries[1], (e.currentTarget as HTMLElement).closest("[data-cell]") as HTMLElement || e.currentTarget as HTMLElement);
+                      handleCellClick(cell.entries[1], e.currentTarget as HTMLElement);
                     }}
                   >
                     {cell.entries[1].notes ? (
