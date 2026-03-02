@@ -52,7 +52,9 @@ export default function LeaveList({
               dur === LeaveDuration.HalfMorning ? "AM" :
               dur === LeaveDuration.HalfAfternoon ? "PM" : "";
             const days = countEntryDays(entry, user.profile.nonWorkingDays, bankHolidayDates);
-            const daysLabel = isHalf ? `0.5d ${periodLabel}` : `${days}d`;
+            const daysLabel = isHalf
+              ? `Half Day ${periodLabel}`
+              : `${days}d`;
             const isSick = entry.type === LeaveType.Sick;
             const statusLabel = isSick
               ? "Sick"

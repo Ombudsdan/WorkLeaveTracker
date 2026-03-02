@@ -37,10 +37,11 @@ describe("AddLeaveModal — rendering", () => {
     expect(screen.getByText(/Mar 2026/i)).toBeInTheDocument();
   });
 
-  it("renders Type option buttons with all type choices (no Other)", () => {
+  it("renders Type option buttons with Holiday (sick is hidden when feature flag is off)", () => {
     renderModal(<AddLeaveModal onClose={jest.fn()} onSave={jest.fn()} />);
     expect(screen.getByRole("button", { name: "Holiday" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Sick" })).toBeInTheDocument();
+    // Sick is behind ENABLE_FEATURE_SICK_LEAVE which is off by default in tests
+    expect(screen.queryByRole("button", { name: "Sick" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Other" })).toBeNull();
   });
 
@@ -80,13 +81,13 @@ describe("AddLeaveModal — rendering", () => {
     expect(screen.getByLabelText("Reason")).toBeInTheDocument();
   });
 
-  it("no type is pre-selected by default", () => {
+  it("Holiday type is pre-selected by default (sick leave feature off)", () => {
     renderModal(<AddLeaveModal onClose={jest.fn()} onSave={jest.fn()} />);
+    // When SICK_LEAVE_ENABLED=false, type defaults to Holiday
     expect(screen.getByRole("button", { name: "Holiday" })).toHaveAttribute(
       "aria-pressed",
-      "false"
+      "true"
     );
-    expect(screen.getByRole("button", { name: "Sick" })).toHaveAttribute("aria-pressed", "false");
   });
 
   it("no status is pre-selected by default", () => {
@@ -114,16 +115,16 @@ describe("AddLeaveModal — validation on save", () => {
     expect(screen.getByText("Please select a start date")).toBeInTheDocument();
   });
 
-  it("shows type required error when Save is clicked with no type selected", async () => {
+  it("requires only dates, reason and status when sick leave feature is off (type=Holiday auto-set)", async () => {
     const user = setup();
     renderModal(<AddLeaveModal onClose={jest.fn()} onSave={jest.fn()} />);
-    // Select dates
+    // Select dates and status only — type is already Holiday, reason is still missing
     await user.click(screen.getByRole("button", { name: "2026-03-09" }));
     await user.click(screen.getByRole("button", { name: "2026-03-13" }));
-    // Select status but not type
     await user.click(screen.getByRole("button", { name: /Planned/i }));
     await user.click(screen.getByRole("button", { name: "Save" }));
-    expect(screen.getByText("Type is required")).toBeInTheDocument();
+    // Type is auto-set; only reason (and optionally status) may still be missing
+    expect(screen.queryByText("Type is required")).toBeNull();
   });
 
   it("shows status required error when Save is clicked with no status selected", async () => {
@@ -196,16 +197,16 @@ describe("AddLeaveModal — onSave", () => {
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ status: LeaveStatus.Approved }));
   });
 
-  it("calls onSave with the chosen type", async () => {
+  it("calls onSave with Holiday type (auto-set when sick feature is off)", async () => {
     const user = setup();
     const onSave = jest.fn();
     renderModal(<AddLeaveModal onClose={jest.fn()} onSave={onSave} />);
     await user.click(screen.getByRole("button", { name: "2026-03-09" }));
     await user.click(screen.getByRole("button", { name: "2026-03-09" }));
-    await user.type(screen.getByLabelText("Reason"), "Sick day");
-    await user.click(screen.getByRole("button", { name: "Sick" }));
+    await user.type(screen.getByLabelText("Reason"), "Day off");
+    await user.click(screen.getByRole("button", { name: /Planned/i }));
     await user.click(screen.getByRole("button", { name: "Save" }));
-    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ type: LeaveType.Sick }));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ type: LeaveType.Holiday }));
   });
 });
 
@@ -220,27 +221,24 @@ describe("AddLeaveModal — onClose", () => {
 });
 
 describe("AddLeaveModal — sick leave auto-status", () => {
-  it("hides the Status picker when Sick is selected", async () => {
-    const user = setup();
+  it("does not show the Sick type button when ENABLE_FEATURE_SICK_LEAVE is off (default)", () => {
     renderModal(<AddLeaveModal onClose={jest.fn()} onSave={jest.fn()} />);
-    // Before selecting sick, status pills are visible
+    // Sick button is hidden; status picker is visible for Holiday
+    expect(screen.queryByRole("button", { name: "Sick" })).toBeNull();
     expect(screen.getByRole("button", { name: /Planned/i })).toBeInTheDocument();
-    // Select sick type
-    await user.click(screen.getByRole("button", { name: "Sick" }));
-    expect(screen.queryByRole("button", { name: /Planned/i })).toBeNull();
   });
 
-  it("saves with status=Approved when Sick is selected (no status picker shown)", async () => {
+  it("saves with status=Planned when Holiday is selected and Planned status is chosen", async () => {
     const user = setup();
     const onSave = jest.fn();
     renderModal(<AddLeaveModal onClose={jest.fn()} onSave={onSave} />);
     await user.click(screen.getByRole("button", { name: "2026-03-09" }));
     await user.click(screen.getByRole("button", { name: "2026-03-09" }));
-    await user.click(screen.getByRole("button", { name: "Sick" }));
-    await user.type(screen.getByLabelText("Reason"), "Sick day");
+    await user.type(screen.getByLabelText("Reason"), "Day off");
+    await user.click(screen.getByRole("button", { name: /Planned/i }));
     await user.click(screen.getByRole("button", { name: "Save" }));
     expect(onSave).toHaveBeenCalledWith(
-      expect.objectContaining({ type: LeaveType.Sick, status: LeaveStatus.Approved })
+      expect.objectContaining({ type: LeaveType.Holiday, status: LeaveStatus.Planned })
     );
   });
 });

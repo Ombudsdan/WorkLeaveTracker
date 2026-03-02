@@ -14,6 +14,7 @@ import LeaveOptionPicker from "@/components/LeaveOptionPicker";
 import Button from "@/components/Button";
 import { useFormValidation } from "@/contexts/FormValidationContext";
 import { getEntryDuration } from "@/utils/dateHelpers";
+import { SICK_LEAVE_ENABLED } from "@/utils/features";
 
 export type DurationType = "full" | "am" | "pm";
 
@@ -85,7 +86,9 @@ export default function LeaveForm({
   const [duration, setDuration] = useState<DurationType>(initial?.duration ?? "full");
   const [startDate, setStartDate] = useState(initial?.startDate ?? "");
   const [endDate, setEndDate] = useState(initial?.endDate ?? "");
-  const [type, setType] = useState<LeaveType | "">(initial?.type ?? "");
+  const [type, setType] = useState<LeaveType | "">(
+    initial?.type ?? (SICK_LEAVE_ENABLED ? "" : LeaveType.Holiday)
+  );
   const [notes, setNotes] = useState(initial?.notes ?? "");
   const [status, setStatus] = useState<LeaveStatus | "">(initial?.status ?? "");
   const [showTopError, setShowTopError] = useState(false);
@@ -93,10 +96,12 @@ export default function LeaveForm({
   const isHalfDay = duration !== "full";
   const isSick = type === LeaveType.Sick;
 
-  const typeOptions = LEAVE_TYPE_ORDER.map((t) => ({
-    value: t,
-    label: LEAVE_TYPE_LABELS[t],
-  }));
+  const typeOptions = LEAVE_TYPE_ORDER
+    .filter((t) => t !== LeaveType.Sick || SICK_LEAVE_ENABLED)
+    .map((t) => ({
+      value: t,
+      label: LEAVE_TYPE_LABELS[t],
+    }));
 
   const statusOptions = LEAVE_STATUS_ORDER.map((s) => ({
     value: s,

@@ -41,21 +41,21 @@ function bh(date: string, title = "Bank Holiday"): BankHolidayEntry {
 describe("CalendarView — header and navigation", () => {
   it("renders the current month and year initially", () => {
     render(<CalendarView user={alice} bankHolidays={[]} />);
-    expect(screen.getByRole("heading", { name: /Mar 2026/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /March 2026/i })).toBeInTheDocument();
   });
 
   it("navigates to the previous month when the ‹ button is clicked", async () => {
     const user = setup();
     render(<CalendarView user={alice} bankHolidays={[]} />);
     await user.click(screen.getByRole("button", { name: "Previous month" }));
-    expect(screen.getByRole("heading", { name: /Feb 2026/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /February 2026/i })).toBeInTheDocument();
   });
 
   it("navigates to the next month when the › button is clicked", async () => {
     const user = setup();
     render(<CalendarView user={alice} bankHolidays={[]} />);
     await user.click(screen.getByRole("button", { name: "Next month" }));
-    expect(screen.getByRole("heading", { name: /Apr 2026/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /April 2026/i })).toBeInTheDocument();
   });
 
   it("wraps from January to December (previous) correctly", async () => {
@@ -66,7 +66,7 @@ describe("CalendarView — header and navigation", () => {
     await user.click(prev); // Feb
     await user.click(prev); // Jan
     await user.click(prev); // Dec 2025
-    expect(screen.getByRole("heading", { name: /Dec 2025/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /December 2025/i })).toBeInTheDocument();
   });
 
   it("wraps from December to January (next) correctly", async () => {
@@ -74,7 +74,7 @@ describe("CalendarView — header and navigation", () => {
     const user = setup();
     render(<CalendarView user={alice} bankHolidays={[]} />);
     await user.click(screen.getByRole("button", { name: "Next month" }));
-    expect(screen.getByRole("heading", { name: /Jan 2027/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /January 2027/i })).toBeInTheDocument();
   });
 });
 
@@ -191,6 +191,28 @@ describe("CalendarView — non-working day display", () => {
     // bg-gray-100 is CALENDAR_CELL_NON_WORKING
     // March 2026 has Sundays on 1, 8, 15, 22, 29
     expect(container.querySelector(".bg-gray-100")).toBeInTheDocument();
+  });
+
+  it("shows 'Non-Working' label in a weekday non-working-day cell", () => {
+    // Set Wednesday (3) as a non-working day for this user
+    const userWithWedOff: PublicUser = {
+      ...alice,
+      profile: { ...alice.profile, nonWorkingDays: [0, 3, 6] },
+    };
+    render(<CalendarView user={userWithWedOff} bankHolidays={[]} />);
+    // March 2026 has Wednesdays on 4, 11, 18, 25 — "Non-Working" should appear
+    // (getByText would fail if there are 0 or >1 exact matches, use getAllByText)
+    const labels = screen.getAllByText("Non-Working");
+    // Cells + legend entry = more than one (at least legend + one cell)
+    expect(labels.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("does NOT show 'Non-Working' label in standard weekend cells", () => {
+    // Alice already has Sun+Sat non-working — default. Weekend cells should not get the label.
+    render(<CalendarView user={alice} bankHolidays={[]} />);
+    // The only "Non-Working" text should be the legend entry (exactly 1)
+    const labels = screen.getAllByText("Non-Working");
+    expect(labels).toHaveLength(1);
   });
 });
 
@@ -456,9 +478,9 @@ describe("CalendarView — sick leave colour", () => {
     expect(container.querySelector(".bg-red-200")).toBeInTheDocument();
   });
 
-  it("shows 'Sick' in the calendar legend", () => {
+  it("does NOT show 'Sick' in the calendar legend when sick feature is disabled (default)", () => {
     render(<CalendarView user={alice} bankHolidays={[]} />);
-    expect(screen.getByText("Sick")).toBeInTheDocument();
+    expect(screen.queryByText("Sick")).toBeNull();
   });
 });
 

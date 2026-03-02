@@ -10,7 +10,7 @@ import {
   SICK_LEAVE_CARD_COLORS,
   getCalendarEntryClass,
 } from "@/variables/colours";
-import { MONTH_NAMES_SHORT, DAY_NAMES_SHORT } from "@/variables/calendar";
+import { MONTH_NAMES_LONG, DAY_NAMES_SHORT } from "@/variables/calendar";
 import {
   getDaysInMonth,
   getFirstDayOfMonth,
@@ -20,6 +20,7 @@ import {
   countEntryDays,
   getEntryDuration,
 } from "@/utils/dateHelpers";
+import { SICK_LEAVE_ENABLED } from "@/utils/features";
 import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, X } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -162,6 +163,11 @@ export default function CalendarView({
     const isBankHoliday = bankHolidayDates.includes(dateStr);
     const bankHolidayName = bankHolidayNames.get(dateStr);
     const isNWD = isNonWorkingDay(dateStr, user.profile.nonWorkingDays);
+    // Compute day-of-week from the known first-day offset to avoid an extra Date allocation.
+    // Show "Non-Working" label only for weekday non-working days (Mon–Fri that are
+    // in nonWorkingDays), not for standard weekend days.
+    const dow = (firstDay + day - 1) % 7;
+    const isWeekdayNWD = isNWD && dow !== 0 && dow !== 6;
     const isToday = dateStr === todayStr;
     const layout = getCellLayout(entries);
 
@@ -187,6 +193,11 @@ export default function CalendarView({
             {isBankHoliday && (
               <span className="text-purple-400 text-[8px] leading-none truncate w-full text-center px-0.5">
                 {bankHolidayName ?? "BH"}
+              </span>
+            )}
+            {isWeekdayNWD && (
+              <span className="text-gray-400 text-[8px] leading-none truncate w-full text-center px-0.5">
+                Non-Working
               </span>
             )}
           </div>
@@ -322,7 +333,7 @@ export default function CalendarView({
           <ChevronLeft size={18} />
         </button>
         <h3 className="font-bold text-gray-800">
-          {MONTH_NAMES_SHORT[calendarMonth]} {calendarYear}
+          {MONTH_NAMES_LONG[calendarMonth]} {calendarYear}
         </h3>
         <div className="flex items-center gap-2">
           {isOwnProfile && onAdd && (
@@ -372,9 +383,11 @@ export default function CalendarView({
         <span className="flex items-center gap-1">
           <span className="w-3 h-3 rounded bg-yellow-200" /> Planned
         </span>
-        <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded bg-red-200" /> Sick
-        </span>
+        {SICK_LEAVE_ENABLED && (
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded bg-red-200" /> Sick
+          </span>
+        )}
         <span className="flex items-center gap-1">
           <span className="w-3 h-3 rounded bg-purple-100" /> Bank Holiday
         </span>

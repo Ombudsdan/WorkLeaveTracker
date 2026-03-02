@@ -55,10 +55,11 @@ describe("EditLeaveModal — rendering", () => {
     expect(screen.getByText("2026-03-13")).toBeInTheDocument();
   });
 
-  it("pre-selects the entry's type pill", () => {
+  it("pre-selects the entry's type pill (Holiday; Sick hidden when feature flag is off)", () => {
     renderModal(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={jest.fn()} />);
     expect(screen.getByRole("button", { name: "Holiday" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "Sick" })).toHaveAttribute("aria-pressed", "false");
+    // Sick button is hidden behind feature flag
+    expect(screen.queryByRole("button", { name: "Sick" })).toBeNull();
   });
 
   it("pre-fills Reason with the entry's notes", () => {

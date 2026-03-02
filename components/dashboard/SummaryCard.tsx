@@ -1,11 +1,12 @@
 "use client";
-import { useState } from "react";
-import { LeaveStatus } from "@/types";
+import { useState, useMemo } from "react";
+import { LeaveStatus, LeaveType } from "@/types";
 import type { PublicUser, BankHolidayEntry } from "@/types";
 import { STATUS_DOT } from "@/variables/colours";
 import { calcLeaveSummary } from "@/utils/leaveCalc";
-import { getHolidayYearBounds, getActiveYearAllowance } from "@/utils/dateHelpers";
+import { countEntryDays, getHolidayYearBounds, getActiveYearAllowance } from "@/utils/dateHelpers";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { SICK_LEAVE_ENABLED } from "@/utils/features";
 
 interface SummaryCardProps {
   user: PublicUser;
@@ -128,12 +129,27 @@ function SingleRingDonut({
 
 export default function SummaryCard({ user, bankHolidays, isOwnProfile }: SummaryCardProps) {
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [activeTab, setActiveTab] = useState<"holiday" | "sick">("holiday");
   const bankHolidayDates = bankHolidays.map((bh) => bh.date);
   const summary = calcLeaveSummary(user, bankHolidayDates);
   const activeYa = getActiveYearAllowance(user.yearAllowances);
   const { start: hyStart, end: hyEnd } = getHolidayYearBounds(activeYa?.holidayStartMonth ?? 1);
 
   const remaining = Math.max(0, summary.remaining);
+
+  // Sick-leave day count (total, all statuses) — memoised so it doesn't recalculate on unrelated renders
+  const sickDays = useMemo(() => {
+    if (!SICK_LEAVE_ENABLED) return 0;
+    return user.entries
+      .filter((e) => e.type === LeaveType.Sick)
+      .reduce(
+        (sum, e) => sum + countEntryDays(e, user.profile.nonWorkingDays, bankHolidayDates),
+        0
+      );
+  }, [user.entries, user.profile.nonWorkingDays, bankHolidayDates]);
+  const hasSickEntries = sickDays > 0;
+  // Show tabs only when sick leave feature is on AND the user has sick entries
+  const showTabs = SICK_LEAVE_ENABLED && hasSickEntries;
 
   // Single ring: approved → requested → planned; denominator is total allowance
   // so the gray track naturally shows the remaining unused portion
@@ -188,70 +204,107 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
         })}
       </p>
 
-      {/* Donut + status key */}
-      <div className="flex items-center gap-4 mb-4">
-        <SingleRingDonut
-          segments={ringSegments}
-          total={summary.total || 1}
-          centerValue={remaining}
-        />
-        <div className="flex-1 space-y-1.5">
-          {statusRows.map(({ label, status, count }) => (
-            <div key={status} className="flex justify-between text-sm">
-              <span className="flex items-center gap-1.5 text-gray-800 font-medium">
-                <span className={`w-2 h-2 rounded-full ${STATUS_DOT[status]}`} />
-                {label}
-              </span>
-              <span className="text-gray-800 font-semibold">{count} days</span>
-            </div>
+      {/* Tab toggle — only shown when the user has sick entries */}
+      {showTabs && (
+        <div className="flex mb-4 border-b border-gray-200 -mx-1">
+          {(["holiday", "sick"] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors cursor-pointer ${
+                activeTab === tab
+                  ? "border-indigo-600 text-indigo-700"
+                  : "border-transparent text-gray-400 hover:text-gray-600"
+              }`}
+            >
+              {tab === "holiday" ? "Holiday" : "Sick"}
+            </button>
           ))}
         </div>
-      </div>
+      )}
 
-      {/* Breakdown toggle */}
-      <button
-        type="button"
-        onClick={() => setShowBreakdown((v) => !v)}
-        className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors cursor-pointer"
-        aria-expanded={showBreakdown}
-      >
-        {showBreakdown ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-        {showBreakdown ? "Hide breakdown" : "View breakdown"}
-      </button>
+      {activeTab === "holiday" ? (
+        <>
+          {/* Donut + status key */}
+          <div className="flex items-center gap-4 mb-4">
+            <SingleRingDonut
+              segments={ringSegments}
+              total={summary.total || 1}
+              centerValue={remaining}
+            />
+            <div className="flex-1 space-y-1.5">
+              {statusRows.map(({ label, status, count }) => (
+                <div key={status} className="flex justify-between text-sm">
+                  <span className="flex items-center gap-1.5 text-gray-800 font-medium">
+                    <span className={`w-2 h-2 rounded-full ${STATUS_DOT[status]}`} />
+                    {label}
+                  </span>
+                  <span className="text-gray-800 font-semibold">{count} days</span>
+                </div>
+              ))}
+            </div>
+          </div>
 
-      {/* Breakdown details */}
-      {showBreakdown && (
-        <div className="mt-3 space-y-1 border-t border-gray-100 pt-3">
-          {breakdownRows.map(({ label, value }, i) => {
-            const isUsedSoFar = i === breakdownRows.length - 2;
-            const isRemaining = i === breakdownRows.length - 1;
-            return (
-              <div
-                key={label}
-                className={[
-                  "flex justify-between",
-                  isRemaining
-                    ? "font-bold text-sm text-gray-900 border-t border-gray-100 pt-1 mt-1"
-                    : isUsedSoFar
-                    ? "font-semibold text-sm text-gray-800"
-                    : "text-xs text-gray-600",
-                ].join(" ")}
-              >
-                <span>{label}</span>
-                <span
-                  className={
-                    isRemaining
-                      ? summary.remaining < 0
-                        ? "text-red-600"
-                        : "text-indigo-700"
-                      : ""
-                  }
-                >
-                  {value}
-                </span>
-              </div>
-            );
-          })}
+          {/* Breakdown toggle */}
+          <button
+            type="button"
+            onClick={() => setShowBreakdown((v) => !v)}
+            className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors cursor-pointer"
+            aria-expanded={showBreakdown}
+          >
+            {showBreakdown ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            {showBreakdown ? "Hide breakdown" : "View breakdown"}
+          </button>
+
+          {/* Breakdown details */}
+          {showBreakdown && (
+            <div className="mt-3 space-y-1 border-t border-gray-100 pt-3">
+              {breakdownRows.map(({ label, value }, i) => {
+                const isUsedSoFar = i === breakdownRows.length - 2;
+                const isRemaining = i === breakdownRows.length - 1;
+                return (
+                  <div
+                    key={label}
+                    className={[
+                      "flex justify-between",
+                      isRemaining
+                        ? "font-bold text-sm text-gray-900 border-t border-gray-100 pt-1 mt-1"
+                        : isUsedSoFar
+                        ? "font-semibold text-sm text-gray-800"
+                        : "text-xs text-gray-600",
+                    ].join(" ")}
+                  >
+                    <span>{label}</span>
+                    <span
+                      className={
+                        isRemaining
+                          ? summary.remaining < 0
+                            ? "text-red-600"
+                            : "text-indigo-700"
+                          : ""
+                      }
+                    >
+                      {value}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
+      ) : (
+        /* Sick tab content */
+        <div className="space-y-2">
+          <p className="text-sm text-gray-600">
+            Sick days logged:{" "}
+            <span className="font-bold text-gray-900">{sickDays}</span>
+          </p>
+          <p className="text-xs text-gray-400">
+            Sick leave is not deducted from your holiday allowance.
+          </p>
         </div>
       )}
     </div>

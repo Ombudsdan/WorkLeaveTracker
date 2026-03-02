@@ -165,22 +165,17 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Tab strip + connected panel */}
-        <div className="bg-white rounded-t-2xl shadow">
-          <UserSelector
-            currentUser={currentUser}
-            allUsers={allUsers}
-            viewingUserId={viewingUserId}
-            onSelectUser={setViewingUserId}
-          />
-        </div>
-
-        <div
-          className={`bg-white shadow rounded-b-2xl px-4 pt-4 pb-6 mb-6 ${
-            /* Only render the tab panel wrapper when there are pinned users */
-            (currentUser.profile.pinnedUserIds ?? []).length === 0 ? "hidden" : ""
-          }`}
-        />
+        {/* Tab strip — only rendered when the user has pinned connections */}
+        {(currentUser.profile.pinnedUserIds ?? []).length > 0 && (
+          <div className="bg-white rounded-2xl shadow mb-6">
+            <UserSelector
+              currentUser={currentUser}
+              allUsers={allUsers}
+              viewingUserId={viewingUserId}
+              onSelectUser={setViewingUserId}
+            />
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1 space-y-4">

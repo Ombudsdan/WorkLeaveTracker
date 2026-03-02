@@ -282,7 +282,7 @@ describe("LeaveList — half-day entries", () => {
     duration: LeaveDuration.HalfMorning,
   };
 
-  it("shows '(0.5d AM)' for an AM half-day entry", () => {
+  it("shows '(Half Day AM)' for an AM half-day entry", () => {
     render(
       <LeaveList
         user={{ ...alice, entries: [halfDayEntry] }}
@@ -292,7 +292,7 @@ describe("LeaveList — half-day entries", () => {
         onDelete={jest.fn()}
       />
     );
-    expect(screen.getByText("(0.5d AM)")).toBeInTheDocument();
+    expect(screen.getByText("(Half Day AM)")).toBeInTheDocument();
   });
 
   it("appends (AM) to the reason for an AM half-day entry", () => {
@@ -342,7 +342,7 @@ describe("LeaveList — half-day entries", () => {
         onDelete={jest.fn()}
       />
     );
-    expect(screen.getByText("(0.5d AM)")).toBeInTheDocument();
+    expect(screen.getByText("(Half Day AM)")).toBeInTheDocument();
     expect(screen.getByText("Old format (AM)")).toBeInTheDocument();
   });
 });

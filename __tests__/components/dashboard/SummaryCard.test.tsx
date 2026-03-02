@@ -225,3 +225,34 @@ describe("SummaryCard — donut uses total allowance as ring denominator", () =>
     expect(paths.length).toBeGreaterThan(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Sick-leave tab (feature flag behaviour)
+// ---------------------------------------------------------------------------
+
+describe("SummaryCard — sick-leave tab", () => {
+  const userWithSick: PublicUser = {
+    ...alice,
+    entries: [
+      {
+        id: "s1",
+        startDate: "2026-03-10",
+        endDate: "2026-03-10",
+        status: LeaveStatus.Approved,
+        type: LeaveType.Sick,
+        notes: "Cold",
+      },
+    ],
+  };
+
+  it("does NOT show the Holiday/Sick tab strip when the user has no sick entries (feature flag default off)", () => {
+    render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
+    expect(screen.queryByRole("tab", { name: "Sick" })).toBeNull();
+  });
+
+  it("does NOT show the Holiday/Sick tab strip even with sick entries when feature flag is off (default env)", () => {
+    // NEXT_PUBLIC_ENABLE_FEATURE_SICK_LEAVE is not set in the test env → SICK_LEAVE_ENABLED = false
+    render(<SummaryCard user={userWithSick} bankHolidays={[]} isOwnProfile={true} />);
+    expect(screen.queryByRole("tab", { name: "Sick" })).toBeNull();
+  });
+});

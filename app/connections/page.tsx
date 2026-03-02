@@ -186,7 +186,7 @@ export default function ConnectionsPage() {
                   <div className="flex gap-2 ml-3">
                     <button
                       onClick={() => handleAccept(u.id)}
-                      className="flex items-center gap-1 text-xs text-green-700 hover:text-green-900 font-medium"
+                      className="flex items-center gap-1 text-xs text-green-700 hover:text-green-900 font-medium cursor-pointer"
                       aria-label={`Accept request from ${u.profile.firstName}`}
                     >
                       <UserRoundCheck size={14} />
@@ -194,7 +194,7 @@ export default function ConnectionsPage() {
                     </button>
                     <button
                       onClick={() => handleDecline(u.id)}
-                      className="flex items-center gap-1 text-xs text-red-600 hover:text-red-800 font-medium"
+                      className="flex items-center gap-1 text-xs text-red-600 hover:text-red-800 font-medium cursor-pointer"
                       aria-label={`Decline request from ${u.profile.firstName}`}
                     >
                       <UserRoundX size={14} />
