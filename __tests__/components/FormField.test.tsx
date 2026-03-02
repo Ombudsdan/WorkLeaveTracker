@@ -231,6 +231,24 @@ describe("FormField — triggerAllValidations", () => {
     await userEvent.click(screen.getByRole("button", { name: "Validate" }));
     expect(screen.queryByText("Name is required")).toBeNull();
   });
+
+  it("treats a null value as empty (required error fires) via the value ?? '' fallback", async () => {
+    renderInProvider(
+      <>
+        {/* value typed as any to exercise the runtime `?? ""` branch */}
+        <FormField
+          id="name"
+          label="Name"
+          value={null as unknown as string}
+          onChange={jest.fn()}
+          required
+        />
+        <TriggerButton />
+      </>
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Validate" }));
+    expect(screen.getByText("Name is required")).toBeInTheDocument();
+  });
 });
 
 // ---------------------------------------------------------------------------

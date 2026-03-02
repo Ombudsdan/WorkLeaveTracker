@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useFormValidation } from "@/contexts/FormValidationContext";
-import { MONTH_NAMES_SHORT, DAY_NAMES_SHORT } from "@/variables/calendar";
+import { MONTH_NAMES_LONG, DAY_NAMES_SHORT } from "@/variables/calendar";
 import { getDaysInMonth, getFirstDayOfMonth, toIsoDate } from "@/utils/dateHelpers";
 
 interface DateRangePickerProps {
@@ -11,6 +11,11 @@ interface DateRangePickerProps {
   endDate: string;
   onStartChange: (date: string) => void;
   onEndChange: (date: string) => void;
+  /**
+   * When true, clicking a day selects a single date (start and end are set to the same
+   * value). No "Now select an end date" hint is shown. Intended for half-day leave.
+   */
+  halfDayMode?: boolean;
 }
 
 export default function DateRangePicker({
@@ -19,6 +24,7 @@ export default function DateRangePicker({
   endDate,
   onStartChange,
   onEndChange,
+  halfDayMode = false,
 }: DateRangePickerProps) {
   const { getError, setError, clearError, registerValidator } = useFormValidation();
   const error = getError(id);
@@ -47,6 +53,28 @@ export default function DateRangePicker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  // When the startDate prop is set to a date in a different month/year than
+  // the calendar is currently showing, navigate to that month.  This ensures:
+  //  • EditLeaveModal always opens with the calendar on the entry's month.
+  //  • After clearing startDate (e.g. duration change), re-picking a date
+  //    correctly updates the displayed month to wherever the user clicked.
+  // We skip the sync when the user is actively picking an end date so that
+  // navigating to a future month for the end date is preserved.
+  useEffect(() => {
+    if (!startDate || isPickingEnd) return;
+    const parts = startDate.split("-");
+    if (parts.length !== 3) return;
+    const y = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10) - 1;
+    if (!isNaN(y) && !isNaN(m) && (y !== calYear || m !== calMonth)) {
+      setCalYear(y);
+      setCalMonth(m);
+    }
+    // We intentionally omit calYear/calMonth so the effect only runs when
+    // startDate changes, not on every navigation click.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startDate]);
+
   function validate(start: string, end: string): boolean {
     if (!start) {
       setError(id, "Please select a start date");
@@ -65,6 +93,13 @@ export default function DateRangePicker({
   }
 
   function handleDayClick(dateStr: string) {
+    if (halfDayMode) {
+      // Single-date mode: set both start and end to the same day
+      onStartChange(dateStr);
+      onEndChange(dateStr);
+      clearError(id);
+      return;
+    }
     if (!startDate || (startDate && endDate)) {
       // Start a fresh selection
       onStartChange(dateStr);
@@ -81,18 +116,29 @@ export default function DateRangePicker({
     <div>
       {/* Selected range summary */}
       <div className="flex gap-4 mb-2 text-sm">
-        <div>
-          <span className="text-gray-500">From: </span>
-          <span className={startDate ? "font-medium text-gray-900" : "text-gray-400"}>
-            {startDate || "—"}
-          </span>
-        </div>
-        <div>
-          <span className="text-gray-500">To: </span>
-          <span className={endDate ? "font-medium text-gray-900" : "text-gray-400"}>
-            {endDate || "—"}
-          </span>
-        </div>
+        {halfDayMode ? (
+          <div>
+            <span className="text-gray-500">Date: </span>
+            <span className={startDate ? "font-medium text-gray-900" : "text-gray-400"}>
+              {startDate || "—"}
+            </span>
+          </div>
+        ) : (
+          <>
+            <div>
+              <span className="text-gray-500">From: </span>
+              <span className={startDate ? "font-medium text-gray-900" : "text-gray-400"}>
+                {startDate || "—"}
+              </span>
+            </div>
+            <div>
+              <span className="text-gray-500">To: </span>
+              <span className={endDate ? "font-medium text-gray-900" : "text-gray-400"}>
+                {endDate || "—"}
+              </span>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Calendar */}
@@ -103,18 +149,18 @@ export default function DateRangePicker({
             type="button"
             onClick={prevMonth}
             aria-label="Previous month"
-            className="p-1 rounded hover:bg-gray-100 text-gray-600"
+            className="p-1 rounded hover:bg-gray-100 text-gray-600 cursor-pointer"
           >
             <ChevronLeft size={14} />
           </button>
           <span className="text-sm font-medium text-gray-700">
-            {MONTH_NAMES_SHORT[calMonth]} {calYear}
+            {MONTH_NAMES_LONG[calMonth]} {calYear}
           </span>
           <button
             type="button"
             onClick={nextMonth}
             aria-label="Next month"
-            className="p-1 rounded hover:bg-gray-100 text-gray-600"
+            className="p-1 rounded hover:bg-gray-100 text-gray-600 cursor-pointer"
           >
             <ChevronRight size={14} />
           </button>
@@ -129,7 +175,7 @@ export default function DateRangePicker({
           ))}
         </div>
 
-        {/* Day cells */}
+        {/* Day cells — always render 42 cells (6 rows) so the calendar height is stable */}
         <div className="grid grid-cols-7 gap-0.5">
           {Array.from({ length: firstDay }).map((_, i) => (
             <div key={`pad-${i}`} />
@@ -167,11 +213,14 @@ export default function DateRangePicker({
               </button>
             );
           })}
+          {Array.from({ length: 42 - firstDay - daysInMonth }).map((_, i) => (
+            <div key={`trail-${i}`} />
+          ))}
         </div>
       </div>
 
       {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
-      {isPickingEnd && !error && (
+      {!halfDayMode && isPickingEnd && !error && (
         <p className="text-indigo-600 text-xs mt-1">Now select an end date</p>
       )}
     </div>

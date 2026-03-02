@@ -9,32 +9,36 @@ export default function UserSelector({
 }: UserSelectorProps) {
   const pinnedUsers = getPinnedUsers(allUsers, currentUser);
 
+  if (pinnedUsers.length === 0) return null;
+
+  const tabs = [
+    { id: null as string | null, label: "My Calendar" },
+    ...pinnedUsers.map((u) => ({
+      id: u.id,
+      label: `${u.profile.firstName} ${u.profile.lastName}`,
+    })),
+  ];
+
   return (
-    <div className="flex items-center gap-3 mb-6 flex-wrap">
-      <span className="text-sm font-medium text-gray-600">Viewing:</span>
-      <button
-        onClick={() => onSelectUser(null)}
-        className={`px-3 py-1 rounded-full text-sm border transition ${
-          !viewingUserId
-            ? "bg-indigo-600 text-white border-indigo-600"
-            : "bg-white text-gray-600 border-gray-300 hover:border-indigo-400"
-        }`}
-      >
-        My Calendar
-      </button>
-      {pinnedUsers.map((user) => (
-        <button
-          key={user.id}
-          onClick={() => onSelectUser(user.id)}
-          className={`px-3 py-1 rounded-full text-sm border transition ${
-            viewingUserId === user.id
-              ? "bg-indigo-600 text-white border-indigo-600"
-              : "bg-white text-gray-600 border-gray-300 hover:border-indigo-400"
-          }`}
-        >
-          {user.profile.firstName} {user.profile.lastName}
-        </button>
-      ))}
+    <div className="flex overflow-x-auto" role="tablist" aria-label="Calendar view">
+      {tabs.map((tab) => {
+        const isActive = tab.id === viewingUserId;
+        return (
+          <button
+            key={tab.id ?? "__me__"}
+            role="tab"
+            aria-selected={isActive}
+            onClick={() => onSelectUser(tab.id)}
+            className={`px-5 py-3 text-sm font-medium transition-colors cursor-pointer focus:outline-none whitespace-nowrap border-b-2 ${
+              isActive
+                ? "border-indigo-600 text-indigo-700"
+                : "border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300"
+            }`}
+          >
+            {tab.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

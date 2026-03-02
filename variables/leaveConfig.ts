@@ -2,9 +2,9 @@ import { LeaveStatus, LeaveType } from "@/types";
 
 /** Human-readable labels for each LeaveStatus */
 export const LEAVE_STATUS_LABELS: Record<LeaveStatus, string> = {
-  [LeaveStatus.Planned]: "Planned (Draft)",
-  [LeaveStatus.Requested]: "Requested (Pending)",
-  [LeaveStatus.Approved]: "Approved (Confirmed)",
+  [LeaveStatus.Planned]: "Planned",
+  [LeaveStatus.Requested]: "Requested",
+  [LeaveStatus.Approved]: "Approved",
 };
 
 /**
@@ -17,7 +17,7 @@ export const LEAVE_STATUS_ORDER: LeaveStatus[] = [
   LeaveStatus.Approved,
 ];
 
-/** Human-readable labels for each LeaveType */
+/** Human-readable labels for each LeaveType (includes deprecated Other for display of existing data) */
 export const LEAVE_TYPE_LABELS: Record<LeaveType, string> = {
   [LeaveType.Holiday]: "Holiday",
   [LeaveType.Sick]: "Sick",
@@ -25,7 +25,7 @@ export const LEAVE_TYPE_LABELS: Record<LeaveType, string> = {
 };
 
 /**
- * Explicit display order for LeaveType.
- * Use this to iterate instead of Object.entries to maintain consistent ordering.
+ * Explicit display order for LeaveType options shown in the Add/Edit form.
+ * "Other" is intentionally excluded — it is deprecated and no longer offered.
  */
-export const LEAVE_TYPE_ORDER: LeaveType[] = [LeaveType.Holiday, LeaveType.Sick, LeaveType.Other];
+export const LEAVE_TYPE_ORDER: LeaveType[] = [LeaveType.Holiday, LeaveType.Sick];

@@ -1,12 +1,13 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import type { PublicUser, LeaveEntry, UserAllowance } from "@/types";
+import type { PublicUser, LeaveEntry, BankHolidayEntry } from "@/types";
 import NavBar from "@/components/NavBar";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import SessionExpiredScreen from "@/components/SessionExpiredScreen";
 import UserSelector from "@/components/dashboard/UserSelector";
 import SummaryCard from "@/components/dashboard/SummaryCard";
-import AllowanceBreakdown from "@/components/dashboard/AllowanceBreakdown";
 import LeaveList from "@/components/dashboard/LeaveList";
 import CalendarView from "@/components/dashboard/CalendarView";
 import AddLeaveModal from "@/components/dashboard/AddLeaveModal";
@@ -27,15 +28,30 @@ export default function DashboardPage() {
 
   const [currentUser, setCurrentUser] = useState<PublicUser | null>(null);
   const [allUsers, setAllUsers] = useState<PublicUser[]>([]);
-  const [bankHolidays, setBankHolidays] = useState<string[]>([]);
+  const [bankHolidays, setBankHolidays] = useState<BankHolidayEntry[]>([]);
   const [viewingUserId, setViewingUserId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingEntry, setEditingEntry] = useState<LeaveEntry | null>(null);
   const [showAllowanceWarningModal, setShowAllowanceWarningModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  /** Mobile-only: which panel is currently visible ("list" | "calendar") */
+  const [mobileView, setMobileView] = useState<"list" | "calendar">("list");
+
+  // Track whether the user was previously authenticated in this browser tab so
+  // we can distinguish a genuine "session expired" event from a first visit.
+  const wasAuthenticatedRef = useRef(false);
 
   useEffect(() => {
-    if (status === "unauthenticated") router.push("/login");
+    if (status === "authenticated") {
+      wasAuthenticatedRef.current = true;
+    }
+    if (status === "unauthenticated") {
+      if (!wasAuthenticatedRef.current) {
+        // Never authenticated in this tab — just redirect to login directly.
+        router.push("/login");
+      }
+      // If wasAuthenticated is true the SessionExpiredScreen will be shown below.
+    }
   }, [status, router]);
 
   useEffect(() => {
@@ -54,17 +70,18 @@ export default function DashboardPage() {
         for (let attempt = 0; attempt <= 4; attempt++) {
           if (attempt > 0)
             await new Promise<void>((r) => setTimeout(r, DASHBOARD_RETRY_DELAY_MS * attempt));
-          const [rawUsers, holidays] = await Promise.all([
-            usersController.fetchAll(),
-            holidaysController.fetchBankHolidays(),
-          ]);
+          const rawUsers = await usersController.fetchAll();
           if (cancelled) return;
-          const result = applyUserData(
-            Array.isArray(rawUsers) ? rawUsers : [],
-            holidays,
-            sessionEmail,
-            sessionId
+          const users = Array.isArray(rawUsers) ? rawUsers : [];
+          // Find the current user so we can request their country's bank holidays
+          const me = users.find(
+            (u) =>
+              (sessionId != null && u.id === sessionId) ||
+              (sessionEmail != null && u.profile.email === sessionEmail)
           );
+          const holidays = await holidaysController.fetchBankHolidays(me?.profile.country);
+          if (cancelled) return;
+          const result = applyUserData(users, holidays, sessionEmail, sessionId);
           // Keep loading=true if we're redirecting so we never flash the error UI.
           if (result === "redirected") return;
           if (result === "found") break;
@@ -86,9 +103,12 @@ export default function DashboardPage() {
   }, [status, session]);
 
   if (status === "loading" || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">Loading…</div>
-    );
+    return <LoadingSpinner />;
+  }
+
+  // Session expired after the user was previously authenticated in this tab
+  if (status === "unauthenticated" && wasAuthenticatedRef.current) {
+    return <SessionExpiredScreen />;
   }
 
   if (!currentUser) {
@@ -117,7 +137,6 @@ export default function DashboardPage() {
 
   const isOwnProfile = !viewingUserId || viewingUserId === currentUser.id;
 
-  const displayedAllowance = getCurrentYearAllowance(displayedUser);
   const allowanceWarning = getYearAllowanceWarning(currentUser);
   /** The year we need to configure if the warning is visible */
   const nextAllowanceYear = (() => {
@@ -126,9 +145,11 @@ export default function DashboardPage() {
     return start.getFullYear() + 1;
   })();
 
+  const pendingConnectionRequests = (currentUser.profile.pendingPinRequestsReceived ?? []).length;
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <NavBar activePage="dashboard" />
+      <NavBar activePage="dashboard" pendingRequestCount={pendingConnectionRequests} />
 
       <main className="max-w-6xl mx-auto py-6 px-4">
         {allowanceWarning && (
@@ -146,21 +167,53 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <UserSelector
-          currentUser={currentUser}
-          allUsers={allUsers}
-          viewingUserId={viewingUserId}
-          onSelectUser={setViewingUserId}
-        />
+        {/* Tab strip — only rendered when the user has pinned connections */}
+        {(currentUser.profile.pinnedUserIds ?? []).length > 0 && (
+          <div className="bg-white rounded-2xl shadow mb-6 border-b border-gray-200 overflow-hidden">
+            <UserSelector
+              currentUser={currentUser}
+              allUsers={allUsers}
+              viewingUserId={viewingUserId}
+              onSelectUser={setViewingUserId}
+            />
+          </div>
+        )}
+
+        {/* Mobile-only toggle between Upcoming Leave list and Calendar */}
+        <div className="flex lg:hidden mb-4 bg-white rounded-xl shadow border border-gray-100 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setMobileView("list")}
+            className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer ${
+              mobileView === "list"
+                ? "border-indigo-500 text-indigo-700"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            Upcoming Leave
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileView("calendar")}
+            className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer ${
+              mobileView === "calendar"
+                ? "border-indigo-500 text-indigo-700"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            Calendar
+          </button>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1 space-y-4">
+          <div
+            className={`lg:col-span-1 space-y-4 ${mobileView === "list" ? "block" : "hidden"} lg:block`}
+          >
             <SummaryCard
               user={displayedUser}
               bankHolidays={bankHolidays}
               isOwnProfile={isOwnProfile}
             />
-            <AllowanceBreakdown allowance={displayedAllowance} />
             <LeaveList
               user={displayedUser}
               bankHolidays={bankHolidays}
@@ -170,19 +223,28 @@ export default function DashboardPage() {
             />
           </div>
 
-          <div className="lg:col-span-2">
+          <div
+            className={`lg:col-span-2 ${mobileView === "calendar" ? "block" : "hidden"} lg:block`}
+          >
             <CalendarView
               user={displayedUser}
               bankHolidays={bankHolidays}
               isOwnProfile={isOwnProfile}
               onAdd={() => setShowAddModal(true)}
+              onEdit={isOwnProfile ? setEditingEntry : undefined}
+              onDelete={isOwnProfile ? handleDeleteEntry : undefined}
             />
           </div>
         </div>
       </main>
 
       {showAddModal && (
-        <AddLeaveModal onClose={() => setShowAddModal(false)} onSave={handleAddEntry} />
+        <AddLeaveModal
+          onClose={() => setShowAddModal(false)}
+          onSave={handleAddEntry}
+          user={currentUser}
+          bankHolidays={bankHolidays}
+        />
       )}
 
       {editingEntry && (
@@ -190,6 +252,8 @@ export default function DashboardPage() {
           entry={editingEntry}
           onClose={() => setEditingEntry(null)}
           onSave={handleUpdateEntry}
+          user={currentUser}
+          bankHolidays={bankHolidays}
         />
       )}
 
@@ -212,7 +276,7 @@ export default function DashboardPage() {
    */
   function applyUserData(
     users: PublicUser[],
-    holidays: string[],
+    holidays: BankHolidayEntry[],
     sessionEmail: string | null | undefined,
     sessionId: string | null | undefined
   ): "redirected" | "found" | "not_found" {
@@ -267,21 +331,16 @@ export default function DashboardPage() {
   }
 
   async function handleSaveWarningAllowance(ya: YearAllowance) {
-    const saved = await usersController.addYearAllowance(ya);
-    if (saved) {
+    const result = await usersController.addYearAllowance(ya);
+    if (result && !("conflict" in result)) {
       setShowAllowanceWarningModal(false);
       setCurrentUser((prev) => {
         if (!prev) return prev;
-        const rest = prev.yearAllowances.filter((a) => a.year !== saved.year);
-        return { ...prev, yearAllowances: [...rest, saved].sort((a, b) => a.year - b.year) };
+        const rest = prev.yearAllowances.filter((a) => a.year !== result.year);
+        return { ...prev, yearAllowances: [...rest, result].sort((a, b) => a.year - b.year) };
       });
     }
   }
-}
-
-function getCurrentYearAllowance(user: PublicUser): UserAllowance {
-  const ya = getActiveYearAllowance(user.yearAllowances);
-  return ya ?? { core: 0, bought: 0, carried: 0 };
 }
 
 function getYearAllowanceWarning(user: PublicUser): string | null {

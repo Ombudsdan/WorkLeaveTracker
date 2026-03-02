@@ -57,7 +57,7 @@ function renderInProvider(ui: React.ReactElement) {
 describe("DateRangePicker — rendering", () => {
   it("renders the current month and year", () => {
     renderInProvider(<ControlledPicker />);
-    expect(screen.getByText(/Mar 2026/i)).toBeInTheDocument();
+    expect(screen.getByText(/March 2026/i)).toBeInTheDocument();
   });
 
   it("renders day-of-week headers", () => {
@@ -78,12 +78,12 @@ describe("DateRangePicker — rendering", () => {
     // April 2026 starts on Wednesday — there are 3 padding cells (Sun/Mon/Tue)
     jest.setSystemTime(new Date("2026-04-01"));
     const { container } = renderInProvider(<ControlledPicker />);
-    expect(screen.getByText(/Apr 2026/i)).toBeInTheDocument();
+    expect(screen.getByText(/April 2026/i)).toBeInTheDocument();
     // Padding cells are empty <div>s — confirm the grid has more children than 30 days
     const grid = container.querySelector(".grid.grid-cols-7.gap-0\\.5");
     expect(grid).not.toBeNull();
-    // April has 30 days + 3 padding = 33 children
-    expect(grid!.children.length).toBe(33);
+    // Calendar always renders 42 cells (6 rows × 7 cols) for a stable height
+    expect(grid!.children.length).toBe(42);
   });
 
   it("shows '—' for From and To when no dates are selected", () => {
@@ -221,14 +221,14 @@ describe("DateRangePicker — month navigation", () => {
     const user = setup();
     renderInProvider(<ControlledPicker />);
     await user.click(screen.getByRole("button", { name: "Previous month" }));
-    expect(screen.getByText(/Feb 2026/i)).toBeInTheDocument();
+    expect(screen.getByText(/February 2026/i)).toBeInTheDocument();
   });
 
   it("navigates to the next month", async () => {
     const user = setup();
     renderInProvider(<ControlledPicker />);
     await user.click(screen.getByRole("button", { name: "Next month" }));
-    expect(screen.getByText(/Apr 2026/i)).toBeInTheDocument();
+    expect(screen.getByText(/April 2026/i)).toBeInTheDocument();
   });
 
   it("wraps from January to December (previous)", async () => {
@@ -236,7 +236,7 @@ describe("DateRangePicker — month navigation", () => {
     const user = setup();
     renderInProvider(<ControlledPicker />);
     await user.click(screen.getByRole("button", { name: "Previous month" }));
-    expect(screen.getByText(/Dec 2025/i)).toBeInTheDocument();
+    expect(screen.getByText(/December 2025/i)).toBeInTheDocument();
   });
 
   it("wraps from December to January (next)", async () => {
@@ -244,6 +244,113 @@ describe("DateRangePicker — month navigation", () => {
     const user = setup();
     renderInProvider(<ControlledPicker />);
     await user.click(screen.getByRole("button", { name: "Next month" }));
-    expect(screen.getByText(/Jan 2027/i)).toBeInTheDocument();
+    expect(screen.getByText(/January 2027/i)).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// startDate prop sync (month navigation)
+// ---------------------------------------------------------------------------
+describe("DateRangePicker — startDate prop syncs calendar month", () => {
+  it("navigates to the month of an externally-supplied startDate", async () => {
+    // Start with no date (shows March 2026).
+    // ControlledPicker with initialStart pre-set to a July date should show July.
+    renderInProvider(<ControlledPicker initialStart="2026-07-07" />);
+    expect(screen.getByText(/July 2026/i)).toBeInTheDocument();
+  });
+
+  it("updates the displayed month when startDate prop changes to a different month", async () => {
+    // We need a wrapper that can change the startDate prop after mount.
+    function SyncTestPicker() {
+      const [start, setStart] = React.useState("2026-03-09");
+      const [end, setEnd] = React.useState("2026-03-13");
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              setStart("2026-07-07");
+              setEnd("2026-07-11");
+            }}
+          >
+            Jump to July
+          </button>
+          <DateRangePicker
+            id="sync-test"
+            startDate={start}
+            endDate={end}
+            onStartChange={setStart}
+            onEndChange={setEnd}
+          />
+        </>
+      );
+    }
+    const user = setup();
+    renderInProvider(<SyncTestPicker />);
+    // Initially shows March
+    expect(screen.getByText(/March 2026/i)).toBeInTheDocument();
+    // After changing startDate to July, the calendar should navigate to July
+    await user.click(screen.getByRole("button", { name: "Jump to July" }));
+    expect(screen.getByText(/July 2026/i)).toBeInTheDocument();
+  });
+
+  it("does not navigate when startDate changes but stays in the same month", async () => {
+    function SameMonthPicker() {
+      const [start, setStart] = React.useState("2026-03-09");
+      const [end, setEnd] = React.useState("");
+      return (
+        <>
+          <button type="button" onClick={() => setStart("2026-03-20")}>
+            Same month
+          </button>
+          <DateRangePicker
+            id="same-month"
+            startDate={start}
+            endDate={end}
+            onStartChange={setStart}
+            onEndChange={setEnd}
+          />
+        </>
+      );
+    }
+    const user = setup();
+    renderInProvider(<SameMonthPicker />);
+    expect(screen.getByText(/March 2026/i)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Same month" }));
+    // Still shows March
+    expect(screen.getByText(/March 2026/i)).toBeInTheDocument();
+  });
+});
+
+describe("DateRangePicker — malformed startDate prop is safely ignored", () => {
+  it("does not crash and stays on current month when startDate changes to a malformed value", async () => {
+    // Sets startDate to a 2-part value ("2026-03") with endDate already set so that
+    // isPickingEnd=false and the guard at line 66 (parts.length !== 3) is reached.
+    function MalformedPicker() {
+      const [start, setStart] = React.useState("2026-03-09");
+      const [end, setEnd] = React.useState("2026-03-13");
+      return (
+        <>
+          <button type="button" onClick={() => setStart("2026-03")}>
+            Set malformed
+          </button>
+          <DateRangePicker
+            id="malformed"
+            startDate={start}
+            endDate={end}
+            onStartChange={setStart}
+            onEndChange={setEnd}
+          />
+        </>
+      );
+    }
+    const user = setup();
+    renderInProvider(<MalformedPicker />);
+    // Initially showing March (initialised from startDate "2026-03-09")
+    expect(screen.getByText(/March 2026/i)).toBeInTheDocument();
+    // Change startDate to a partial date (2 parts) — guard at line 66 fires, no navigation
+    await user.click(screen.getByRole("button", { name: "Set malformed" }));
+    // Calendar should still show the same month
+    expect(screen.getByText(/March 2026/i)).toBeInTheDocument();
   });
 });

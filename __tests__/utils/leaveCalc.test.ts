@@ -1,5 +1,5 @@
 import { calcLeaveSummary } from "@/utils/leaveCalc";
-import { LeaveStatus, LeaveType } from "@/types";
+import { LeaveStatus, LeaveType, LeaveDuration } from "@/types";
 import type { PublicUser } from "@/types";
 
 // Fix the current date so getHolidayYearBounds is deterministic
@@ -263,5 +263,88 @@ describe("calcLeaveSummary — no allowance configured", () => {
     const summary = calcLeaveSummary(user, []);
     expect(summary.total).toBe(0);
     expect(summary.remaining).toBe(0);
+  });
+
+  it("returns all zeros (early return) when yearAllowances is empty", () => {
+    const user: PublicUser = { ...baseUser, yearAllowances: [] };
+    const summary = calcLeaveSummary(user, []);
+    expect(summary).toEqual({
+      total: 0,
+      approved: 0,
+      requested: 0,
+      planned: 0,
+      used: 0,
+      remaining: 0,
+    });
+  });
+});
+
+describe("calcLeaveSummary — allowance without explicit holidayStartMonth", () => {
+  it("uses January as the default holidayStartMonth when the field is missing", () => {
+    // The allowance has no holidayStartMonth — the ?? 1 fallback should default to January.
+    const user: PublicUser = {
+      ...baseUser,
+      yearAllowances: [
+        {
+          year: 2026,
+          company: "Acme",
+          // No holidayStartMonth — should default to 1 (January)
+          holidayStartMonth: undefined as unknown as number,
+          core: 20,
+          bought: 0,
+          carried: 0,
+        },
+      ],
+      entries: [
+        {
+          id: "e-no-sm",
+          startDate: "2026-03-09",
+          endDate: "2026-03-13",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    const { approved } = calcLeaveSummary(user, []);
+    // Mon–Fri = 5 days, within Jan–Dec 2026
+    expect(approved).toBe(5);
+  });
+});
+
+describe("calcLeaveSummary — half-day entries count as 0.5", () => {
+  it("counts an AM half-day approved entry as 0.5 days", () => {
+    const user: PublicUser = {
+      ...baseUser,
+      entries: [
+        {
+          id: "hd1",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfMorning,
+        },
+      ],
+    };
+    const { approved } = calcLeaveSummary(user, []);
+    expect(approved).toBe(0.5);
+  });
+
+  it("counts a PM half-day planned entry as 0.5 days", () => {
+    const user: PublicUser = {
+      ...baseUser,
+      entries: [
+        {
+          id: "hd2",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Planned,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfAfternoon,
+        },
+      ],
+    };
+    const { planned } = calcLeaveSummary(user, []);
+    expect(planned).toBe(0.5);
   });
 });

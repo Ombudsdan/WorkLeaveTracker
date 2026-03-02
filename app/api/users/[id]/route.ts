@@ -9,7 +9,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const user = findUserById(id);
+  const user = await findUserById(id);
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

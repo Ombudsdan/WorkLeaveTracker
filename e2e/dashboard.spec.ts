@@ -16,8 +16,8 @@ test.describe("Dashboard", () => {
 
   test("dashboard shows the leave summary card", async ({ page }) => {
     await loginAs(page, ALICE.email, ALICE.password);
-    // "Total Allowance" is a text label inside the SummaryCard
-    await expect(page.getByText("Total Allowance")).toBeVisible();
+    // "View breakdown" is a button always present inside the SummaryCard
+    await expect(page.getByRole("button", { name: /view breakdown/i })).toBeVisible();
   });
 
   test("dashboard shows the Add Leave button in the calendar", async ({ page }) => {

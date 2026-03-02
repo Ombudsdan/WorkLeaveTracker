@@ -60,7 +60,7 @@ export default function LeaveOptionPicker<T extends string>({
             type="button"
             onClick={() => handleClick(option.value)}
             aria-pressed={value === option.value}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition ${
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition cursor-pointer ${
               value === option.value
                 ? "bg-indigo-600 text-white border-indigo-600"
                 : "bg-white text-gray-700 border-gray-300 hover:border-indigo-400 hover:text-indigo-600"

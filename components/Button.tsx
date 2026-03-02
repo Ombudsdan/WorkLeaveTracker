@@ -28,7 +28,7 @@ export default function Button({
       onClick={onClick}
       disabled={disabled}
       className={`
-        rounded-lg font-semibold transition
+        rounded-lg font-semibold transition cursor-pointer
         ${VARIANT_CLASSES[variant]}
         ${SIZE_CLASSES[size]}
         ${fullWidth ? "w-full" : ""}

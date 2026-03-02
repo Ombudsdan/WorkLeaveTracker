@@ -16,18 +16,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Fetch England & Wales bank holidays from gov.uk
+      - name: Fetch bank holidays from gov.uk
         run: |
           curl -fsSL "https://www.gov.uk/bank-holidays.json" \
             | python3 -c "
           import json, sys
           data = json.load(sys.stdin)
-          events = data.get('england-and-wales', {}).get('events', [])
-          if not events:
+          regions = ['england-and-wales', 'scotland', 'northern-ireland']
+          result = {}
+          for region in regions:
+              events = data.get(region, {}).get('events', [])
+              result[region] = [{'date': e['date'], 'title': e['title']} for e in events]
+          if not result.get('england-and-wales'):
               print('ERROR: no events found in response', file=sys.stderr)
               sys.exit(1)
-          dates = [e['date'] for e in events]
-          print(json.dumps(dates, indent=2))
+          print(json.dumps(result, indent=2))
           " > data/bank-holidays.json
 
       - name: Commit updated bank holidays (if changed)

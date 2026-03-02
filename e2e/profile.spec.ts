@@ -33,21 +33,25 @@ test.describe("Profile", () => {
     await expect(page.getByText(/no allowances configured yet/i)).not.toBeVisible();
   });
 
-  test("profile page shows pinned users section", async ({ page }) => {
+  test("profile page shows connections tab", async ({ page }) => {
     await loginAs(page, ALICE.email, ALICE.password);
     await page.goto("/profile");
 
-    // Pinned Users section heading is always rendered
-    await expect(page.getByText(/pinned users/i)).toBeVisible();
+    // Connections tab should be visible in the tab strip
+    await expect(page.getByRole("tab", { name: /connections/i })).toBeVisible();
   });
 
-  test("profile shows pinned user Bob (pinned by Alice in seed data)", async ({ page }) => {
+  test("connections tab on profile page shows Bob (connected to Alice in seed data)", async ({
+    page,
+  }) => {
     await loginAs(page, ALICE.email, ALICE.password);
     await page.goto("/profile");
 
-    // Alice has Bob pinned in data.example.json
-    await expect(page.getByText(/bob/i)).toBeVisible();
-    await expect(page.getByText(/no users pinned yet/i)).not.toBeVisible();
+    // Click the Connections tab
+    await page.getByRole("tab", { name: /connections/i }).click();
+
+    // Alice has Bob connected in data.example.json
+    await expect(page.getByText(/bob/i).first()).toBeVisible();
   });
 
   test("saving profile shows a success message", async ({ page }) => {

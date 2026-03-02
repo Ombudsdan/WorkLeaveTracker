@@ -1,4 +1,5 @@
 import type { LeaveEntry, YearAllowance } from "@/types";
+import { LeaveDuration } from "@/types";
 
 /**
  * Count working days between two ISO date strings (inclusive).
@@ -29,24 +30,45 @@ export function countWorkingDays(
 }
 
 /**
- * Find the year allowance whose holiday year contains today.
- * Iterates allowances using each one's own holidayStartMonth so no external
- * start month is needed. Falls back to the most recently started allowance.
+ * Find the year allowance that is most relevant to today.
+ *
+ * Uses a two-tier date-based approach on non-deactivated allowances:
+ *  1. **Primary** — the allowance whose holiday year window contains today.
+ *  2. **Lookahead** — if a newer year's allowance has been pre-configured and
+ *     its holiday year starts within the next 60 days, prefer it over the
+ *     current year. This handles the common case where an admin sets up the
+ *     upcoming year in advance (e.g. configuring April 2026 in early March).
+ *
+ * Among all candidates the one with the highest year wins.
+ * Falls back to the most recently started allowance, then the earliest future one.
  */
 export function getActiveYearAllowance(allowances: YearAllowance[]): YearAllowance | undefined {
   const today = new Date();
-  for (const ya of allowances) {
+  // Prefer allowances that haven't been deactivated (company-change replacements)
+  const notDeactivated = allowances.filter((ya) => ya.active !== false);
+  const search = notDeactivated.length > 0 ? notDeactivated : allowances;
+
+  const lookahead = new Date(today);
+  lookahead.setDate(lookahead.getDate() + 60);
+
+  const candidates = search.filter((ya) => {
     const sm = ya.holidayStartMonth ?? 1;
     const start = new Date(ya.year, sm - 1, 1);
     const end = new Date(ya.year + 1, sm - 1, 1); // exclusive upper bound
-    if (today >= start && today < end) return ya;
-  }
-  // Fallback: the most recently started allowance
-  const past = allowances.filter(
+    const containsToday = today >= start && today < end;
+    const startsVerySoon = start > today && start <= lookahead;
+    return containsToday || startsVerySoon;
+  });
+
+  // Among all candidates prefer the latest year
+  if (candidates.length > 0) return candidates.sort((a, b) => b.year - a.year)[0];
+
+  // Fallback: the most recently started allowance from the search set
+  const past = search.filter(
     (ya) => today >= new Date(ya.year, (ya.holidayStartMonth ?? 1) - 1, 1)
   );
   if (past.length > 0) return past.sort((a, b) => b.year - a.year)[0];
-  return [...allowances].sort((a, b) => a.year - b.year)[0];
+  return [...search].sort((a, b) => a.year - b.year)[0];
 }
 
 export function getHolidayYearBounds(holidayStartMonth: number): { start: Date; end: Date } {
@@ -79,6 +101,20 @@ export function getEntryForDate(date: string, entries: LeaveEntry[]): LeaveEntry
   });
 }
 
+/**
+ * Find all leave entries (up to 2) that cover the given ISO date string.
+ * Returns at most 2 entries — more than 2 overlapping entries are not supported.
+ */
+export function getEntriesForDate(date: string, entries: LeaveEntry[]): LeaveEntry[] {
+  const matches = entries.filter((e) => {
+    const s = new Date(e.startDate);
+    const en = new Date(e.endDate);
+    const d = new Date(date);
+    return d >= s && d <= en;
+  });
+  return matches.slice(0, 2);
+}
+
 /** Returns true if the date falls on one of the user's non-working days */
 export function isNonWorkingDay(date: string, nonWorkingDays: number[]): boolean {
   return nonWorkingDays.includes(new Date(date).getDay());
@@ -87,4 +123,35 @@ export function isNonWorkingDay(date: string, nonWorkingDays: number[]): boolean
 /** Format a Date to YYYY-MM-DD */
 export function toIsoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
+}
+
+/**
+ * Normalise the duration of a leave entry to a `LeaveDuration` value.
+ *
+ * Handles three data generations:
+ *  1. New entries: use the `duration` field directly.
+ *  2. Old entries with `halfDay`/`halfDayPeriod` fields.
+ *  3. Legacy entries with no half-day information → `Full`.
+ */
+export function getEntryDuration(entry: LeaveEntry): LeaveDuration {
+  if (entry.duration) return entry.duration;
+  if (entry.halfDay) {
+    return entry.halfDayPeriod === "am" ? LeaveDuration.HalfMorning : LeaveDuration.HalfAfternoon;
+  }
+  return LeaveDuration.Full;
+}
+
+/**
+ * Count the number of days an entry consumes, respecting half-days.
+ * Half-day entries always count as 0.5 regardless of the date range.
+ * Full-day entries use countWorkingDays.
+ */
+export function countEntryDays(
+  entry: LeaveEntry,
+  nonWorkingDays: number[],
+  bankHolidays: string[]
+): number {
+  const duration = getEntryDuration(entry);
+  if (duration !== LeaveDuration.Full) return 0.5;
+  return countWorkingDays(entry.startDate, entry.endDate, nonWorkingDays, bankHolidays);
 }

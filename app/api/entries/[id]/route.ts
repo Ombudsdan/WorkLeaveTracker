@@ -13,18 +13,18 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   // Fall back to email lookup in case the session ID is stale
-  let resolvedUser = findUserById(userId);
+  let resolvedUser = await findUserById(userId);
   if (!resolvedUser && session.user?.email) {
-    resolvedUser = findUserByEmail(session.user.email);
+    resolvedUser = await findUserByEmail(session.user.email);
   }
   if (!resolvedUser) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const { id: entryId } = await params;
   const body = (await request.json()) as Partial<LeaveEntry>;
-  const ok = updateEntry(resolvedUser.id, entryId, body);
+  const ok = await updateEntry(resolvedUser.id, entryId, body);
   if (!ok) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const updated = findUserById(resolvedUser.id);
+  const updated = await findUserById(resolvedUser.id);
   const entry = updated?.entries.find((e) => e.id === entryId);
   return NextResponse.json(entry);
 }
@@ -38,14 +38,14 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   // Fall back to email lookup in case the session ID is stale
-  let resolvedUser = findUserById(userId);
+  let resolvedUser = await findUserById(userId);
   if (!resolvedUser && session.user?.email) {
-    resolvedUser = findUserByEmail(session.user.email);
+    resolvedUser = await findUserByEmail(session.user.email);
   }
   if (!resolvedUser) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const { id: entryId } = await params;
-  const ok = deleteEntry(resolvedUser.id, entryId);
+  const ok = await deleteEntry(resolvedUser.id, entryId);
   if (!ok) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   return new NextResponse(null, { status: 204 });

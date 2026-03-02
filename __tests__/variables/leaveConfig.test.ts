@@ -56,11 +56,11 @@ describe("LEAVE_TYPE_LABELS", () => {
 });
 
 describe("LEAVE_TYPE_ORDER", () => {
-  it("contains all three LeaveType values", () => {
-    expect(LEAVE_TYPE_ORDER).toHaveLength(3);
+  it("contains Holiday and Sick (Other is deprecated and excluded from the UI)", () => {
+    expect(LEAVE_TYPE_ORDER).toHaveLength(2);
     expect(LEAVE_TYPE_ORDER).toContain(LeaveType.Holiday);
     expect(LEAVE_TYPE_ORDER).toContain(LeaveType.Sick);
-    expect(LEAVE_TYPE_ORDER).toContain(LeaveType.Other);
+    expect(LEAVE_TYPE_ORDER).not.toContain(LeaveType.Other);
   });
 
   it("lists Holiday first (primary leave type)", () => {
