@@ -59,41 +59,41 @@ function SingleRingDonut({
   const cy = 50;
   const R = 38;
   const strokeWidth = 14;
-  let cumulativeAngle = -90;
 
-  const paths = segments
-    .filter((s) => s.value > 0 && total > 0)
-    .map((seg, i) => {
-      const pct = seg.value / total;
-      const angle = pct * 360;
-      const startAngle = cumulativeAngle;
-      cumulativeAngle += angle;
-      const endAngle = cumulativeAngle;
-
-      if (pct >= 1) {
-        return (
-          <circle
-            key={i}
-            cx={cx}
-            cy={cy}
-            r={R}
-            fill="none"
-            stroke={seg.color}
-            strokeWidth={strokeWidth}
-          />
-        );
-      }
-
-      return (
-        <path
-          key={i}
-          fill="none"
-          stroke={seg.color}
-          strokeWidth={strokeWidth}
-          d={buildArcPath(cx, cy, R, startAngle, endAngle)}
-        />
-      );
-    });
+  const paths = useMemo(
+    () =>
+      segments
+        .filter((s) => s.value > 0 && total > 0)
+        .reduce<{ els: React.ReactNode[]; angle: number }>(
+          ({ els, angle }, seg, i) => {
+            const pct = seg.value / total;
+            const endAngle = angle + pct * 360;
+            const el =
+              pct >= 1 ? (
+                <circle
+                  key={i}
+                  cx={cx}
+                  cy={cy}
+                  r={R}
+                  fill="none"
+                  stroke={seg.color}
+                  strokeWidth={strokeWidth}
+                />
+              ) : (
+                <path
+                  key={i}
+                  fill="none"
+                  stroke={seg.color}
+                  strokeWidth={strokeWidth}
+                  d={buildArcPath(cx, cy, R, angle, endAngle)}
+                />
+              );
+            return { els: [...els, el], angle: endAngle };
+          },
+          { els: [], angle: -90 }
+        ).els,
+    [segments, total]
+  );
 
   return (
     <svg viewBox="0 0 100 100" className="w-28 h-28 shrink-0">

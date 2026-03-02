@@ -38,7 +38,6 @@ export default function ProfilePage() {
   const [workingDays, setWorkingDays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [country, setCountry] = useState<UkCountry | "">("");
   const [yearAllowances, setYearAllowances] = useState<YearAllowance[]>([]);
-  const [allUsers, setAllUsers] = useState<PublicUser[]>([]);
   const [pinnedUserIds, setPinnedUserIds] = useState<string[]>([]);
   const [saved, setSaved] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -95,7 +94,6 @@ export default function ProfilePage() {
           (sessionId ? result.find((u) => u.id === sessionId) : undefined) ??
           result.find((u) => u.profile.email === session?.user?.email);
         if (me) {
-          setAllUsers(result);
           applyUserProfile(me);
           setLoading(false);
           return;
