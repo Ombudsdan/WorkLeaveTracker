@@ -180,7 +180,9 @@ describe("CalendarView — bank holiday indicator", () => {
         },
       ],
     };
-    render(<CalendarView user={userWithEntry} bankHolidays={[bh("2026-03-02", "Spring Bank Holiday")]} />);
+    render(
+      <CalendarView user={userWithEntry} bankHolidays={[bh("2026-03-02", "Spring Bank Holiday")]} />
+    );
     expect(screen.queryByText("Spring Bank Holiday")).toBeNull();
   });
 });
@@ -548,9 +550,7 @@ describe("CalendarView — half-day cells", () => {
       duration: LeaveDuration.HalfAfternoon,
       notes: "Afternoon",
     };
-    render(
-      <CalendarView user={{ ...alice, entries: [amEntry, pmEntry] }} bankHolidays={[]} />
-    );
+    render(<CalendarView user={{ ...alice, entries: [amEntry, pmEntry] }} bankHolidays={[]} />);
     // Both notes visible
     expect(screen.getByText("Morning (AM)")).toBeInTheDocument();
     expect(screen.getByText("Afternoon (PM)")).toBeInTheDocument();
@@ -628,9 +628,7 @@ describe("CalendarView — getCellLayout full-day + half-day placement", () => {
       type: LeaveType.Holiday,
       notes: "Full",
     };
-    render(
-      <CalendarView user={{ ...alice, entries: [amHalfDay, fullDay] }} bankHolidays={[]} />
-    );
+    render(<CalendarView user={{ ...alice, entries: [amHalfDay, fullDay] }} bankHolidays={[]} />);
     // Both entries should be visible
     expect(screen.getByText("AM (AM)")).toBeInTheDocument();
     expect(screen.getByText("Full")).toBeInTheDocument();
@@ -654,9 +652,7 @@ describe("CalendarView — getCellLayout full-day + half-day placement", () => {
       type: LeaveType.Holiday,
       notes: "Full",
     };
-    render(
-      <CalendarView user={{ ...alice, entries: [pmHalfDay, fullDay] }} bankHolidays={[]} />
-    );
+    render(<CalendarView user={{ ...alice, entries: [pmHalfDay, fullDay] }} bankHolidays={[]} />);
     expect(screen.getByText("PM (PM)")).toBeInTheDocument();
     expect(screen.getByText("Full")).toBeInTheDocument();
   });

@@ -72,7 +72,9 @@ function getCellLayout(entries: LeaveEntry[]): CellLayout {
     const e = entries[0];
     const dur = getEntryDuration(e);
     if (dur === LeaveDuration.Full) return { kind: "full", entry: e };
-    return dur === LeaveDuration.HalfMorning ? { kind: "top", entry: e } : { kind: "bottom", entry: e };
+    return dur === LeaveDuration.HalfMorning
+      ? { kind: "top", entry: e }
+      : { kind: "bottom", entry: e };
   }
 
   // Two entries — determine top/bottom placement
@@ -176,8 +178,8 @@ export default function CalendarView({
         ? isBankHoliday
           ? CALENDAR_CELL_BANK_HOLIDAY
           : isNWD
-          ? CALENDAR_CELL_NON_WORKING
-          : CALENDAR_CELL_DEFAULT
+            ? CALENDAR_CELL_NON_WORKING
+            : CALENDAR_CELL_DEFAULT
         : "";
 
     const todayRing = isToday ? "ring-2 ring-indigo-500" : "";
@@ -242,10 +244,14 @@ export default function CalendarView({
               onClick={(ev) => handleCellClick(e, ev.currentTarget as HTMLElement)}
             >
               {label && (
-                <span className="text-[7px] leading-tight text-center truncate w-full">{label}</span>
+                <span className="text-[7px] leading-tight text-center truncate w-full">
+                  {label}
+                </span>
               )}
             </div>
-            <div className={`flex-1 flex items-center justify-center ${defaultClass || CALENDAR_CELL_DEFAULT}`} />
+            <div
+              className={`flex-1 flex items-center justify-center ${defaultClass || CALENDAR_CELL_DEFAULT}`}
+            />
           </div>
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <span className="w-4 h-4 rounded-full bg-white/90 flex items-center justify-center text-[9px] font-bold text-gray-700 shadow-sm">
@@ -266,13 +272,17 @@ export default function CalendarView({
           title={label}
         >
           <div className="flex flex-col h-full">
-            <div className={`flex-1 flex items-center justify-center ${defaultClass || CALENDAR_CELL_DEFAULT}`} />
+            <div
+              className={`flex-1 flex items-center justify-center ${defaultClass || CALENDAR_CELL_DEFAULT}`}
+            />
             <div
               className={`flex-1 flex items-center justify-center overflow-hidden px-0.5 ${getCalendarEntryClass(e)}`}
               onClick={(ev) => handleCellClick(e, ev.currentTarget as HTMLElement)}
             >
               {label && (
-                <span className="text-[7px] leading-tight text-center truncate w-full">{label}</span>
+                <span className="text-[7px] leading-tight text-center truncate w-full">
+                  {label}
+                </span>
               )}
             </div>
           </div>
@@ -300,7 +310,9 @@ export default function CalendarView({
             onClick={(e) => handleCellClick(topEntry, e.currentTarget as HTMLElement)}
           >
             {topLabel && (
-              <span className="text-[7px] leading-tight text-center truncate w-full">{topLabel}</span>
+              <span className="text-[7px] leading-tight text-center truncate w-full">
+                {topLabel}
+              </span>
             )}
           </div>
           <div
@@ -308,7 +320,9 @@ export default function CalendarView({
             onClick={(e) => handleCellClick(botEntry, e.currentTarget as HTMLElement)}
           >
             {botLabel && (
-              <span className="text-[7px] leading-tight text-center truncate w-full">{botLabel}</span>
+              <span className="text-[7px] leading-tight text-center truncate w-full">
+                {botLabel}
+              </span>
             )}
           </div>
         </div>
@@ -421,7 +435,9 @@ export default function CalendarView({
               ? "Sick Leave"
               : popover.entry.status.charAt(0).toUpperCase() + popover.entry.status.slice(1);
             return (
-              <div className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold mb-2 border ${badgeClass}`}>
+              <div
+                className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold mb-2 border ${badgeClass}`}
+              >
                 {badgeLabel}
               </div>
             );
@@ -448,7 +464,10 @@ export default function CalendarView({
             <div className="flex gap-2 pt-2 border-t border-gray-100">
               {onEdit && (
                 <button
-                  onClick={() => { onEdit(popover.entry); setPopover(null); }}
+                  onClick={() => {
+                    onEdit(popover.entry);
+                    setPopover(null);
+                  }}
                   className="flex items-center gap-1 text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer"
                   aria-label="Edit"
                 >
@@ -457,7 +476,10 @@ export default function CalendarView({
               )}
               {onDelete && (
                 <button
-                  onClick={() => { onDelete(popover.entry.id); setPopover(null); }}
+                  onClick={() => {
+                    onDelete(popover.entry.id);
+                    setPopover(null);
+                  }}
                   className="flex items-center gap-1 text-red-500 hover:text-red-700 font-medium cursor-pointer"
                   aria-label="Delete"
                 >

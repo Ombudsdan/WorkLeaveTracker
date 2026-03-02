@@ -53,8 +53,7 @@ export default function CompanySelect({
   return (
     <div>
       <label htmlFor={id} className="block text-sm font-medium text-gray-600 mb-1">
-        {label}{" "}
-        <span className="text-gray-400 font-normal">(optional)</span>
+        {label} <span className="text-gray-400 font-normal">(optional)</span>
       </label>
       <select
         id={id}

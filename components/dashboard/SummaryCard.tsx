@@ -16,9 +16,9 @@ interface SummaryCardProps {
 
 // Chart segment colours — match the Tailwind status colours used elsewhere
 const DONUT_COLORS = {
-  approved: "#86efac",   // green-300
-  requested: "#93c5fd",  // blue-300
-  planned: "#fde047",    // yellow-300
+  approved: "#86efac", // green-300
+  requested: "#93c5fd", // blue-300
+  planned: "#fde047", // yellow-300
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -273,8 +273,8 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
                       isRemaining
                         ? "font-bold text-sm text-gray-900 border-t border-gray-100 pt-1 mt-1"
                         : isUsedSoFar
-                        ? "font-semibold text-sm text-gray-800"
-                        : "text-xs text-gray-600",
+                          ? "font-semibold text-sm text-gray-800"
+                          : "text-xs text-gray-600",
                     ].join(" ")}
                   >
                     <span>{label}</span>
@@ -299,8 +299,7 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
         /* Sick tab content */
         <div className="space-y-2">
           <p className="text-sm text-gray-600">
-            Sick days logged:{" "}
-            <span className="font-bold text-gray-900">{sickDays}</span>
+            Sick days logged: <span className="font-bold text-gray-900">{sickDays}</span>
           </p>
           <p className="text-xs text-gray-400">
             Sick leave is not deducted from your holiday allowance.

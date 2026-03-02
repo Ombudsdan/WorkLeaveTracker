@@ -84,10 +84,7 @@ describe("AddLeaveModal — rendering", () => {
   it("Holiday type is pre-selected by default (sick leave feature off)", () => {
     renderModal(<AddLeaveModal onClose={jest.fn()} onSave={jest.fn()} />);
     // When SICK_LEAVE_ENABLED=false, type defaults to Holiday
-    expect(screen.getByRole("button", { name: "Holiday" })).toHaveAttribute(
-      "aria-pressed",
-      "true"
-    );
+    expect(screen.getByRole("button", { name: "Holiday" })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("no status is pre-selected by default", () => {

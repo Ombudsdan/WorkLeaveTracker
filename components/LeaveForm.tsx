@@ -96,12 +96,12 @@ export default function LeaveForm({
   const isHalfDay = duration !== "full";
   const isSick = type === LeaveType.Sick;
 
-  const typeOptions = LEAVE_TYPE_ORDER
-    .filter((t) => t !== LeaveType.Sick || SICK_LEAVE_ENABLED)
-    .map((t) => ({
-      value: t,
-      label: LEAVE_TYPE_LABELS[t],
-    }));
+  const typeOptions = LEAVE_TYPE_ORDER.filter(
+    (t) => t !== LeaveType.Sick || SICK_LEAVE_ENABLED
+  ).map((t) => ({
+    value: t,
+    label: LEAVE_TYPE_LABELS[t],
+  }));
 
   const statusOptions = LEAVE_STATUS_ORDER.map((s) => ({
     value: s,

@@ -10,5 +10,4 @@
  * When unset or any other value, sick-leave UI is hidden and the form
  * defaults silently to "Holiday".
  */
-export const SICK_LEAVE_ENABLED =
-  process.env.NEXT_PUBLIC_ENABLE_FEATURE_SICK_LEAVE === "true";
+export const SICK_LEAVE_ENABLED = process.env.NEXT_PUBLIC_ENABLE_FEATURE_SICK_LEAVE === "true";

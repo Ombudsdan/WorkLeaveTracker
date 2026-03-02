@@ -43,9 +43,18 @@ describe("EditLeaveModal — rendering", () => {
 
   it("pre-selects Full day(s) Duration button for a full-day entry", () => {
     renderModal(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={jest.fn()} />);
-    expect(screen.getByRole("button", { name: "Full day(s)" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "Half Day AM" })).toHaveAttribute("aria-pressed", "false");
-    expect(screen.getByRole("button", { name: "Half Day PM" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Full day(s)" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+    expect(screen.getByRole("button", { name: "Half Day AM" })).toHaveAttribute(
+      "aria-pressed",
+      "false"
+    );
+    expect(screen.getByRole("button", { name: "Half Day PM" })).toHaveAttribute(
+      "aria-pressed",
+      "false"
+    );
   });
 
   it("shows the entry start and end dates in the DateRangePicker summary", () => {
@@ -194,14 +203,23 @@ describe("EditLeaveModal — half-day editing", () => {
 
   it("pre-selects Half Day AM Duration button for an AM half-day entry", () => {
     renderModal(<EditLeaveModal entry={halfDayEntry} onClose={jest.fn()} onSave={jest.fn()} />);
-    expect(screen.getByRole("button", { name: "Half Day AM" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "Full day(s)" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Half Day AM" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+    expect(screen.getByRole("button", { name: "Full day(s)" })).toHaveAttribute(
+      "aria-pressed",
+      "false"
+    );
   });
 
   it("pre-selects Half Day PM Duration button for a PM half-day entry", () => {
     const pmEntry = { ...halfDayEntry, duration: LeaveDuration.HalfAfternoon };
     renderModal(<EditLeaveModal entry={pmEntry} onClose={jest.fn()} onSave={jest.fn()} />);
-    expect(screen.getByRole("button", { name: "Half Day PM" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Half Day PM" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
   });
 
   it("also pre-selects correctly for legacy halfDay/halfDayPeriod entries", () => {
@@ -216,7 +234,10 @@ describe("EditLeaveModal — half-day editing", () => {
       halfDayPeriod: "pm",
     };
     renderModal(<EditLeaveModal entry={legacyEntry} onClose={jest.fn()} onSave={jest.fn()} />);
-    expect(screen.getByRole("button", { name: "Half Day PM" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Half Day PM" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
   });
 
   it("shows the half-day date in the DateRangePicker summary", () => {

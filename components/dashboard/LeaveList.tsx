@@ -49,27 +49,22 @@ export default function LeaveList({
             const dur = getEntryDuration(entry);
             const isHalf = dur !== LeaveDuration.Full;
             const periodLabel =
-              dur === LeaveDuration.HalfMorning ? "AM" :
-              dur === LeaveDuration.HalfAfternoon ? "PM" : "";
+              dur === LeaveDuration.HalfMorning
+                ? "AM"
+                : dur === LeaveDuration.HalfAfternoon
+                  ? "PM"
+                  : "";
             const days = countEntryDays(entry, user.profile.nonWorkingDays, bankHolidayDates);
-            const daysLabel = isHalf
-              ? `Half Day ${periodLabel}`
-              : `${days}d`;
+            const daysLabel = isHalf ? `Half Day ${periodLabel}` : `${days}d`;
             const isSick = entry.type === LeaveType.Sick;
             const statusLabel = isSick
               ? "Sick"
               : entry.status.charAt(0).toUpperCase() + entry.status.slice(1);
             const cardClass = isSick ? SICK_LEAVE_CARD_COLORS : STATUS_COLORS[entry.status];
             const baseNote = entry.notes ?? "–";
-            const noteText =
-              isHalf && entry.notes
-                ? `${entry.notes} (${periodLabel})`
-                : baseNote;
+            const noteText = isHalf && entry.notes ? `${entry.notes} (${periodLabel})` : baseNote;
             return (
-              <div
-                key={entry.id}
-                className={`border rounded-lg p-2 text-xs ${cardClass}`}
-              >
+              <div key={entry.id} className={`border rounded-lg p-2 text-xs ${cardClass}`}>
                 {/* Line 1: Reason (left) | Status (right) */}
                 <div className="flex items-center justify-between">
                   <span className="font-medium truncate mr-2">{noteText}</span>

@@ -309,7 +309,12 @@ describe("LeaveList — half-day entries", () => {
   });
 
   it("appends (PM) to the reason for a PM half-day entry", () => {
-    const pmEntry: LeaveEntry = { ...halfDayEntry, id: "e4", duration: LeaveDuration.HalfAfternoon, notes: "Physio" };
+    const pmEntry: LeaveEntry = {
+      ...halfDayEntry,
+      id: "e4",
+      duration: LeaveDuration.HalfAfternoon,
+      notes: "Physio",
+    };
     render(
       <LeaveList
         user={{ ...alice, entries: [pmEntry] }}

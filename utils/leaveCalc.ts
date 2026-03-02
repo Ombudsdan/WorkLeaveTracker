@@ -43,14 +43,15 @@ export function calcLeaveSummary(user: PublicUser, bankHolidays: string[]): Leav
     const ee = new Date(entry.endDate);
     if (ee < start || es > end) continue;
 
-    const days = getEntryDuration(entry) !== LeaveDuration.Full
-      ? 0.5
-      : countWorkingDays(
-          entry.startDate,
-          entry.endDate,
-          user.profile.nonWorkingDays,
-          relevantBankHolidays
-        );
+    const days =
+      getEntryDuration(entry) !== LeaveDuration.Full
+        ? 0.5
+        : countWorkingDays(
+            entry.startDate,
+            entry.endDate,
+            user.profile.nonWorkingDays,
+            relevantBankHolidays
+          );
 
     if (entry.status === LeaveStatus.Approved) approved += days;
     else if (entry.status === LeaveStatus.Requested) requested += days;
