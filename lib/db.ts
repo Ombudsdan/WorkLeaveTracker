@@ -42,29 +42,60 @@ function writeDbFile(db: Database): void {
 //   email:{email}      → user id string        (email → id index)
 //   user_ids           → Redis SET of all ids  (for listing all users)
 
+/**
+ * Returns the KV REST API URL.
+ * Supports both the standard Vercel KV env var name and the prefixed variant
+ * that Vercel creates when a storage integration is named (e.g.
+ * "LEAVE_TRACKER_STORAGE" → LEAVE_TRACKER_STORAGE_KV_REST_API_URL).
+ */
+function getKvUrl(): string | undefined {
+  return process.env.KV_REST_API_URL ?? process.env.LEAVE_TRACKER_STORAGE_KV_REST_API_URL;
+}
+
+/**
+ * Returns the KV REST API token.
+ * Supports both the standard Vercel KV env var name and the prefixed variant.
+ */
+function getKvToken(): string | undefined {
+  return process.env.KV_REST_API_TOKEN ?? process.env.LEAVE_TRACKER_STORAGE_KV_REST_API_TOKEN;
+}
+
 /** Returns true when Vercel KV is configured and should be used. */
 function useKv(): boolean {
-  return Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+  return Boolean(getKvUrl() && getKvToken());
+}
+
+let cachedKvClient: import("@vercel/kv").VercelKV | null = null;
+
+async function getKvClient(): Promise<import("@vercel/kv").VercelKV> {
+  if (!cachedKvClient) {
+    const url = getKvUrl();
+    const token = getKvToken();
+    if (!url || !token) {
+      throw new Error(
+        "Vercel KV is not configured: missing KV_REST_API_URL and KV_REST_API_TOKEN (or their LEAVE_TRACKER_STORAGE_ prefixed equivalents)"
+      );
+    }
+    const { createClient } = await import("@vercel/kv");
+    cachedKvClient = createClient({ url, token });
+  }
+  return cachedKvClient;
 }
 
 async function kvGet<T>(key: string): Promise<T | null> {
-  const { kv } = await import("@vercel/kv");
-  return kv.get<T>(key);
+  return (await getKvClient()).get<T>(key);
 }
 
 async function kvSet(key: string, value: unknown): Promise<void> {
-  const { kv } = await import("@vercel/kv");
-  await kv.set(key, value);
+  await (await getKvClient()).set(key, value);
 }
 
 async function kvSadd(key: string, member: string): Promise<void> {
-  const { kv } = await import("@vercel/kv");
-  await kv.sadd(key, member);
+  await (await getKvClient()).sadd(key, member);
 }
 
 async function kvSmembers(key: string): Promise<string[]> {
-  const { kv } = await import("@vercel/kv");
-  return (await kv.smembers(key)) as string[];
+  return (await (await getKvClient()).smembers(key)) as string[];
 }
 
 // ---------------------------------------------------------------------------
