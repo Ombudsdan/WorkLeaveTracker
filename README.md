@@ -33,12 +33,19 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 Create a `.env.local` file in the project root based on `.env.example`. The following variables are required:
 
-| Variable            | Description                                                                                                             |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `NEXTAUTH_URL`      | The canonical URL of your site (e.g. `http://localhost:3000` for local dev)                                             |
-| `NEXTAUTH_SECRET`   | A secret used to sign/encrypt NextAuth tokens. **Required in production.** Generate one with `openssl rand -base64 32`. |
-| `KV_REST_API_URL`   | Vercel KV REST endpoint. Set automatically when you link a KV store in the Vercel dashboard. Leave blank for local dev. |
-| `KV_REST_API_TOKEN` | Vercel KV REST token. Set automatically when you link a KV store in the Vercel dashboard. Leave blank for local dev.    |
+| Variable                                    | Description                                                                                                             |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `NEXTAUTH_URL`                              | The canonical URL of your site (e.g. `http://localhost:3000` for local dev)                                             |
+| `NEXTAUTH_SECRET`                           | A secret used to sign/encrypt NextAuth tokens. **Required in production.** Generate one with `openssl rand -base64 32`. |
+| `KV_REST_API_URL`                           | Vercel KV REST endpoint. Set automatically when you link a KV store in the Vercel dashboard. Leave blank for local dev. |
+| `KV_REST_API_TOKEN`                         | Vercel KV REST token. Set automatically when you link a KV store in the Vercel dashboard. Leave blank for local dev.    |
+
+> **Note on prefixed env vars:** When you connect a Vercel KV store that has a
+> custom name (e.g. **LEAVE_TRACKER_STORAGE**), Vercel creates prefixed
+> variables such as `LEAVE_TRACKER_STORAGE_KV_REST_API_URL` and
+> `LEAVE_TRACKER_STORAGE_KV_REST_API_TOKEN` instead of the standard names
+> above. The app automatically detects and uses these prefixed variables, so no
+> manual renaming is needed.
 
 ## Data Storage
 
@@ -57,7 +64,9 @@ To enable Vercel KV:
 1. Open your project in the [Vercel dashboard](https://vercel.com/dashboard).
 2. Go to the **Storage** tab and click **Create Database → KV**.
 3. Follow the prompts to create a free KV store and connect it to your project.
-4. Vercel automatically adds `KV_REST_API_URL` and `KV_REST_API_TOKEN` to your project's environment variables. **No manual copying needed.**
+4. Vercel automatically adds KV credentials to your project's environment variables. **No manual copying needed.**
+   - If you accepted the default name the variables will be `KV_REST_API_URL` and `KV_REST_API_TOKEN`.
+   - If you gave the store a custom name (e.g. **LEAVE_TRACKER_STORAGE**) the variables will be prefixed accordingly (e.g. `LEAVE_TRACKER_STORAGE_KV_REST_API_URL` / `LEAVE_TRACKER_STORAGE_KV_REST_API_TOKEN`). The app handles both automatically.
 5. Re-deploy (or trigger a new deployment) — the app will now read and write all user data from KV.
 
 > **Note:** `data.json` is gitignored so your personal data is never committed to the repository. Only `data.example.json` (containing demo users) is tracked in version control.
