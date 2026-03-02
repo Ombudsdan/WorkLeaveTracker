@@ -17,10 +17,6 @@ function ControlledFormField(
   return <FormField {...rest} value={value} onChange={setValue} />;
 }
 
-function renderInProvider(ui: React.ReactElement) {
-  return render(<FormValidationProvider>{ui}</FormValidationProvider>);
-}
-
 // Helper component that exposes triggerAllValidations for testing
 function TriggerButton() {
   const { triggerAllValidations } = useFormValidation();
@@ -234,5 +230,60 @@ describe("FormField — triggerAllValidations", () => {
     );
     await userEvent.click(screen.getByRole("button", { name: "Validate" }));
     expect(screen.queryByText("Name is required")).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Email format validation
+// ---------------------------------------------------------------------------
+describe("FormField — email validation", () => {
+  it("shows a format error when an invalid email is entered and the field is blurred", async () => {
+    renderInProvider(
+      <ControlledFormField id="email" label="Email" type="email" initialValue="" value="" />
+    );
+    await userEvent.type(screen.getByLabelText("Email"), "notvalid");
+    await userEvent.tab(); // trigger blur
+    expect(screen.getByText("Email must be a valid email address")).toBeInTheDocument();
+  });
+
+  it("does not show a format error while typing (before blur)", async () => {
+    renderInProvider(
+      <ControlledFormField id="email" label="Email" type="email" initialValue="" value="" />
+    );
+    await userEvent.type(screen.getByLabelText("Email"), "notvalid");
+    // No blur yet — error must not appear
+    expect(screen.queryByText(/valid email address/i)).toBeNull();
+  });
+
+  it("does not show an error for a valid email string after blur", async () => {
+    renderInProvider(
+      <ControlledFormField id="email" label="Email" type="email" initialValue="" value="" />
+    );
+    await userEvent.type(screen.getByLabelText("Email"), "user@example.com");
+    await userEvent.tab();
+    expect(screen.queryByText(/valid email address/i)).toBeNull();
+  });
+
+  it("clears the format error when a valid email is entered after an invalid one (both blurred)", async () => {
+    renderInProvider(
+      <ControlledFormField id="email" label="Email" type="email" initialValue="" value="" />
+    );
+    await userEvent.type(screen.getByLabelText("Email"), "bad");
+    await userEvent.tab(); // blur to trigger error
+    expect(screen.getByText(/valid email address/i)).toBeInTheDocument();
+    await userEvent.click(screen.getByLabelText("Email")); // focus back
+    await userEvent.clear(screen.getByLabelText("Email"));
+    await userEvent.type(screen.getByLabelText("Email"), "good@example.com");
+    await userEvent.tab();
+    expect(screen.queryByText(/valid email address/i)).toBeNull();
+  });
+
+  it("does not show format error when the email field is empty (required handles that)", async () => {
+    renderInProvider(
+      <FormField id="email" label="Email" type="email" value="a@b.com" onChange={jest.fn()} />
+    );
+    await userEvent.clear(screen.getByLabelText("Email"));
+    await userEvent.tab();
+    expect(screen.queryByText(/valid email address/i)).toBeNull();
   });
 });

@@ -5,7 +5,6 @@ import { readDb, updateUser, addUser, findUserByEmail } from "@/lib/db";
 import type { AppUser } from "@/types";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
-import { getHolidayYearBounds } from "@/utils/dateHelpers";
 
 /** GET /api/users - list all users (profiles only, no passwords) */
 export async function GET() {
@@ -15,7 +14,9 @@ export async function GET() {
   const db = readDb();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const users = db.users.map(({ password: _p, ...rest }) => rest);
-  return NextResponse.json(users);
+  return NextResponse.json(users, {
+    headers: { "Cache-Control": "no-store, max-age=0" },
+  });
 }
 
 /** POST /api/users - register a new user */
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
     company?: string;
   };
 
-  const { firstName, lastName, email, password, company } = body;
+  const { firstName, lastName, email, password } = body;
   if (!firstName || !lastName || !email || !password) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
@@ -39,9 +40,6 @@ export async function POST(request: Request) {
   }
 
   const hashed = await bcrypt.hash(password, 10);
-  const defaultHolidayStartMonth = 1;
-  const { start } = getHolidayYearBounds(defaultHolidayStartMonth);
-  const currentYear = start.getFullYear();
 
   const newUser: AppUser = {
     id: randomUUID(),
@@ -50,12 +48,10 @@ export async function POST(request: Request) {
       firstName,
       lastName,
       email,
-      company: company ?? "",
       nonWorkingDays: [0, 6],
-      holidayStartMonth: 1,
       pinnedUserIds: [],
     },
-    yearAllowances: [{ year: currentYear, core: 25, bought: 0, carried: 0 }],
+    yearAllowances: [],
     entries: [],
   };
 
@@ -74,12 +70,19 @@ export async function PATCH(request: Request) {
   const userId = (session.user as { id?: string }).id;
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // Fall back to email lookup in case the session ID is stale
+  let resolvedUser = readDb().users.find((u) => u.id === userId);
+  if (!resolvedUser && session.user?.email) {
+    resolvedUser = findUserByEmail(session.user.email);
+  }
+  if (!resolvedUser) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
   const body = (await request.json()) as Partial<AppUser>;
   // Never allow updating password or id via this endpoint
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { password: _p, id: _i, entries: _e, ...safe } = body;
 
-  const updated = updateUser(userId, safe);
+  const updated = updateUser(resolvedUser.id, safe);
   if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

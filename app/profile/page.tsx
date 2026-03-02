@@ -9,13 +9,16 @@ import FormField from "@/components/FormField";
 import FormErrorOutlet from "@/components/FormErrorOutlet";
 import Button from "@/components/Button";
 import { useFormValidation } from "@/contexts/FormValidationContext";
-import { DAY_NAMES_SHORT, MONTH_NAMES_LONG } from "@/variables/calendar";
+import { DAY_NAMES_SHORT } from "@/variables/calendar";
 
 import { usersController } from "@/controllers/usersController";
 import YearAllowanceModal from "@/components/dashboard/YearAllowanceModal";
-import { getHolidayYearBounds } from "@/utils/dateHelpers";
+import PinUserModal from "@/components/dashboard/PinUserModal";
+import { getActiveYearAllowance } from "@/utils/dateHelpers";
 
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
+/** How long to wait before retrying when the user record is not found. */
+const PROFILE_RETRY_DELAY_MS = 400;
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
@@ -24,38 +27,109 @@ export default function ProfilePage() {
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [company, setCompany] = useState("");
   const [email, setEmail] = useState("");
-  /** Selected days are WORKING days (the opposite of the stored nonWorkingDays) */
   const [workingDays, setWorkingDays] = useState<number[]>([1, 2, 3, 4, 5]);
-  const [holidayStartMonth, setHolidayStartMonth] = useState(1);
   const [yearAllowances, setYearAllowances] = useState<YearAllowance[]>([]);
   const [allUsers, setAllUsers] = useState<PublicUser[]>([]);
   const [pinnedUserIds, setPinnedUserIds] = useState<string[]>([]);
   const [saved, setSaved] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [profileError, setProfileError] = useState(false);
   const [showAllowanceModal, setShowAllowanceModal] = useState(false);
   const [editingAllowance, setEditingAllowance] = useState<YearAllowance | undefined>(undefined);
+  const [showPinModal, setShowPinModal] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
   }, [status, router]);
 
+  // Clear any stale form errors carried over from other pages that share the
+  // root-level FormValidationProvider. Empty dep array is intentional — this
+  // should only run once on mount, not whenever the clearAllErrors ref changes.
+  useEffect(() => {
+    clearAllErrors();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (status !== "authenticated") return;
-    usersController.fetchAll().then((users) => {
-      setAllUsers(users);
-      const me = users.find((user) => user.profile.email === session?.user?.email);
-      if (me) applyUserProfile(me);
+    let active = true;
+    setLoading(true);
+    setProfileError(false);
+    const sessionId = (session?.user as { id?: string })?.id;
+
+    async function loadProfile() {
+      // Retry a few times before showing an error — handles the case where the
+      // server-side data is transiently unavailable (e.g. Vercel cold start on
+      // a Lambda instance that hasn't yet received the user's data).
+      // 3 total attempts (initial + 2 retries) before showing an error.
+      for (let attempt = 0; attempt <= 2; attempt++) {
+        if (attempt > 0) await new Promise<void>((r) => setTimeout(r, PROFILE_RETRY_DELAY_MS));
+        if (!active) return;
+        const result = await usersController.fetchAll();
+        if (!active) return;
+        if (!Array.isArray(result)) continue;
+        // Prefer ID-based lookup; fall back to email for robustness
+        const me =
+          (sessionId ? result.find((u) => u.id === sessionId) : undefined) ??
+          result.find((u) => u.profile.email === session?.user?.email);
+        if (me) {
+          setAllUsers(result);
+          applyUserProfile(me);
+          setLoading(false);
+          return;
+        }
+      }
+      // All retries exhausted — show an error state.  We deliberately do NOT
+      // call signOut here: the session JWT may still be valid, and on Vercel
+      // the user's data simply may not be present on this Lambda instance.
+      // Signing out would destroy the valid session and the user would be
+      // unable to log back in on the same Lambda instance.
+      if (active) {
+        setLoading(false);
+        setProfileError(true);
+      }
+    }
+
+    loadProfile().catch(() => {
+      if (active) {
+        setLoading(false);
+        setProfileError(true);
+      }
     });
+
+    return () => {
+      active = false;
+    };
   }, [status, session]);
 
-  if (status === "loading") {
+  if (status === "loading" || loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading…</div>;
   }
 
-  const { start: hyStart } = getHolidayYearBounds(holidayStartMonth);
-  const currentHolidayYear = hyStart.getFullYear();
+  if (profileError) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <NavBar activePage="profile" />
+        <main className="max-w-2xl mx-auto py-8 px-4">
+          <div className="bg-amber-50 border border-amber-300 text-amber-800 rounded-xl px-4 py-3 text-sm">
+            Your profile could not be loaded. Please{" "}
+            <button
+              onClick={() => window.location.reload()}
+              className="underline font-medium hover:text-amber-900"
+            >
+              refresh the page
+            </button>
+            .
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  const activeYa = getActiveYearAllowance(yearAllowances);
+  const currentHolidayYear = activeYa?.year ?? new Date().getFullYear();
   const otherUsers = allUsers.filter((u) => u.profile.email !== email);
 
   return (
@@ -92,12 +166,6 @@ export default function ProfilePage() {
                 onChange={(v) => setLastName(v)}
                 required
               />
-              <FormField
-                id="company"
-                label="Company"
-                value={company}
-                onChange={(v) => setCompany(v)}
-              />
               <FormField id="email" label="Email" type="email" value={email} readOnly />
             </div>
           </section>
@@ -126,33 +194,6 @@ export default function ProfilePage() {
               ))}
             </div>
             <p className="text-xs text-gray-400 mt-1">Select the days you work</p>
-          </section>
-
-          {/* Holiday period */}
-          <section>
-            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">
-              Holiday Period
-            </h3>
-            <div>
-              <label
-                htmlFor="holidayStartMonth"
-                className="block text-sm font-medium text-gray-600 mb-1"
-              >
-                Holiday Year Starts
-              </label>
-              <select
-                id="holidayStartMonth"
-                value={holidayStartMonth}
-                onChange={(e) => setHolidayStartMonth(Number(e.target.value))}
-                className="border rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-indigo-400 focus:outline-none"
-              >
-                {MONTH_NAMES_LONG.map((month, index) => (
-                  <option key={index} value={index + 1}>
-                    {month}
-                  </option>
-                ))}
-              </select>
-            </div>
           </section>
 
           {/* Year Allowances */}
@@ -189,6 +230,11 @@ export default function ProfilePage() {
                     >
                       <span className="font-medium">
                         {ya.year}
+                        {ya.company ? (
+                          <span className="ml-1 font-normal text-xs opacity-70">
+                            — {ya.company}
+                          </span>
+                        ) : null}
                         {ya.year === currentHolidayYear && (
                           <span className="ml-2 text-xs text-indigo-500">(current)</span>
                         )}
@@ -215,35 +261,52 @@ export default function ProfilePage() {
           </section>
 
           {/* Pinned Users */}
-          {otherUsers.length > 0 && (
-            <section>
-              <h3 className="font-semibold text-gray-700 mb-1 text-sm uppercase tracking-wide">
+          <section>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">
                 Pinned Users
               </h3>
-              <p className="text-xs text-gray-400 mb-3">
-                Select up to 3 users to show in the dashboard switcher.
-              </p>
-              <div className="flex gap-2 flex-wrap">
-                {otherUsers.map((u) => {
-                  const isPinned = pinnedUserIds.includes(u.id);
+              <button
+                type="button"
+                onClick={() => setShowPinModal(true)}
+                disabled={pinnedUserIds.length >= 3}
+                className="bg-indigo-600 text-white text-xs px-3 py-1 rounded-lg hover:bg-indigo-700 transition disabled:opacity-40"
+              >
+                + Search User
+              </button>
+            </div>
+            <p className="text-xs text-gray-400 mb-3">
+              Pin up to 3 users to show in the dashboard switcher.
+            </p>
+            {pinnedUserIds.length === 0 ? (
+              <p className="text-sm text-gray-400">No users pinned yet.</p>
+            ) : (
+              <ul className="space-y-2">
+                {pinnedUserIds.map((id) => {
+                  const u = allUsers.find((user) => user.id === id);
+                  if (!u) return null;
                   return (
-                    <button
-                      key={u.id}
-                      type="button"
-                      onClick={() => togglePinnedUser(u.id)}
-                      className={`px-3 py-1 rounded-full text-sm font-medium border transition ${
-                        isPinned
-                          ? "bg-indigo-100 border-indigo-300 text-indigo-700"
-                          : "bg-gray-100 border-gray-300 text-gray-500"
-                      }`}
+                    <li
+                      key={id}
+                      className="flex items-center justify-between text-sm bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2"
                     >
-                      {u.profile.firstName} {u.profile.lastName}
-                    </button>
+                      <span className="text-indigo-800">
+                        {u.profile.firstName} {u.profile.lastName}{" "}
+                        <span className="text-indigo-500 font-normal">({u.profile.email})</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => unpinUser(id)}
+                        className="text-xs text-red-500 hover:text-red-700 ml-3"
+                      >
+                        Unpin
+                      </button>
+                    </li>
                   );
                 })}
-              </div>
-            </section>
-          )}
+              </ul>
+            )}
+          </section>
 
           {submitError && <p className="text-red-500 text-sm">{submitError}</p>}
           {saved && (
@@ -267,6 +330,15 @@ export default function ProfilePage() {
           onSave={handleSaveAllowance}
         />
       )}
+
+      {showPinModal && (
+        <PinUserModal
+          otherUsers={otherUsers}
+          pinnedUserIds={pinnedUserIds}
+          onClose={() => setShowPinModal(false)}
+          onPin={handlePinUser}
+        />
+      )}
     </div>
   );
 
@@ -288,30 +360,33 @@ export default function ProfilePage() {
 
     const nonWorkingDays = ALL_DAYS.filter((d) => !workingDays.includes(d));
 
-    const ok = await usersController.updateProfile({
+    // updateProfile now returns the full updated user so we can sync all
+    // local state (including yearAllowances) directly from the PATCH response,
+    // without a separate fetchAll() round-trip that could hit a different
+    // Vercel Lambda instance.
+    const updated = await usersController.updateProfile({
       firstName,
       lastName,
-      company,
       email,
       nonWorkingDays,
-      holidayStartMonth,
       pinnedUserIds,
     });
 
-    if (!ok) {
+    if (!updated) {
       setSubmitError("Failed to save. Please try again.");
     } else {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
+      applyUserProfile(updated);
     }
   }
 
   async function handleSaveAllowance(ya: YearAllowance) {
-    const ok = await usersController.addYearAllowance(ya);
-    if (ok) {
+    const saved = await usersController.addYearAllowance(ya);
+    if (saved) {
       setYearAllowances((prev) => {
-        const rest = prev.filter((a) => a.year !== ya.year);
-        return [...rest, ya].sort((a, b) => a.year - b.year);
+        const rest = prev.filter((a) => a.year !== saved.year);
+        return [...rest, saved].sort((a, b) => a.year - b.year);
       });
     }
     setShowAllowanceModal(false);
@@ -321,21 +396,22 @@ export default function ProfilePage() {
     setWorkingDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
   }
 
-  function togglePinnedUser(id: string) {
+  function handlePinUser(id: string) {
     setPinnedUserIds((prev) => {
-      if (prev.includes(id)) return prev.filter((p) => p !== id);
-      if (prev.length >= 3) return prev; // max 3
+      if (prev.includes(id) || prev.length >= 3) return prev;
       return [...prev, id];
     });
+  }
+
+  function unpinUser(id: string) {
+    setPinnedUserIds((prev) => prev.filter((p) => p !== id));
   }
 
   function applyUserProfile(me: PublicUser) {
     setFirstName(me.profile.firstName);
     setLastName(me.profile.lastName);
-    setCompany(me.profile.company);
     setEmail(me.profile.email);
     setWorkingDays(ALL_DAYS.filter((d) => !me.profile.nonWorkingDays.includes(d)));
-    setHolidayStartMonth(me.profile.holidayStartMonth);
     setYearAllowances(me.yearAllowances ?? []);
     setPinnedUserIds(me.profile.pinnedUserIds ?? []);
   }

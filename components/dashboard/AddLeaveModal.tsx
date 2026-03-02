@@ -23,12 +23,13 @@ export default function AddLeaveModal({ onClose, onSave }: AddLeaveModalProps) {
 }
 
 function AddLeaveModalInner({ onClose, onSave }: AddLeaveModalProps) {
-  const { triggerAllValidations } = useFormValidation();
+  const { triggerAllValidations, hasErrors } = useFormValidation();
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [type, setType] = useState<LeaveType | "">("");
   const [status, setStatus] = useState<LeaveStatus | "">("");
   const [notes, setNotes] = useState("");
+  const [showTopError, setShowTopError] = useState(false);
 
   const typeOptions = LEAVE_TYPE_ORDER.map((leaveType) => ({
     value: leaveType,
@@ -44,6 +45,15 @@ function AddLeaveModalInner({ onClose, onSave }: AddLeaveModalProps) {
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
         <h3 className="font-bold text-gray-800 mb-4">Add Leave</h3>
+        {showTopError && hasErrors && (
+          <div
+            role="alert"
+            aria-live="polite"
+            className="mb-4 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-700"
+          >
+            Please fix the highlighted fields before saving.
+          </div>
+        )}
         <div className="space-y-4">
           <DateRangePicker
             id="add-dateRange"
@@ -69,12 +79,11 @@ function AddLeaveModalInner({ onClose, onSave }: AddLeaveModalProps) {
             required
           />
           <FormField
-            id="add-notes"
-            label="Notes (optional)"
+            id="add-reason"
+            label="Reason (optional)"
             value={notes}
             onChange={(v) => setNotes(v)}
             placeholder="e.g. Beach holiday"
-            maxLength={30}
           />
         </div>
         <div className="flex gap-2 mt-5">
@@ -91,7 +100,11 @@ function AddLeaveModalInner({ onClose, onSave }: AddLeaveModalProps) {
 
   function handleSave() {
     const valid = triggerAllValidations();
-    if (!valid) return;
+    if (!valid) {
+      setShowTopError(true);
+      return;
+    }
+    setShowTopError(false);
     onSave({
       startDate,
       endDate,

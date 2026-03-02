@@ -1,5 +1,4 @@
 "use client";
-import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 
 interface NavBarProps {
@@ -13,7 +12,7 @@ export default function NavBar({ activePage }: NavBarProps) {
     <nav className="bg-white border-b px-6 py-3 flex items-center justify-between">
       <h1 className="text-lg font-bold text-indigo-700">Work Leave Tracker</h1>
       <div className="flex items-center gap-4 text-sm">
-        <Link
+        <a
           href="/dashboard"
           className={
             activePage === "dashboard"
@@ -22,8 +21,8 @@ export default function NavBar({ activePage }: NavBarProps) {
           }
         >
           Dashboard
-        </Link>
-        <Link
+        </a>
+        <a
           href="/profile"
           className={
             activePage === "profile"
@@ -32,7 +31,7 @@ export default function NavBar({ activePage }: NavBarProps) {
           }
         >
           Profile
-        </Link>
+        </a>
         {session && (
           <>
             <span className="text-gray-400">|</span>

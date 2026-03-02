@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFormValidation } from "@/contexts/FormValidationContext";
 
 export default function FormField({
@@ -18,10 +18,14 @@ export default function FormField({
   const { getError, setError, clearError, registerValidator } = useFormValidation();
   const error = getError(id);
 
+  // Track whether the field has been blurred at least once, so format
+  // validation (e.g. email) is deferred until the user leaves the field.
+  const [hasBlurred, setHasBlurred] = useState(false);
+
   // Keep validateRef in sync with the latest props so triggerAllValidations
   // always uses the current value and rules without re-registering each render.
   const validateRef = useRef<() => boolean>(() => true);
-  validateRef.current = () => validate(String(value ?? ""));
+  validateRef.current = () => validate(String(value ?? ""), true);
 
   useEffect(() => {
     return registerValidator(id, () => validateRef.current());
@@ -39,6 +43,10 @@ export default function FormField({
         type={type}
         value={value}
         onChange={onChange ? (e) => handleChange(e.target.value) : undefined}
+        onBlur={(e) => {
+          setHasBlurred(true);
+          validate(e.target.value, true);
+        }}
         readOnly={readOnly}
         placeholder={placeholder}
         min={min}
@@ -54,16 +62,33 @@ export default function FormField({
 
   function handleChange(rawValue: string) {
     onChange?.(rawValue);
-    validate(rawValue);
+    // On change: only run format-sensitive validations if the field has already
+    // been blurred once (so errors don't appear mid-typing on first visit).
+    validate(rawValue, hasBlurred);
   }
 
-  function validate(rawValue: string): boolean {
+  /**
+   * @param rawValue  The current raw input value.
+   * @param full      When true, run all validation rules including email format.
+   *                  When false (typing before first blur), only run required /
+   *                  number range checks so the field clears its "required" error
+   *                  as soon as the user starts typing.
+   */
+  function validate(rawValue: string, full: boolean): boolean {
     const trimmed = rawValue.trim();
 
     if (required && trimmed === "") {
       const message = typeof required === "string" ? required : `${label} is required`;
       setError(id, message);
       return false;
+    }
+
+    if (full && type === "email" && trimmed !== "") {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmed)) {
+        setError(id, `${label} must be a valid email address`);
+        return false;
+      }
     }
 
     if (type === "number" && trimmed !== "") {

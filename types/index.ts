@@ -34,17 +34,18 @@ export interface UserAllowance {
 export interface YearAllowance extends UserAllowance {
   /** The calendar year in which this holiday period begins */
   year: number;
+  /** Name of the company this allowance applies to */
+  company: string;
+  /** 1-12, e.g. 1 for Jan, 4 for Apr — defines when this holiday year starts */
+  holidayStartMonth: number;
 }
 
 export interface UserProfile {
   firstName: string;
   lastName: string;
-  company: string;
   email: string;
   /** 0=Sun, 1=Mon, ..., 6=Sat */
   nonWorkingDays: number[];
-  /** 1-12, e.g. 1 for Jan, 4 for Apr */
-  holidayStartMonth: number;
   /** IDs of up to 3 other users pinned in the dashboard user selector */
   pinnedUserIds?: string[];
 }

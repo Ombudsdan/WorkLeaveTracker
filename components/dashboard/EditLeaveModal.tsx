@@ -58,12 +58,11 @@ function EditLeaveModalInner({ entry, onClose, onSave }: EditLeaveModalProps) {
             options={statusOptions}
           />
           <FormField
-            id="edit-notes"
-            label="Notes (optional)"
+            id="edit-reason"
+            label="Reason (optional)"
             value={notes}
             onChange={(v) => setNotes(v)}
             placeholder="e.g. Beach holiday"
-            maxLength={30}
           />
         </div>
         <div className="flex gap-2 mt-5">

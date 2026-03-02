@@ -3,7 +3,8 @@ import { useState } from "react";
 import type { YearAllowance } from "@/types";
 import FormField from "@/components/FormField";
 import Button from "@/components/Button";
-import { FormValidationProvider } from "@/contexts/FormValidationContext";
+import { FormValidationProvider, useFormValidation } from "@/contexts/FormValidationContext";
+import { MONTH_NAMES_LONG } from "@/variables/calendar";
 
 export default function YearAllowanceModal({
   initialYear,
@@ -29,7 +30,10 @@ function YearAllowanceModalInner({
   onClose,
   onSave,
 }: YearAllowanceModalProps) {
+  const { triggerAllValidations } = useFormValidation();
   const [year, setYear] = useState(existing?.year ?? initialYear ?? new Date().getFullYear());
+  const [company, setCompany] = useState(existing?.company ?? "");
+  const [holidayStartMonth, setHolidayStartMonth] = useState(existing?.holidayStartMonth ?? 1);
   const [core, setCore] = useState(existing?.core ?? 25);
   const [bought, setBought] = useState(existing?.bought ?? 0);
   const [carried, setCarried] = useState(existing?.carried ?? 0);
@@ -49,6 +53,32 @@ function YearAllowanceModalInner({
             max={2100}
             required
           />
+          <FormField
+            id="ya-company"
+            label="Company"
+            value={company}
+            onChange={(v) => setCompany(v)}
+          />
+          <div>
+            <label
+              htmlFor="ya-holidayStartMonth"
+              className="block text-sm font-medium text-gray-600 mb-1"
+            >
+              Holiday Year Starts
+            </label>
+            <select
+              id="ya-holidayStartMonth"
+              value={holidayStartMonth}
+              onChange={(e) => setHolidayStartMonth(Number(e.target.value))}
+              className="w-full border rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+            >
+              {MONTH_NAMES_LONG.map((month, index) => (
+                <option key={index} value={index + 1}>
+                  {month}
+                </option>
+              ))}
+            </select>
+          </div>
           <FormField
             id="ya-core"
             label="Core Days"
@@ -94,7 +124,8 @@ function YearAllowanceModalInner({
   );
 
   function handleSave() {
-    onSave({ year, core, bought, carried });
+    if (!triggerAllValidations()) return;
+    onSave({ year, company, holidayStartMonth, core, bought, carried });
   }
 }
 

@@ -1,22 +1,24 @@
 import type { LeaveEntry } from "@/types";
 
 export const entriesController = {
-  async create(entry: Omit<LeaveEntry, "id">): Promise<boolean> {
+  async create(entry: Omit<LeaveEntry, "id">): Promise<LeaveEntry | null> {
     const res = await fetch("/api/entries", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(entry),
     });
-    return res.ok;
+    if (!res.ok) return null;
+    return res.json() as Promise<LeaveEntry>;
   },
 
-  async update(entry: LeaveEntry): Promise<boolean> {
+  async update(entry: LeaveEntry): Promise<LeaveEntry | null> {
     const res = await fetch(`/api/entries/${entry.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(entry),
     });
-    return res.ok;
+    if (!res.ok) return null;
+    return res.json() as Promise<LeaveEntry>;
   },
 
   async remove(id: string): Promise<boolean> {

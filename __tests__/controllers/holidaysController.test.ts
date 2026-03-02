@@ -16,12 +16,30 @@ describe("holidaysController.fetchBankHolidays", () => {
     const dates = ["2026-01-01", "2026-04-03"];
     mockFetch(dates);
     const result = await holidaysController.fetchBankHolidays();
-    expect(fetch).toHaveBeenCalledWith("/api/holidays");
+    expect(fetch).toHaveBeenCalledWith("/api/holidays", { cache: "no-store" });
     expect(result).toEqual(dates);
   });
 
   it("returns an empty array when the API returns no holidays", async () => {
     mockFetch([]);
+    const result = await holidaysController.fetchBankHolidays();
+    expect(result).toEqual([]);
+  });
+
+  it("returns an empty array when the API responds with a non-OK status", async () => {
+    mockFetch({ error: "Server Error" }, false);
+    const result = await holidaysController.fetchBankHolidays();
+    expect(result).toEqual([]);
+  });
+
+  it("returns an empty array when fetch throws (network error)", async () => {
+    global.fetch = jest.fn().mockRejectedValue(new Error("Network error"));
+    const result = await holidaysController.fetchBankHolidays();
+    expect(result).toEqual([]);
+  });
+
+  it("returns an empty array when the response body is not an array", async () => {
+    mockFetch({ not: "an array" });
     const result = await holidaysController.fetchBankHolidays();
     expect(result).toEqual([]);
   });

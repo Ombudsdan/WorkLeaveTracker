@@ -1,6 +1,10 @@
 import { LeaveStatus, LeaveType } from "@/types";
 import type { PublicUser } from "@/types";
-import { countWorkingDays, getHolidayYearBounds } from "@/utils/dateHelpers";
+import {
+  countWorkingDays,
+  getHolidayYearBounds,
+  getActiveYearAllowance,
+} from "@/utils/dateHelpers";
 
 export interface LeaveSummary {
   total: number;
@@ -16,10 +20,10 @@ export interface LeaveSummary {
  * Only holiday-type entries are counted; bank holidays on working days are excluded.
  */
 export function calcLeaveSummary(user: PublicUser, bankHolidays: string[]): LeaveSummary {
-  const { start, end } = getHolidayYearBounds(user.profile.holidayStartMonth);
-  const currentYear = start.getFullYear();
-  const ya = user.yearAllowances.find((a) => a.year === currentYear);
-  const total = ya ? ya.core + ya.bought + ya.carried : 0;
+  const activeYa = getActiveYearAllowance(user.yearAllowances);
+  const holidayStartMonth = activeYa?.holidayStartMonth ?? 1;
+  const { start, end } = getHolidayYearBounds(holidayStartMonth);
+  const total = activeYa ? activeYa.core + activeYa.bought + activeYa.carried : 0;
 
   // Bank holidays that fall within this holiday year on working days
   const relevantBankHolidays = bankHolidays.filter((d) => {

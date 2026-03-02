@@ -18,12 +18,12 @@ const baseUser: PublicUser = {
   profile: {
     firstName: "Alice",
     lastName: "Smith",
-    company: "Acme",
     email: "alice@example.com",
     nonWorkingDays: [0, 6], // Sat + Sun
-    holidayStartMonth: 1,
   },
-  yearAllowances: [{ year: 2026, core: 25, bought: 0, carried: 0 }],
+  yearAllowances: [
+    { year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+  ],
   entries: [],
 };
 
@@ -31,7 +31,9 @@ describe("calcLeaveSummary — totals", () => {
   it("returns total as sum of core + bought + carried", () => {
     const user: PublicUser = {
       ...baseUser,
-      yearAllowances: [{ year: 2026, core: 20, bought: 3, carried: 2 }],
+      yearAllowances: [
+        { year: 2026, company: "Acme", holidayStartMonth: 1, core: 20, bought: 3, carried: 2 },
+      ],
     };
     const { total } = calcLeaveSummary(user, []);
     expect(total).toBe(25);
@@ -237,7 +239,9 @@ describe("calcLeaveSummary — remaining can go negative", () => {
   it("returns a negative remaining when used days exceed allowance", () => {
     const user: PublicUser = {
       ...baseUser,
-      yearAllowances: [{ year: 2026, core: 1, bought: 0, carried: 0 }],
+      yearAllowances: [
+        { year: 2026, company: "Acme", holidayStartMonth: 1, core: 1, bought: 0, carried: 0 },
+      ],
       entries: [
         {
           id: "e9",

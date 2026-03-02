@@ -235,3 +235,105 @@ describe("toIsoDate", () => {
     expect(toIsoDate(new Date("2026-12-31T23:59:59Z"))).toBe("2026-12-31");
   });
 });
+
+// ---------------------------------------------------------------------------
+// getActiveYearAllowance
+// ---------------------------------------------------------------------------
+import { getActiveYearAllowance } from "@/utils/dateHelpers";
+import type { YearAllowance } from "@/types";
+
+// Fix "today" so tests are deterministic
+const MARCH_2026 = new Date("2026-03-15");
+
+describe("getActiveYearAllowance", () => {
+  const ya2025: YearAllowance = {
+    year: 2025,
+    company: "Acme",
+    holidayStartMonth: 1,
+    core: 25,
+    bought: 0,
+    carried: 0,
+  };
+  const ya2026: YearAllowance = {
+    year: 2026,
+    company: "Acme",
+    holidayStartMonth: 1,
+    core: 25,
+    bought: 0,
+    carried: 0,
+  };
+  const ya2027: YearAllowance = {
+    year: 2027,
+    company: "Acme",
+    holidayStartMonth: 1,
+    core: 25,
+    bought: 0,
+    carried: 0,
+  };
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(MARCH_2026);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it("returns the allowance whose holiday year contains today", () => {
+    const result = getActiveYearAllowance([ya2025, ya2026, ya2027]);
+    expect(result?.year).toBe(2026);
+  });
+
+  it("returns undefined for an empty array", () => {
+    expect(getActiveYearAllowance([])).toBeUndefined();
+  });
+
+  it("falls back to the most recent past allowance when no allowance contains today", () => {
+    // Only a 2024 allowance exists; today is March 2026 → past, no exact match
+    const ya2024: YearAllowance = {
+      year: 2024,
+      company: "Acme",
+      holidayStartMonth: 1,
+      core: 25,
+      bought: 0,
+      carried: 0,
+    };
+    const result = getActiveYearAllowance([ya2024]);
+    expect(result?.year).toBe(2024);
+  });
+
+  it("falls back to the earliest future allowance when all are in the future", () => {
+    // Only 2027+ allowances; today is March 2026 → all future
+    const result = getActiveYearAllowance([ya2027]);
+    expect(result?.year).toBe(2027);
+  });
+
+  it("defaults holidayStartMonth to 1 when the field is missing in the primary loop (backward compat)", () => {
+    // Simulate legacy data without holidayStartMonth — but year 2026 still matches today
+    const legacy = {
+      year: 2026,
+      company: "Acme",
+      core: 25,
+      bought: 0,
+      carried: 0,
+    } as YearAllowance;
+    const result = getActiveYearAllowance([legacy]);
+    expect(result?.year).toBe(2026);
+  });
+
+  it("defaults holidayStartMonth to 1 in the fallback filter when the field is missing", () => {
+    // Simulate legacy data where no entry matches today via primary loop
+    // Use year 2024 so it falls into the "past fallback" path with undefined holidayStartMonth
+    const legacy = {
+      year: 2024,
+      company: "Acme",
+      core: 25,
+      bought: 0,
+      carried: 0,
+    } as YearAllowance;
+    const result = getActiveYearAllowance([legacy]);
+    // Jan 2024 start, Jan 2025 end → today (Mar 2026) is past → falls back to most recent past
+    expect(result?.year).toBe(2024);
+  });
+});

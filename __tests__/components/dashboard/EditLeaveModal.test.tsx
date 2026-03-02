@@ -42,15 +42,15 @@ describe("EditLeaveModal — rendering", () => {
     expect(screen.getByLabelText("Status")).toHaveValue(LeaveStatus.Planned);
   });
 
-  it("pre-fills Notes with the entry's notes", () => {
+  it("pre-fills Reason with the entry's notes", () => {
     renderModal(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={jest.fn()} />);
-    expect(screen.getByLabelText("Notes (optional)")).toHaveValue("Skiing");
+    expect(screen.getByLabelText("Reason (optional)")).toHaveValue("Skiing");
   });
 
   it("handles missing notes gracefully (defaults to empty string)", () => {
     const entryNoNotes = { ...entry, notes: undefined };
     renderModal(<EditLeaveModal entry={entryNoNotes} onClose={jest.fn()} onSave={jest.fn()} />);
-    expect(screen.getByLabelText("Notes (optional)")).toHaveValue("");
+    expect(screen.getByLabelText("Reason (optional)")).toHaveValue("");
   });
 
   it("renders all status options in the Status select", () => {
@@ -93,13 +93,13 @@ describe("EditLeaveModal — onSave", () => {
   });
 });
 
-describe("EditLeaveModal — notes update", () => {
-  it("calls onSave with updated notes when the notes field is changed", async () => {
+describe("EditLeaveModal — reason update", () => {
+  it("calls onSave with updated reason when the reason field is changed (stored as notes)", async () => {
     const onSave = jest.fn();
     renderModal(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={onSave} />);
-    const notesField = screen.getByLabelText("Notes (optional)");
-    await userEvent.clear(notesField);
-    await userEvent.type(notesField, "Updated note");
+    const reasonField = screen.getByLabelText("Reason (optional)");
+    await userEvent.clear(reasonField);
+    await userEvent.type(reasonField, "Updated note");
     await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ notes: "Updated note" }));
   });

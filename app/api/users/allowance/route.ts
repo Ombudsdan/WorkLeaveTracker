@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { findUserById, updateUser } from "@/lib/db";
+import { findUserById, findUserByEmail, updateUser } from "@/lib/db";
 import type { YearAllowance } from "@/types";
 
 /** POST /api/users/allowance - add or update a year's allowance for the current user */
@@ -13,21 +13,32 @@ export async function POST(request: Request) {
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = (await request.json()) as YearAllowance;
-  const { year, core, bought, carried } = body;
+  const { year, core, bought, carried, company, holidayStartMonth } = body;
 
   if (!year || core === undefined || bought === undefined || carried === undefined) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
-  const user = findUserById(userId);
+  let user = findUserById(userId);
+  if (!user && session.user?.email) {
+    user = findUserByEmail(session.user.email);
+  }
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  const newAllowance: YearAllowance = {
+    year,
+    core,
+    bought,
+    carried,
+    company: company ?? "",
+    holidayStartMonth: holidayStartMonth ?? 1,
+  };
   const yearAllowances = user.yearAllowances.filter((a) => a.year !== year);
-  yearAllowances.push({ year, core, bought, carried });
+  yearAllowances.push(newAllowance);
   yearAllowances.sort((a, b) => a.year - b.year);
 
-  const updated = updateUser(userId, { yearAllowances });
+  const updated = updateUser(user.id, { yearAllowances });
   if (!updated) return NextResponse.json({ error: "Update failed" }, { status: 500 });
 
-  return NextResponse.json({ year, core, bought, carried });
+  return NextResponse.json(newAllowance);
 }

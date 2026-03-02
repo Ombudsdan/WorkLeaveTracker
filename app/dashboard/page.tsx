@@ -11,10 +11,15 @@ import LeaveList from "@/components/dashboard/LeaveList";
 import CalendarView from "@/components/dashboard/CalendarView";
 import AddLeaveModal from "@/components/dashboard/AddLeaveModal";
 import EditLeaveModal from "@/components/dashboard/EditLeaveModal";
+import YearAllowanceModal from "@/components/dashboard/YearAllowanceModal";
 import { usersController } from "@/controllers/usersController";
 import { holidaysController } from "@/controllers/holidaysController";
 import { entriesController } from "@/controllers/entriesController";
-import { getHolidayYearBounds } from "@/utils/dateHelpers";
+import { getHolidayYearBounds, getActiveYearAllowance } from "@/utils/dateHelpers";
+import type { YearAllowance } from "@/types";
+
+/** How long to wait before retrying initDashboard when the user record is not found. */
+const DASHBOARD_RETRY_DELAY_MS = 400;
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -26,6 +31,7 @@ export default function DashboardPage() {
   const [viewingUserId, setViewingUserId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingEntry, setEditingEntry] = useState<LeaveEntry | null>(null);
+  const [showAllowanceWarningModal, setShowAllowanceWarningModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,23 +40,48 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (status !== "authenticated") return;
+    // Capture identifiers before the async call so they're not stale
+    const sessionEmail = session?.user?.email;
+    const sessionId = (session?.user as { id?: string })?.id;
+    if (!sessionEmail && !sessionId) return;
+
     let cancelled = false;
     async function initDashboard() {
       setLoading(true);
-      const [users, holidays] = await Promise.all([
-        usersController.fetchAll(),
-        holidaysController.fetchBankHolidays(),
-      ]);
-      if (!cancelled) {
-        applyUserData(users, holidays);
-        setLoading(false);
+      try {
+        // 5 total attempts (initial + 4 retries) with increasing delays:
+        // 0ms, 400ms, 800ms, 1200ms, 1600ms between successive attempts.
+        for (let attempt = 0; attempt <= 4; attempt++) {
+          if (attempt > 0)
+            await new Promise<void>((r) => setTimeout(r, DASHBOARD_RETRY_DELAY_MS * attempt));
+          const [rawUsers, holidays] = await Promise.all([
+            usersController.fetchAll(),
+            holidaysController.fetchBankHolidays(),
+          ]);
+          if (cancelled) return;
+          const result = applyUserData(
+            Array.isArray(rawUsers) ? rawUsers : [],
+            holidays,
+            sessionEmail,
+            sessionId
+          );
+          // Keep loading=true if we're redirecting so we never flash the error UI.
+          if (result === "redirected") return;
+          if (result === "found") break;
+          // "not_found" on first attempt → loop and retry
+        }
+        if (!cancelled) setLoading(false);
+      } catch {
+        // Stop loading on fetch failure so the "profile not found" banner shows
+        if (!cancelled) setLoading(false);
       }
     }
     initDashboard();
     return () => {
       cancelled = true;
     };
-    // applyUserData uses session which is already in the dep array
+    // applyUserData is defined later in this component and depends on stable
+    // setter refs and router; adding it would trigger re-runs on every render
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, session]);
 
@@ -60,7 +91,25 @@ export default function DashboardPage() {
     );
   }
 
-  if (!currentUser) return null;
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <NavBar activePage="dashboard" />
+        <main className="max-w-6xl mx-auto py-6 px-4">
+          <div className="bg-amber-50 border border-amber-300 text-amber-800 rounded-xl px-4 py-3 text-sm">
+            Your profile could not be loaded. Please{" "}
+            <button
+              onClick={() => window.location.reload()}
+              className="underline font-medium hover:text-amber-900"
+            >
+              refresh the page
+            </button>
+            .
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   const displayedUser = viewingUserId
     ? (allUsers.find((user) => user.id === viewingUserId) ?? currentUser)
@@ -68,8 +117,14 @@ export default function DashboardPage() {
 
   const isOwnProfile = !viewingUserId || viewingUserId === currentUser.id;
 
-  const currentAllowance = getCurrentYearAllowance(currentUser);
+  const displayedAllowance = getCurrentYearAllowance(displayedUser);
   const allowanceWarning = getYearAllowanceWarning(currentUser);
+  /** The year we need to configure if the warning is visible */
+  const nextAllowanceYear = (() => {
+    const activeYa = getActiveYearAllowance(currentUser.yearAllowances);
+    const { start } = getHolidayYearBounds(activeYa?.holidayStartMonth ?? 1);
+    return start.getFullYear() + 1;
+  })();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -79,7 +134,15 @@ export default function DashboardPage() {
         {allowanceWarning && (
           <div className="mb-4 bg-amber-50 border border-amber-300 text-amber-800 rounded-xl px-4 py-3 text-sm flex items-start gap-2">
             <span className="text-amber-500 text-lg leading-none mt-0.5">⚠</span>
-            <span>{allowanceWarning}</span>
+            <span>
+              {allowanceWarning}{" "}
+              <button
+                onClick={() => setShowAllowanceWarningModal(true)}
+                className="underline font-medium hover:text-amber-900 ml-1"
+              >
+                Configure now
+              </button>
+            </span>
           </div>
         )}
 
@@ -97,12 +160,11 @@ export default function DashboardPage() {
               bankHolidays={bankHolidays}
               isOwnProfile={isOwnProfile}
             />
-            <AllowanceBreakdown allowance={currentAllowance} />
+            <AllowanceBreakdown allowance={displayedAllowance} />
             <LeaveList
               user={displayedUser}
               bankHolidays={bankHolidays}
               isOwnProfile={isOwnProfile}
-              onAdd={() => setShowAddModal(true)}
               onEdit={setEditingEntry}
               onDelete={handleDeleteEntry}
             />
@@ -130,54 +192,102 @@ export default function DashboardPage() {
           onSave={handleUpdateEntry}
         />
       )}
+
+      {showAllowanceWarningModal && (
+        <YearAllowanceModal
+          initialYear={nextAllowanceYear}
+          onClose={() => setShowAllowanceWarningModal(false)}
+          onSave={handleSaveWarningAllowance}
+        />
+      )}
     </div>
   );
 
-  async function refreshData() {
-    const [users, holidays] = await Promise.all([
-      usersController.fetchAll(),
-      holidaysController.fetchBankHolidays(),
-    ]);
-    applyUserData(users, holidays);
-  }
-
-  function applyUserData(users: PublicUser[], holidays: string[]) {
+  /**
+   * Apply fetched user data to component state.
+   * Returns:
+   *  "redirected" – a navigation to /setup was triggered (don't stop loading)
+   *  "found"      – current user was located and currentUser state was updated
+   *  "not_found"  – current user was not present in the fetched list
+   */
+  function applyUserData(
+    users: PublicUser[],
+    holidays: string[],
+    sessionEmail: string | null | undefined,
+    sessionId: string | null | undefined
+  ): "redirected" | "found" | "not_found" {
     setBankHolidays(holidays);
     setAllUsers(users);
-    const me = users.find((user) => user.profile.email === session?.user?.email);
-    if (me) setCurrentUser(me);
+    const me = users.find(
+      (u) =>
+        (sessionId != null && u.id === sessionId) ||
+        (sessionEmail != null && u.profile.email === sessionEmail)
+    );
+    if (me) {
+      if (me.yearAllowances.length === 0) {
+        router.replace("/setup");
+        return "redirected";
+      }
+      setCurrentUser(me);
+      return "found";
+    }
+    return "not_found";
   }
 
   async function handleAddEntry(entry: Omit<LeaveEntry, "id">) {
-    const ok = await entriesController.create(entry);
-    if (ok) {
+    const created = await entriesController.create(entry);
+    if (created) {
       setShowAddModal(false);
-      await refreshData();
+      applyEntryUpdate((entries) => [...entries, created]);
     }
   }
 
   async function handleUpdateEntry(entry: LeaveEntry) {
-    const ok = await entriesController.update(entry);
-    if (ok) {
+    const updated = await entriesController.update(entry);
+    if (updated) {
       setEditingEntry(null);
-      await refreshData();
+      applyEntryUpdate((entries) => entries.map((e) => (e.id === updated.id ? updated : e)));
     }
   }
 
   async function handleDeleteEntry(id: string) {
-    await entriesController.remove(id);
-    await refreshData();
+    const ok = await entriesController.remove(id);
+    if (ok) {
+      applyEntryUpdate((entries) => entries.filter((e) => e.id !== id));
+    }
+  }
+
+  /** Update the current user's entries in both currentUser and allUsers state. */
+  function applyEntryUpdate(updater: (entries: LeaveEntry[]) => LeaveEntry[]) {
+    const userId = currentUser?.id;
+    setCurrentUser((prev) => (prev ? { ...prev, entries: updater(prev.entries) } : prev));
+    setAllUsers((prev) =>
+      prev.map((u) => (u.id === userId ? { ...u, entries: updater(u.entries) } : u))
+    );
+  }
+
+  async function handleSaveWarningAllowance(ya: YearAllowance) {
+    const saved = await usersController.addYearAllowance(ya);
+    if (saved) {
+      setShowAllowanceWarningModal(false);
+      setCurrentUser((prev) => {
+        if (!prev) return prev;
+        const rest = prev.yearAllowances.filter((a) => a.year !== saved.year);
+        return { ...prev, yearAllowances: [...rest, saved].sort((a, b) => a.year - b.year) };
+      });
+    }
   }
 }
 
 function getCurrentYearAllowance(user: PublicUser): UserAllowance {
-  const { start } = getHolidayYearBounds(user.profile.holidayStartMonth);
-  const ya = user.yearAllowances.find((a) => a.year === start.getFullYear());
+  const ya = getActiveYearAllowance(user.yearAllowances);
   return ya ?? { core: 0, bought: 0, carried: 0 };
 }
 
 function getYearAllowanceWarning(user: PublicUser): string | null {
-  const { end, start } = getHolidayYearBounds(user.profile.holidayStartMonth);
+  const activeYa = getActiveYearAllowance(user.yearAllowances);
+  const holidayStartMonth = activeYa?.holidayStartMonth ?? 1;
+  const { end, start } = getHolidayYearBounds(holidayStartMonth);
   const now = new Date();
   const daysUntilEnd = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
@@ -185,7 +295,7 @@ function getYearAllowanceWarning(user: PublicUser): string | null {
     const nextYear = start.getFullYear() + 1;
     const hasNextYear = user.yearAllowances.some((a) => a.year === nextYear);
     if (!hasNextYear) {
-      return `Your holiday year ends in ${daysUntilEnd} day${daysUntilEnd === 1 ? "" : "s"}. Please configure your ${nextYear} leave allowance in your profile.`;
+      return `Your holiday year ends in ${daysUntilEnd} day${daysUntilEnd === 1 ? "" : "s"}. Please configure your ${nextYear} leave allowance.`;
     }
   }
 
