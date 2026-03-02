@@ -278,3 +278,154 @@ describe("CalendarView — overlapping leave entries", () => {
     expect(blueElements.length).toBe(1);
   });
 });
+
+describe("CalendarView — leave popover on click", () => {
+  it("shows a popover when a leave entry cell is clicked", async () => {
+    const user = setup();
+    const entry = {
+      id: "e-pop",
+      startDate: "2026-03-09",
+      endDate: "2026-03-11",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      notes: "Annual leave",
+    };
+    render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
+    // Click on day 9 (covered by the entry)
+    const dayNine = screen.getByText("9");
+    await user.click(dayNine);
+    // Popover should appear — there is now at least one instance in the popover
+    // (notes may also appear as a tiny label in the cell itself)
+    expect(screen.getAllByText("Annual leave").length).toBeGreaterThanOrEqual(1);
+    // The popover has role="tooltip"
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+  });
+
+  it("shows a popover with date range and working days", async () => {
+    const user = setup();
+    const entry = {
+      id: "e-pop2",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Planned,
+      type: LeaveType.Holiday,
+      notes: "Dentist",
+    };
+    render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
+    await user.click(screen.getByText("9"));
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    expect(screen.getByText(/working day/i)).toBeInTheDocument();
+  });
+
+  it("shows edit and delete buttons in the popover when isOwnProfile=true", async () => {
+    const user = setup();
+    const entry = {
+      id: "e-pop3",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+    };
+    render(
+      <CalendarView
+        user={{ ...alice, entries: [entry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    await user.click(screen.getByText("9"));
+    expect(screen.getByRole("button", { name: /edit/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /delete/i })).toBeInTheDocument();
+  });
+
+  it("does not show edit/delete buttons when isOwnProfile=false", async () => {
+    const user = setup();
+    const entry = {
+      id: "e-pop4",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+    };
+    render(
+      <CalendarView
+        user={{ ...alice, entries: [entry] }}
+        bankHolidays={[]}
+        isOwnProfile={false}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    await user.click(screen.getByText("9"));
+    expect(screen.queryByRole("button", { name: /edit/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /delete/i })).toBeNull();
+  });
+
+  it("closes the popover when the close (X) button is clicked", async () => {
+    const user = setup();
+    const entry = {
+      id: "e-pop5",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      notes: "Beach trip",
+    };
+    render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
+    await user.click(screen.getByText("9"));
+    // Popover is visible
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("tooltip")).toBeNull();
+  });
+
+  it("calls onEdit with the entry when Edit is clicked in the popover", async () => {
+    const user = setup();
+    const onEdit = jest.fn();
+    const entry = {
+      id: "e-edit",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+    };
+    render(
+      <CalendarView
+        user={{ ...alice, entries: [entry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={onEdit}
+        onDelete={jest.fn()}
+      />
+    );
+    await user.click(screen.getByText("9"));
+    await user.click(screen.getByRole("button", { name: /edit/i }));
+    expect(onEdit).toHaveBeenCalledWith(entry);
+  });
+
+  it("calls onDelete with the entry id when Delete is clicked in the popover", async () => {
+    const user = setup();
+    const onDelete = jest.fn();
+    const entry = {
+      id: "e-del",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+    };
+    render(
+      <CalendarView
+        user={{ ...alice, entries: [entry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={onDelete}
+      />
+    );
+    await user.click(screen.getByText("9"));
+    await user.click(screen.getByRole("button", { name: /delete/i }));
+    expect(onDelete).toHaveBeenCalledWith("e-del");
+  });
+});

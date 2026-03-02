@@ -1,7 +1,12 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import SummaryCard from "@/components/dashboard/SummaryCard";
 import { LeaveStatus, LeaveType } from "@/types";
 import type { PublicUser } from "@/types";
+
+function setup() {
+  return userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+}
 
 // Fix date so holiday year bounds are deterministic
 beforeEach(() => {
@@ -143,5 +148,46 @@ describe("SummaryCard — no year allowances (legacy/missing data)", () => {
       <SummaryCard user={{ ...alice, yearAllowances: [] }} bankHolidays={[]} isOwnProfile={true} />
     );
     expect(screen.getByText("0% used")).toBeInTheDocument();
+  });
+});
+
+describe("SummaryCard — allowance breakdown popover", () => {
+  it("does not show the breakdown panel initially", () => {
+    render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
+    expect(screen.queryByText("Allowance Breakdown")).toBeNull();
+  });
+
+  it("shows the breakdown panel after clicking 'Total Allowance'", async () => {
+    const user = setup();
+    render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
+    await user.click(screen.getByRole("button", { name: /total allowance/i }));
+    expect(screen.getByText("Allowance Breakdown")).toBeInTheDocument();
+  });
+
+  it("shows Core Days and Total in the breakdown", async () => {
+    const user = setup();
+    render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
+    await user.click(screen.getByRole("button", { name: /total allowance/i }));
+    expect(screen.getByText("Core Days")).toBeInTheDocument();
+    // At least one "+0" (bought or carried shown in breakdown)
+    expect(screen.getAllByText("+0").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("closes the breakdown panel when the close button is clicked", async () => {
+    const user = setup();
+    render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
+    await user.click(screen.getByRole("button", { name: /total allowance/i }));
+    expect(screen.getByText("Allowance Breakdown")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Close breakdown" }));
+    expect(screen.queryByText("Allowance Breakdown")).toBeNull();
+  });
+
+  it("renders the SVG donut chart when breakdown is open", async () => {
+    const user = setup();
+    const { container } = render(
+      <SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />
+    );
+    await user.click(screen.getByRole("button", { name: /total allowance/i }));
+    expect(container.querySelector("svg")).toBeInTheDocument();
   });
 });

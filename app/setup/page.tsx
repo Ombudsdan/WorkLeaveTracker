@@ -8,7 +8,7 @@ import FormField from "@/components/FormField";
 import FormErrorOutlet from "@/components/FormErrorOutlet";
 import Button from "@/components/Button";
 import LoadingSpinner from "@/components/LoadingSpinner";
-import CompanyCombobox from "@/components/CompanyCombobox";
+import CompanySelect from "@/components/CompanySelect";
 import { usersController } from "@/controllers/usersController";
 import { DAY_NAMES_SHORT, MONTH_NAMES_LONG } from "@/variables/calendar";
 import { getHolidayYearBounds } from "@/utils/dateHelpers";
@@ -30,6 +30,7 @@ function SetupPageInner() {
 
   const [workingDays, setWorkingDays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [company, setCompany] = useState("");
+  const [companies, setCompanies] = useState<string[]>([]);
   const [holidayStartMonth, setHolidayStartMonth] = useState(1);
   const [coreDays, setCoreDays] = useState(25);
   const [boughtDays, setBoughtDays] = useState(0);
@@ -59,6 +60,13 @@ function SetupPageInner() {
       }
     });
   }, [status, session, router]);
+
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    usersController.fetchCompanies().then((fetched) => {
+      if (fetched.length > 0) setCompanies(fetched);
+    });
+  }, [status]);
 
   if (status === "loading" || checking) {
     return <LoadingSpinner />;
@@ -111,11 +119,12 @@ function SetupPageInner() {
               Leave Allowance for {currentHolidayYear}
             </h3>
             <div className="space-y-3">
-              <CompanyCombobox
+              <CompanySelect
                 id="setup-company"
                 label="Company"
                 value={company}
                 onChange={setCompany}
+                companies={companies}
               />
               <div>
                 <label

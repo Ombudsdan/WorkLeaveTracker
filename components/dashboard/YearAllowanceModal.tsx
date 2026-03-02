@@ -1,11 +1,12 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { YearAllowance } from "@/types";
 import FormField from "@/components/FormField";
 import Button from "@/components/Button";
-import CompanyCombobox from "@/components/CompanyCombobox";
+import CompanySelect from "@/components/CompanySelect";
 import { FormValidationProvider, useFormValidation } from "@/contexts/FormValidationContext";
 import { MONTH_NAMES_LONG } from "@/variables/calendar";
+import { usersController } from "@/controllers/usersController";
 
 export default function YearAllowanceModal({
   initialYear,
@@ -42,6 +43,17 @@ function YearAllowanceModalInner({
   const [bought, setBought] = useState(existing?.bought ?? 0);
   const [carried, setCarried] = useState(existing?.carried ?? 0);
 
+  // Merge prop-provided companies with anything fetched from the API
+  const [companies, setCompanies] = useState<string[]>(existingCompanies);
+
+  useEffect(() => {
+    usersController.fetchCompanies().then((fetched) => {
+      if (fetched.length > 0) {
+        setCompanies((prev) => [...new Set([...prev, ...fetched])]);
+      }
+    });
+  }, []);
+
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm">
@@ -57,12 +69,12 @@ function YearAllowanceModalInner({
             max={2100}
             required
           />
-          <CompanyCombobox
+          <CompanySelect
             id="ya-company"
             label="Company"
             value={company}
             onChange={setCompany}
-            suggestions={existingCompanies}
+            companies={companies}
           />
           <div>
             <label
@@ -137,7 +149,7 @@ function YearAllowanceModalInner({
 interface YearAllowanceModalProps {
   initialYear?: number;
   existing?: YearAllowance;
-  /** Existing company names to show as suggestions in the combobox */
+  /** Existing company names to pre-populate the selector (will be merged with API results) */
   existingCompanies?: string[];
   onClose: () => void;
   onSave: (allowance: YearAllowance) => void;

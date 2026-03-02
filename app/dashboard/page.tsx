@@ -2,13 +2,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import type { PublicUser, LeaveEntry, UserAllowance } from "@/types";
+import type { PublicUser, LeaveEntry } from "@/types";
 import NavBar from "@/components/NavBar";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import SessionExpiredScreen from "@/components/SessionExpiredScreen";
 import UserSelector from "@/components/dashboard/UserSelector";
 import SummaryCard from "@/components/dashboard/SummaryCard";
-import AllowanceBreakdown from "@/components/dashboard/AllowanceBreakdown";
 import LeaveList from "@/components/dashboard/LeaveList";
 import CalendarView from "@/components/dashboard/CalendarView";
 import AddLeaveModal from "@/components/dashboard/AddLeaveModal";
@@ -135,7 +134,6 @@ export default function DashboardPage() {
 
   const isOwnProfile = !viewingUserId || viewingUserId === currentUser.id;
 
-  const displayedAllowance = getCurrentYearAllowance(displayedUser);
   const allowanceWarning = getYearAllowanceWarning(currentUser);
   /** The year we need to configure if the warning is visible */
   const nextAllowanceYear = (() => {
@@ -190,7 +188,6 @@ export default function DashboardPage() {
               bankHolidays={bankHolidays}
               isOwnProfile={isOwnProfile}
             />
-            <AllowanceBreakdown allowance={displayedAllowance} />
             <LeaveList
               user={displayedUser}
               bankHolidays={bankHolidays}
@@ -206,6 +203,8 @@ export default function DashboardPage() {
               bankHolidays={bankHolidays}
               isOwnProfile={isOwnProfile}
               onAdd={() => setShowAddModal(true)}
+              onEdit={isOwnProfile ? setEditingEntry : undefined}
+              onDelete={isOwnProfile ? handleDeleteEntry : undefined}
             />
           </div>
         </div>
@@ -307,11 +306,6 @@ export default function DashboardPage() {
       });
     }
   }
-}
-
-function getCurrentYearAllowance(user: PublicUser): UserAllowance {
-  const ya = getActiveYearAllowance(user.yearAllowances);
-  return ya ?? { core: 0, bought: 0, carried: 0 };
 }
 
 function getYearAllowanceWarning(user: PublicUser): string | null {

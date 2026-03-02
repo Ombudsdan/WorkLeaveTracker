@@ -96,4 +96,11 @@ export const usersController = {
     const json = await res.json();
     return { ok: false, error: json.error ?? "Failed to respond" };
   },
+
+  /** Fetch all unique company names known in the system. */
+  async fetchCompanies(): Promise<string[]> {
+    const res = await fetch("/api/companies", { cache: "no-store" });
+    if (!res.ok) return [];
+    return res.json();
+  },
 };
