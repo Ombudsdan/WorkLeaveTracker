@@ -176,9 +176,7 @@ describe("PinUserModal — search", () => {
     render(<PinUserModal otherUsers={[alice, bob]} pinnedUserIds={[]} onClose={jest.fn()} />);
     await userEvent.type(screen.getByLabelText("Email address"), "alice@example.com");
     await userEvent.click(screen.getByRole("button", { name: /send request/i }));
-    await waitFor(() =>
-      expect(screen.getByText(/already connected/i)).toBeInTheDocument()
-    );
+    await waitFor(() => expect(screen.getByText(/already connected/i)).toBeInTheDocument());
   });
 
   it("shows a generic error when sendPinRequest returns an unrecognised error", async () => {
@@ -186,9 +184,7 @@ describe("PinUserModal — search", () => {
     render(<PinUserModal otherUsers={[alice, bob]} pinnedUserIds={[]} onClose={jest.fn()} />);
     await userEvent.type(screen.getByLabelText("Email address"), "alice@example.com");
     await userEvent.click(screen.getByRole("button", { name: /send request/i }));
-    await waitFor(() =>
-      expect(screen.getByText("Server error")).toBeInTheDocument()
-    );
+    await waitFor(() => expect(screen.getByText("Server error")).toBeInTheDocument());
   });
 
   it("shows fallback error text when sendPinRequest returns ok:false with no error field", async () => {
@@ -196,9 +192,7 @@ describe("PinUserModal — search", () => {
     render(<PinUserModal otherUsers={[alice, bob]} pinnedUserIds={[]} onClose={jest.fn()} />);
     await userEvent.type(screen.getByLabelText("Email address"), "alice@example.com");
     await userEvent.click(screen.getByRole("button", { name: /send request/i }));
-    await waitFor(() =>
-      expect(screen.getByText(/failed to send request/i)).toBeInTheDocument()
-    );
+    await waitFor(() => expect(screen.getByText(/failed to send request/i)).toBeInTheDocument());
   });
 });
 

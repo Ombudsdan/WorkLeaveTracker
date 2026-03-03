@@ -24,7 +24,9 @@ describe("CompanyCombobox — rendering", () => {
   });
 
   it("hides '(optional)' suffix when optional=false", () => {
-    render(<CompanyCombobox id="co" label="Company" value="" onChange={jest.fn()} optional={false} />);
+    render(
+      <CompanyCombobox id="co" label="Company" value="" onChange={jest.fn()} optional={false} />
+    );
     expect(screen.queryByText("(optional)")).toBeNull();
   });
 
@@ -98,9 +100,7 @@ describe("CompanyCombobox — rendering", () => {
 
 describe("CompanyCombobox — value and onChange", () => {
   it("displays the current value in the input", () => {
-    render(
-      <CompanyCombobox id="co" label="Company" value="Current Co" onChange={jest.fn()} />
-    );
+    render(<CompanyCombobox id="co" label="Company" value="Current Co" onChange={jest.fn()} />);
     expect(screen.getByDisplayValue("Current Co")).toBeInTheDocument();
   });
 

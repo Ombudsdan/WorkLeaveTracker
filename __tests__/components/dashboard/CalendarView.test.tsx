@@ -985,9 +985,7 @@ describe("CalendarView — split-cell click opens popover for top and bottom ent
 
   it("opens a popover when the top half of a split cell is clicked", async () => {
     const user = setup();
-    render(
-      <CalendarView user={{ ...alice, entries: [amEntry, pmEntry] }} bankHolidays={[]} />
-    );
+    render(<CalendarView user={{ ...alice, entries: [amEntry, pmEntry] }} bankHolidays={[]} />);
     // Click the AM label in the top half
     await user.click(screen.getByText("TopAM (AM)"));
     expect(screen.getByRole("tooltip")).toBeInTheDocument();
@@ -995,9 +993,7 @@ describe("CalendarView — split-cell click opens popover for top and bottom ent
 
   it("opens a popover when the bottom half of a split cell is clicked", async () => {
     const user = setup();
-    render(
-      <CalendarView user={{ ...alice, entries: [amEntry, pmEntry] }} bankHolidays={[]} />
-    );
+    render(<CalendarView user={{ ...alice, entries: [amEntry, pmEntry] }} bankHolidays={[]} />);
     // Click the PM label in the bottom half
     await user.click(screen.getByText("BotPM (PM)"));
     expect(screen.getByRole("tooltip")).toBeInTheDocument();
