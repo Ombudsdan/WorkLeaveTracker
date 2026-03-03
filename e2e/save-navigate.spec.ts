@@ -78,7 +78,7 @@ async function removeConnectionIfPresent(
   name: RegExp | string
 ) {
   await page.goto("/connections");
-  await page.getByText("My Connections").waitFor({ state: "visible" });
+  await page.getByText("People I'm Following").waitFor({ state: "visible" });
   const removeButton = page
     .locator("li")
     .filter({ hasText: name })
