@@ -170,6 +170,30 @@ describe("PinUserModal — search", () => {
       expect(screen.getByText(/request has already been sent/i)).toBeInTheDocument()
     );
   });
+
+  it("shows 'already connected' when sendPinRequest returns 'Already connected'", async () => {
+    mockSendPinRequest.mockResolvedValue({ ok: false, error: "Already connected" });
+    render(<PinUserModal otherUsers={[alice, bob]} pinnedUserIds={[]} onClose={jest.fn()} />);
+    await userEvent.type(screen.getByLabelText("Email address"), "alice@example.com");
+    await userEvent.click(screen.getByRole("button", { name: /send request/i }));
+    await waitFor(() => expect(screen.getByText(/already connected/i)).toBeInTheDocument());
+  });
+
+  it("shows a generic error when sendPinRequest returns an unrecognised error", async () => {
+    mockSendPinRequest.mockResolvedValue({ ok: false, error: "Server error" });
+    render(<PinUserModal otherUsers={[alice, bob]} pinnedUserIds={[]} onClose={jest.fn()} />);
+    await userEvent.type(screen.getByLabelText("Email address"), "alice@example.com");
+    await userEvent.click(screen.getByRole("button", { name: /send request/i }));
+    await waitFor(() => expect(screen.getByText("Server error")).toBeInTheDocument());
+  });
+
+  it("shows fallback error text when sendPinRequest returns ok:false with no error field", async () => {
+    mockSendPinRequest.mockResolvedValue({ ok: false });
+    render(<PinUserModal otherUsers={[alice, bob]} pinnedUserIds={[]} onClose={jest.fn()} />);
+    await userEvent.type(screen.getByLabelText("Email address"), "alice@example.com");
+    await userEvent.click(screen.getByRole("button", { name: /send request/i }));
+    await waitFor(() => expect(screen.getByText(/failed to send request/i)).toBeInTheDocument());
+  });
 });
 
 describe("PinUserModal — close", () => {

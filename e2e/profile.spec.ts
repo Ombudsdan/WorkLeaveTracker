@@ -33,21 +33,21 @@ test.describe("Profile", () => {
     await expect(page.getByText(/no allowances configured yet/i)).not.toBeVisible();
   });
 
-  test("profile page shows pinned users section", async ({ page }) => {
+  test("profile page shows connections section", async ({ page }) => {
     await loginAs(page, ALICE.email, ALICE.password);
     await page.goto("/profile");
 
-    // Pinned Users section heading is always rendered
-    await expect(page.getByText(/pinned users/i)).toBeVisible();
+    // Connections section heading is always rendered on the profile page
+    await expect(page.locator("h3").filter({ hasText: /connections/i })).toBeVisible();
   });
 
-  test("profile shows pinned user Bob (pinned by Alice in seed data)", async ({ page }) => {
+  test("connections page shows Bob (connected to Alice in seed data)", async ({ page }) => {
     await loginAs(page, ALICE.email, ALICE.password);
-    await page.goto("/profile");
+    await page.goto("/connections");
 
-    // Alice has Bob pinned in data.example.json
+    // Alice has Bob connected in data.example.json
     await expect(page.getByText(/bob/i)).toBeVisible();
-    await expect(page.getByText(/no users pinned yet/i)).not.toBeVisible();
+    await expect(page.getByText(/no connections yet/i)).not.toBeVisible();
   });
 
   test("saving profile shows a success message", async ({ page }) => {

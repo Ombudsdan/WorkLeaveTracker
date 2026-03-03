@@ -4,7 +4,7 @@ import type { BankHolidayEntry, UkCountry } from "@/types";
 
 const DEFAULT_COUNTRY: UkCountry = "england-and-wales";
 
-const bankHolidaysByCountry = bankHolidaysRaw as Record<UkCountry, BankHolidayEntry[]>;
+const bankHolidaysByCountry = bankHolidaysRaw as unknown as Record<UkCountry, BankHolidayEntry[]>;
 
 /** GET /api/holidays?country=<division> - returns bank holiday entries for the given country */
 export async function GET(request: Request) {

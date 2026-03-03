@@ -1,5 +1,5 @@
 import { calcLeaveSummary } from "@/utils/leaveCalc";
-import { LeaveStatus, LeaveType } from "@/types";
+import { LeaveStatus, LeaveType, LeaveDuration } from "@/types";
 import type { PublicUser } from "@/types";
 
 // Fix the current date so getHolidayYearBounds is deterministic
@@ -263,5 +263,43 @@ describe("calcLeaveSummary — no allowance configured", () => {
     const summary = calcLeaveSummary(user, []);
     expect(summary.total).toBe(0);
     expect(summary.remaining).toBe(0);
+  });
+});
+
+describe("calcLeaveSummary — half-day entries count as 0.5", () => {
+  it("counts an AM half-day approved entry as 0.5 days", () => {
+    const user: PublicUser = {
+      ...baseUser,
+      entries: [
+        {
+          id: "hd1",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfMorning,
+        },
+      ],
+    };
+    const { approved } = calcLeaveSummary(user, []);
+    expect(approved).toBe(0.5);
+  });
+
+  it("counts a PM half-day planned entry as 0.5 days", () => {
+    const user: PublicUser = {
+      ...baseUser,
+      entries: [
+        {
+          id: "hd2",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Planned,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfAfternoon,
+        },
+      ],
+    };
+    const { planned } = calcLeaveSummary(user, []);
+    expect(planned).toBe(0.5);
   });
 });

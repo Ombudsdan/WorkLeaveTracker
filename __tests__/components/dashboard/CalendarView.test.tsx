@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import CalendarView from "@/components/dashboard/CalendarView";
 import { LeaveStatus, LeaveType, LeaveDuration } from "@/types";
@@ -767,5 +767,235 @@ describe("CalendarView — sick leave popover badge", () => {
     const tooltip = screen.getByRole("tooltip");
     expect(tooltip).not.toHaveTextContent("Approved");
     expect(tooltip).toHaveTextContent("Sick Leave");
+  });
+});
+
+describe("CalendarView — popover close on outside click", () => {
+  it("closes the popover when a mousedown occurs outside the calendar", async () => {
+    const user = setup();
+    const entry = {
+      id: "e-outside",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      notes: "Outside click test",
+    };
+    render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
+    // Open the popover
+    await user.click(screen.getByText("9"));
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    // Dispatch a mousedown on document.body (outside the calendar div)
+    fireEvent.mouseDown(document.body);
+    expect(screen.queryByRole("tooltip")).toBeNull();
+  });
+});
+
+describe("CalendarView — re-click same entry closes popover", () => {
+  it("closes the popover when the same entry cell is clicked a second time", async () => {
+    const user = setup();
+    const entry = {
+      id: "e-reclick",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      notes: "Re-click test",
+    };
+    render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
+    // First click — opens popover
+    await user.click(screen.getByText("9"));
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    // Second click on same cell — closes popover
+    await user.click(screen.getByText("9"));
+    expect(screen.queryByRole("tooltip")).toBeNull();
+  });
+});
+
+describe("CalendarView — getNoteLabel without notes (pure duration label)", () => {
+  it("shows '(AM)' (no leading note) for an AM half-day with no notes", () => {
+    const entry = {
+      id: "e-am-nonote",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      duration: LeaveDuration.HalfMorning,
+      // no notes
+    };
+    render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
+    expect(screen.getByText("(AM)")).toBeInTheDocument();
+  });
+
+  it("shows '(PM)' (no leading note) for a PM half-day with no notes", () => {
+    const entry = {
+      id: "e-pm-nonote",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      duration: LeaveDuration.HalfAfternoon,
+      // no notes
+    };
+    render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
+    expect(screen.getByText("(PM)")).toBeInTheDocument();
+  });
+});
+
+describe("CalendarView — getCellLayout: b is AM or PM, a is not", () => {
+  it("places entry b (AM) on top when b is AM and a is full-day", () => {
+    // a = full-day (first), b = AM half-day (second) → line 89: bIsAm && !aIsAm
+    const fullDay = {
+      id: "e-full-ba",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Planned,
+      type: LeaveType.Holiday,
+      notes: "Full",
+    };
+    const amHalfDay = {
+      id: "e-am-ba",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      duration: LeaveDuration.HalfMorning,
+      notes: "AM",
+    };
+    const { container } = render(
+      // Pass full-day first (a), AM second (b) — tests the bIsAm && !aIsAm branch
+      <CalendarView user={{ ...alice, entries: [fullDay, amHalfDay] }} bankHolidays={[]} />
+    );
+    expect(screen.getByText("AM (AM)")).toBeInTheDocument();
+    expect(screen.getByText("Full")).toBeInTheDocument();
+    // AM entry should be rendered (visible in the split cell)
+    expect(container.querySelector(".bg-green-200")).toBeInTheDocument();
+  });
+
+  it("places entry b (PM) on bottom when b is PM and a is full-day", () => {
+    // a = full-day (first), b = PM half-day (second) → line 94: bIsPm && !aIsPm
+    const fullDay = {
+      id: "e-full-bp",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Planned,
+      type: LeaveType.Holiday,
+      notes: "Full2",
+    };
+    const pmHalfDay = {
+      id: "e-pm-bp",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      duration: LeaveDuration.HalfAfternoon,
+      notes: "PM2",
+    };
+    const { container } = render(
+      // Pass full-day first (a), PM second (b) — tests the bIsPm && !aIsPm branch
+      <CalendarView user={{ ...alice, entries: [fullDay, pmHalfDay] }} bankHolidays={[]} />
+    );
+    expect(screen.getByText("PM2 (PM)")).toBeInTheDocument();
+    expect(screen.getByText("Full2")).toBeInTheDocument();
+    expect(container.querySelector(".bg-green-200")).toBeInTheDocument();
+  });
+});
+
+describe("CalendarView — bank holiday with no title falls back to 'BH'", () => {
+  it("shows 'BH' text when the bank holiday has an undefined title", () => {
+    render(
+      <CalendarView
+        user={alice}
+        bankHolidays={[{ date: "2026-03-02", title: undefined as unknown as string }]}
+      />
+    );
+    // The cell should show 'BH' as the fallback
+    const bhElements = screen.getAllByText("BH");
+    expect(bhElements.length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe("CalendarView — popover with only onEdit (no onDelete)", () => {
+  it("shows only the Edit button when onDelete is not provided", async () => {
+    const user = setup();
+    const entry = {
+      id: "e-edit-only",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+    };
+    render(
+      <CalendarView
+        user={{ ...alice, entries: [entry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        // onDelete intentionally omitted
+      />
+    );
+    await user.click(screen.getByText("9"));
+    expect(screen.getByRole("button", { name: /edit/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /delete/i })).toBeNull();
+  });
+
+  it("shows only the Delete button when onEdit is not provided", async () => {
+    const user = setup();
+    const entry = {
+      id: "e-delete-only",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+    };
+    render(
+      <CalendarView
+        user={{ ...alice, entries: [entry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        // onEdit intentionally omitted
+        onDelete={jest.fn()}
+      />
+    );
+    await user.click(screen.getByText("9"));
+    expect(screen.queryByRole("button", { name: /edit/i })).toBeNull();
+    expect(screen.getByRole("button", { name: /delete/i })).toBeInTheDocument();
+  });
+});
+
+describe("CalendarView — split-cell click opens popover for top and bottom entries", () => {
+  const amEntry = {
+    id: "e-split-am",
+    startDate: "2026-03-09",
+    endDate: "2026-03-09",
+    status: LeaveStatus.Approved,
+    type: LeaveType.Holiday,
+    duration: LeaveDuration.HalfMorning,
+    notes: "TopAM",
+  };
+  const pmEntry = {
+    id: "e-split-pm",
+    startDate: "2026-03-09",
+    endDate: "2026-03-09",
+    status: LeaveStatus.Planned,
+    type: LeaveType.Holiday,
+    duration: LeaveDuration.HalfAfternoon,
+    notes: "BotPM",
+  };
+
+  it("opens a popover when the top half of a split cell is clicked", async () => {
+    const user = setup();
+    render(<CalendarView user={{ ...alice, entries: [amEntry, pmEntry] }} bankHolidays={[]} />);
+    // Click the AM label in the top half
+    await user.click(screen.getByText("TopAM (AM)"));
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+  });
+
+  it("opens a popover when the bottom half of a split cell is clicked", async () => {
+    const user = setup();
+    render(<CalendarView user={{ ...alice, entries: [amEntry, pmEntry] }} bankHolidays={[]} />);
+    // Click the PM label in the bottom half
+    await user.click(screen.getByText("BotPM (PM)"));
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
   });
 });
