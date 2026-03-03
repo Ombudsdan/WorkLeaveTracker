@@ -100,7 +100,7 @@ export default function ConnectionsPage() {
   const sentUsers = allUsers.filter((u) => sentIds.includes(u.id));
   const receivedUsers = allUsers.filter((u) => receivedIds.includes(u.id));
   // People following me = users who have my id in their pinnedUserIds
-  const followersUsers = allUsers.filter(
+  const followers = allUsers.filter(
     (u) => u.id !== currentUser.id && (u.profile.pinnedUserIds ?? []).includes(currentUser.id)
   );
   const otherUsers = allUsers.filter((u) => u.id !== currentUser.id);
@@ -330,11 +330,11 @@ export default function ConnectionsPage() {
           <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide mb-3">
             People Following Me
           </h3>
-          {followersUsers.length === 0 ? (
+          {followers.length === 0 ? (
             <p className="text-sm text-gray-400">Nobody is following you yet.</p>
           ) : (
             <ul className="space-y-2">
-              {followersUsers.map((u) => (
+              {followers.map((u) => (
                 <li
                   key={u.id}
                   className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-sm"
