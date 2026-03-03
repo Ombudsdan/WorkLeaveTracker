@@ -7,7 +7,16 @@ import NavBar from "@/components/NavBar";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import PinUserModal from "@/components/dashboard/PinUserModal";
 import { usersController } from "@/controllers/usersController";
-import { UserRoundCheck, UserRoundX, UserRoundPlus, Clock, Info, X, ShieldOff, Archive } from "lucide-react";
+import {
+  UserRoundCheck,
+  UserRoundX,
+  UserRoundPlus,
+  Clock,
+  Info,
+  X,
+  ShieldOff,
+  Archive,
+} from "lucide-react";
 
 /** Format an ISO date string as DD/MM/YYYY in UTC */
 function formatUtcDate(isoDate: string): string {
