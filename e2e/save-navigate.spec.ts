@@ -50,11 +50,10 @@ async function goToDashboard(page: Parameters<typeof loginAs>[0]) {
   await page.getByRole("button", { name: "Sign Out" }).waitFor({ state: "visible" });
 }
 
-/** Assert that the profile page shows non-empty allowances and pinned users. */
+/** Assert that the profile page shows non-empty allowances. */
 async function assertProfileSectionsPopulated(page: Parameters<typeof loginAs>[0]) {
   await expect(page.getByText(/no allowances configured yet/i)).not.toBeVisible();
   await expect(page.getByText(/2025|2026/).first()).toBeVisible();
-  await expect(page.getByText(/no users pinned yet/i)).not.toBeVisible();
 }
 
 /** Assert that the dashboard is loaded without any error banner. */
@@ -67,6 +66,26 @@ async function assertDashboardLoaded(page: Parameters<typeof loginAs>[0]) {
 async function saveProfile(page: Parameters<typeof loginAs>[0]) {
   await page.getByRole("button", { name: "Save Profile" }).click();
   await expect(page.getByText(/saved successfully/i)).toBeVisible();
+}
+
+/**
+ * Navigate to the connections page and remove Bob if he is connected.
+ * Removing a connection calls PATCH /api/users — the same code path that
+ * was previously exercised by the "pin user + save profile" flow.
+ */
+async function removeConnectionIfPresent(
+  page: Parameters<typeof loginAs>[0],
+  name: RegExp | string
+) {
+  await page.goto("/connections");
+  await page.getByText("My Connections").waitFor({ state: "visible" });
+  const removeButton = page
+    .locator("li")
+    .filter({ hasText: name })
+    .getByRole("button", { name: "Remove" });
+  if (await removeButton.isVisible()) {
+    await removeButton.click();
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -88,6 +107,34 @@ test.describe("Save then navigate", () => {
 
     await expect(page.getByLabel("First Name")).toHaveValue("Alicia");
     await assertProfileSectionsPopulated(page);
+  });
+
+  // ── Connection management bug ─────────────────────────────────────────────
+  test("remove connection → dashboard: no error banner (exact reported failure)", async ({
+    page,
+  }) => {
+    await loginAs(page, ALICE.email, ALICE.password);
+
+    // Removing a connection calls PATCH /api/users — the same bug vector as the
+    // old "pin user in profile + save profile" path that caused a dashboard error.
+    await removeConnectionIfPresent(page, /bob/i);
+
+    await goToDashboard(page);
+    await assertDashboardLoaded(page);
+  });
+
+  test("remove connection → dashboard → profile: data persists", async ({ page }) => {
+    await loginAs(page, ALICE.email, ALICE.password);
+
+    // Removing a connection calls PATCH /api/users (same code path as the old "save profile")
+    await removeConnectionIfPresent(page, /bob/i);
+
+    await goToDashboard(page);
+    await goToProfile(page);
+
+    // Profile data should still be intact after the connection change + navigation
+    await expect(page.getByLabel("First Name")).toHaveValue("Alice");
+    await expect(page.getByText(/no allowances configured yet/i)).not.toBeVisible();
   });
 
   // ── The exact failing path reported by the user ──────────────────────────
@@ -117,55 +164,6 @@ test.describe("Save then navigate", () => {
 
     await expect(page.getByLabel("First Name")).toHaveValue("Alice");
     await assertProfileSectionsPopulated(page);
-  });
-
-  // ── Pin user bug ─────────────────────────────────────────────────────────
-  test("pin user → save → dashboard: no error banner (exact reported failure)", async ({
-    page,
-  }) => {
-    await loginAs(page, ALICE.email, ALICE.password);
-    await goToProfile(page);
-
-    // Unpin existing pins so we can exercise the full add-pin flow
-    const unpinButton = page.getByRole("button", { name: "Unpin" }).first();
-    if (await unpinButton.isVisible()) await unpinButton.click();
-
-    await page.getByRole("button", { name: "+ Search User" }).click();
-    const modal = page.locator("div.fixed").last();
-    await modal.waitFor({ state: "visible" });
-    await modal.getByLabel("Email address").fill(BOB.email);
-    await modal.getByRole("button", { name: "Search & Pin" }).click();
-    await modal.waitFor({ state: "hidden" });
-
-    await expect(page.getByText(/bob/i).first()).toBeVisible();
-    await saveProfile(page);
-    await goToDashboard(page);
-    await assertDashboardLoaded(page);
-  });
-
-  test("pin user → save → dashboard → profile: pinned user persists", async ({ page }) => {
-    await loginAs(page, ALICE.email, ALICE.password);
-    await goToProfile(page);
-
-    // Unpin all existing, then re-pin Bob
-    const unpinButtons = page.getByRole("button", { name: "Unpin" });
-    while ((await unpinButtons.count()) > 0) {
-      await unpinButtons.first().click();
-    }
-
-    await page.getByRole("button", { name: "+ Search User" }).click();
-    const modal = page.locator("div.fixed").last();
-    await modal.waitFor({ state: "visible" });
-    await modal.getByLabel("Email address").fill(BOB.email);
-    await modal.getByRole("button", { name: "Search & Pin" }).click();
-    await modal.waitFor({ state: "hidden" });
-
-    await saveProfile(page);
-    await goToDashboard(page);
-    await goToProfile(page);
-
-    await expect(page.getByText(/bob/i).first()).toBeVisible();
-    await expect(page.getByText(/no users pinned yet/i)).not.toBeVisible();
   });
 
   // ── Two quick saves on the same page visit ───────────────────────────────

@@ -70,24 +70,25 @@ test.describe("Navigation data freshness", () => {
     await expect(page.getByText(/2025|2026/).first()).toBeVisible();
   });
 
-  test("pinned users are NOT empty after dashboard → profile → dashboard → profile", async ({
+  test("connections are NOT empty after dashboard → profile → dashboard → connections", async ({
     page,
   }) => {
     await loginAs(page, ALICE.email, ALICE.password);
 
-    // dashboard → profile → dashboard → profile
+    // dashboard → profile
     await page.getByRole("link", { name: "Profile" }).click();
     await page.waitForURL(/\/profile/);
 
     await page.getByRole("link", { name: "Dashboard" }).click();
     await page.waitForURL(/\/dashboard/);
 
-    await page.getByRole("link", { name: "Profile" }).click();
-    await page.waitForURL(/\/profile/);
+    // Navigate to connections page — Bob should be listed
+    await page.getByRole("link", { name: /connections/i }).click();
+    await page.waitForURL(/\/connections/);
 
-    // Pinned Users section must show Bob (Alice has him pinned in seed data),
-    // not the empty-state "No users pinned yet." message
-    await expect(page.getByText(/no users pinned yet/i)).not.toBeVisible();
+    // My Connections must show Bob (Alice has him connected in seed data),
+    // not the empty-state "No connections yet." message
+    await expect(page.getByText(/no connections yet/i)).not.toBeVisible();
     await expect(page.getByText(/bob/i)).toBeVisible();
   });
 

@@ -72,7 +72,12 @@ export async function addLeave(page: Page, startDate: string, endDate: string): 
 
   // Select type and status using the LeaveOptionPicker buttons
   await modal.getByRole("button", { name: "Holiday" }).click();
-  await modal.getByRole("button", { name: "Planned (Draft)" }).click();
+
+  // Fill the required Reason field
+  await modal.getByLabel("Reason").fill("Test leave");
+
+  // Select Planned status
+  await modal.getByRole("button", { name: "Planned" }).click();
 
   // Save — use dispatchEvent to fire the DOM click directly, bypassing
   // Playwright's viewport check.  The AddLeaveModal uses `position: fixed`
