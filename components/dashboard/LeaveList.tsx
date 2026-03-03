@@ -29,11 +29,15 @@ export default function LeaveList({
   onDelete,
 }: LeaveListProps) {
   const bankHolidayDates = bankHolidays.map((bh) => bh.date);
-  const sorted = [...user.entries].sort((a, b) => a.startDate.localeCompare(b.startDate));
+  const today = new Date().toISOString().slice(0, 10);
+  // Upcoming Leave = entries that are in-progress (started but end hasn't passed)
+  // or entirely in the future. Past entries (endDate < today) are excluded.
+  const upcoming = user.entries.filter((e) => e.endDate >= today);
+  const sorted = [...upcoming].sort((a, b) => a.startDate.localeCompare(b.startDate));
 
-  const title = isOwnProfile ? "My Leave" : `${user.profile.firstName}\u2019s Leave`;
+  const title = isOwnProfile ? "Upcoming Leave" : `${user.profile.firstName}\u2019s Leave`;
 
-  const emptyMessage = isOwnProfile ? "No leave entries yet." : "No leave entries.";
+  const emptyMessage = isOwnProfile ? "No upcoming leave." : "No upcoming leave.";
 
   return (
     <div className="bg-white rounded-2xl shadow p-5">

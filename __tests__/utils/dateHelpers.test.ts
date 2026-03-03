@@ -363,6 +363,21 @@ describe("getActiveYearAllowance", () => {
     expect(result?.year).toBe(2027);
   });
 
+  it("prefers active allowances over inactive ones when both cover today", () => {
+    // Two allowances for 2026: one inactive (came first) and one active
+    const inactive2026: YearAllowance = { ...ya2026, company: "OldCo", active: false };
+    const active2026: YearAllowance = { ...ya2026, company: "NewCo" };
+    const result = getActiveYearAllowance([inactive2026, active2026]);
+    expect(result?.company).toBe("NewCo");
+  });
+
+  it("falls back to an inactive allowance when no active one covers today", () => {
+    // Only an inactive 2026 allowance exists; should still return it as a fallback
+    const inactive2026: YearAllowance = { ...ya2026, company: "OldCo", active: false };
+    const result = getActiveYearAllowance([inactive2026]);
+    expect(result?.company).toBe("OldCo");
+  });
+
   it("defaults holidayStartMonth to 1 when the field is missing in the primary loop (backward compat)", () => {
     // Simulate legacy data without holidayStartMonth — but year 2026 still matches today
     const legacy = {

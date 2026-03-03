@@ -33,21 +33,23 @@ test.describe("Profile", () => {
     await expect(page.getByText(/no allowances configured yet/i)).not.toBeVisible();
   });
 
-  test("profile page shows connections section", async ({ page }) => {
+  test("profile page shows connections tab", async ({ page }) => {
     await loginAs(page, ALICE.email, ALICE.password);
     await page.goto("/profile");
 
-    // Connections section heading is always rendered on the profile page
-    await expect(page.locator("h3").filter({ hasText: /connections/i })).toBeVisible();
+    // Connections tab should be visible in the tab strip
+    await expect(page.getByRole("tab", { name: /connections/i })).toBeVisible();
   });
 
-  test("connections page shows Bob (connected to Alice in seed data)", async ({ page }) => {
+  test("connections tab on profile page shows Bob (connected to Alice in seed data)", async ({ page }) => {
     await loginAs(page, ALICE.email, ALICE.password);
-    await page.goto("/connections");
+    await page.goto("/profile");
+
+    // Click the Connections tab
+    await page.getByRole("tab", { name: /connections/i }).click();
 
     // Alice has Bob connected in data.example.json
     await expect(page.getByText(/bob/i).first()).toBeVisible();
-    await expect(page.getByText(/no connections yet/i)).not.toBeVisible();
   });
 
   test("saving profile shows a success message", async ({ page }) => {

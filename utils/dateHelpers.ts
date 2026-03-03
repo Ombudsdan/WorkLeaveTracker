@@ -32,22 +32,27 @@ export function countWorkingDays(
 /**
  * Find the year allowance whose holiday year contains today.
  * Iterates allowances using each one's own holidayStartMonth so no external
- * start month is needed. Falls back to the most recently started allowance.
+ * start month is needed. Prefers active (non-deactivated) allowances over
+ * inactive ones (active === false). Falls back to the most recently started
+ * allowance.
  */
 export function getActiveYearAllowance(allowances: YearAllowance[]): YearAllowance | undefined {
   const today = new Date();
-  for (const ya of allowances) {
+  // Prefer allowances that haven't been deactivated (company-change replacements)
+  const active = allowances.filter((ya) => ya.active !== false);
+  const search = active.length > 0 ? active : allowances;
+  for (const ya of search) {
     const sm = ya.holidayStartMonth ?? 1;
     const start = new Date(ya.year, sm - 1, 1);
     const end = new Date(ya.year + 1, sm - 1, 1); // exclusive upper bound
     if (today >= start && today < end) return ya;
   }
-  // Fallback: the most recently started allowance
-  const past = allowances.filter(
+  // Fallback: the most recently started allowance from the preferred set
+  const past = search.filter(
     (ya) => today >= new Date(ya.year, (ya.holidayStartMonth ?? 1) - 1, 1)
   );
   if (past.length > 0) return past.sort((a, b) => b.year - a.year)[0];
-  return [...allowances].sort((a, b) => a.year - b.year)[0];
+  return [...search].sort((a, b) => a.year - b.year)[0];
 }
 
 export function getHolidayYearBounds(holidayStartMonth: number): { start: Date; end: Date } {
