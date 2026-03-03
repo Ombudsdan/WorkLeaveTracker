@@ -24,6 +24,13 @@ describe("NavBar — unauthenticated", () => {
     expect(screen.getByText("Work Leave Tracker")).toBeInTheDocument();
   });
 
+  it("renders the app title as a link to /dashboard", () => {
+    render(<NavBar activePage="dashboard" />);
+    const logoLink = screen.getByRole("link", { name: "Work Leave Tracker" });
+    expect(logoLink).toBeInTheDocument();
+    expect(logoLink).toHaveAttribute("href", "/dashboard");
+  });
+
   it("renders a Dashboard navigation link", () => {
     render(<NavBar activePage="dashboard" />);
     expect(screen.getByRole("link", { name: "Dashboard" })).toBeInTheDocument();

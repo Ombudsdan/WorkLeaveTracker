@@ -89,7 +89,7 @@ test.describe("Navigation data freshness", () => {
     // My Connections must show Bob (Alice has him connected in seed data),
     // not the empty-state "No connections yet." message
     await expect(page.getByText(/no connections yet/i)).not.toBeVisible();
-    await expect(page.getByText(/bob/i)).toBeVisible();
+    await expect(page.getByText(/bob/i).first()).toBeVisible();
   });
 
   test("adding leave, visiting profile, then adding another leave succeeds (no 404)", async ({

@@ -87,7 +87,7 @@ export default function LeaveForm({
   const [startDate, setStartDate] = useState(initial?.startDate ?? "");
   const [endDate, setEndDate] = useState(initial?.endDate ?? "");
   const [type, setType] = useState<LeaveType | "">(
-    initial?.type ?? (SICK_LEAVE_ENABLED ? "" : LeaveType.Holiday)
+    SICK_LEAVE_ENABLED ? (initial?.type ?? "") : LeaveType.Holiday
   );
   const [notes, setNotes] = useState(initial?.notes ?? "");
   const [status, setStatus] = useState<LeaveStatus | "">(initial?.status ?? "");
@@ -187,15 +187,17 @@ export default function LeaveForm({
         halfDayMode={isHalfDay}
       />
 
-      {/* Type */}
-      <LeaveOptionPicker
-        id="leave-type"
-        label="Type"
-        options={typeOptions}
-        value={type}
-        onChange={(v) => handleTypeChange(v)}
-        required
-      />
+      {/* Type — only shown when sick leave is enabled (user has a choice to make) */}
+      {SICK_LEAVE_ENABLED && (
+        <LeaveOptionPicker
+          id="leave-type"
+          label="Type"
+          options={typeOptions}
+          value={type}
+          onChange={(v) => handleTypeChange(v)}
+          required
+        />
+      )}
 
       {/* Reason */}
       <FormField

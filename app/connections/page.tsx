@@ -7,7 +7,25 @@ import NavBar from "@/components/NavBar";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import PinUserModal from "@/components/dashboard/PinUserModal";
 import { usersController } from "@/controllers/usersController";
-import { UserRoundCheck, UserRoundX, UserRoundPlus, Clock, Info, X } from "lucide-react";
+import {
+  UserRoundCheck,
+  UserRoundX,
+  UserRoundPlus,
+  Clock,
+  Info,
+  X,
+  ShieldOff,
+  Archive,
+} from "lucide-react";
+
+/** Format an ISO date string as DD/MM/YYYY in UTC */
+function formatUtcDate(isoDate: string): string {
+  const d = new Date(isoDate);
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const year = d.getUTCFullYear();
+  return `${day}/${month}/${year}`;
+}
 
 export default function ConnectionsPage() {
   const { data: session, status } = useSession();
@@ -60,7 +78,7 @@ export default function ConnectionsPage() {
             Your profile could not be loaded. Please{" "}
             <button
               onClick={() => router.refresh()}
-              className="underline font-medium hover:text-amber-900"
+              className="underline font-medium hover:text-amber-900 cursor-pointer"
             >
               refresh the page
             </button>
@@ -75,11 +93,16 @@ export default function ConnectionsPage() {
   const pinnedIds = profile.pinnedUserIds ?? [];
   const sentIds = profile.pendingPinRequestsSent ?? [];
   const receivedIds = profile.pendingPinRequestsReceived ?? [];
+  const revokedConnections = profile.revokedConnections ?? [];
   const pendingCount = receivedIds.length;
 
   const connectedUsers = allUsers.filter((u) => pinnedIds.includes(u.id));
   const sentUsers = allUsers.filter((u) => sentIds.includes(u.id));
   const receivedUsers = allUsers.filter((u) => receivedIds.includes(u.id));
+  // People following me = users who have my id in their pinnedUserIds
+  const followers = allUsers.filter(
+    (u) => u.id !== currentUser.id && (u.profile.pinnedUserIds ?? []).includes(currentUser.id)
+  );
   const otherUsers = allUsers.filter((u) => u.id !== currentUser.id);
 
   async function handleAccept(requesterId: string) {
@@ -114,6 +137,39 @@ export default function ConnectionsPage() {
       return;
     }
     setCurrentUser(updated);
+  }
+
+  async function handleRevokeFollower(followerId: string) {
+    setActionError("");
+    const result = await usersController.revokeConnection(followerId);
+    if (!result.ok) {
+      setActionError(result.error ?? "Failed to revoke connection.");
+      return;
+    }
+    refreshUser();
+  }
+
+  async function handleReconnect(userId: string) {
+    setActionError("");
+    const result = await usersController.sendPinRequest(userId);
+    if (!result.ok) {
+      setActionError(result.error ?? "Failed to send request.");
+      return;
+    }
+    // Optimistically update local state: move from revoked to sent
+    setCurrentUser((prev) => {
+      if (!prev) return prev;
+      const sent = prev.profile.pendingPinRequestsSent ?? [];
+      const revoked = (prev.profile.revokedConnections ?? []).filter((r) => r.userId !== userId);
+      return {
+        ...prev,
+        profile: {
+          ...prev.profile,
+          pendingPinRequestsSent: [...sent, userId],
+          revokedConnections: revoked,
+        },
+      };
+    });
   }
 
   function handleRequestSent(userId: string) {
@@ -151,7 +207,7 @@ export default function ConnectionsPage() {
           <button
             onClick={() => setShowPinModal(true)}
             disabled={pinnedIds.length >= 3}
-            className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-indigo-700 transition disabled:opacity-40"
+            className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-indigo-700 transition disabled:opacity-40 cursor-pointer"
           >
             <UserRoundPlus size={16} />
             Add Connection
@@ -230,20 +286,20 @@ export default function ConnectionsPage() {
           </section>
         )}
 
-        {/* Active connections */}
+        {/* People I'm following */}
         <section className="bg-white rounded-2xl shadow p-5">
           <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide mb-3 flex items-center gap-2">
-            My Connections
+            People I&apos;m Following
             <button
               onClick={() => setShowInfoModal(true)}
               aria-label="What are connections?"
-              className="text-gray-400 hover:text-indigo-600 transition-colors"
+              className="text-gray-400 hover:text-indigo-600 transition-colors cursor-pointer"
             >
               <Info size={14} />
             </button>
           </h3>
           {connectedUsers.length === 0 ? (
-            <p className="text-sm text-gray-400">No connections yet.</p>
+            <p className="text-sm text-gray-400">Not following anyone yet.</p>
           ) : (
             <ul className="space-y-2">
               {connectedUsers.map((u) => (
@@ -259,7 +315,7 @@ export default function ConnectionsPage() {
                   </span>
                   <button
                     onClick={() => handleUnpin(u.id)}
-                    className="text-xs text-red-500 hover:text-red-700 ml-3"
+                    className="text-xs text-red-500 hover:text-red-700 ml-3 cursor-pointer"
                   >
                     Remove
                   </button>
@@ -268,6 +324,83 @@ export default function ConnectionsPage() {
             </ul>
           )}
         </section>
+
+        {/* People following me */}
+        <section className="bg-white rounded-2xl shadow p-5">
+          <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide mb-3">
+            People Following Me
+          </h3>
+          {followers.length === 0 ? (
+            <p className="text-sm text-gray-400">Nobody is following you yet.</p>
+          ) : (
+            <ul className="space-y-2">
+              {followers.map((u) => (
+                <li
+                  key={u.id}
+                  className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-sm"
+                >
+                  <span className="text-green-800 font-medium">
+                    {u.profile.firstName} {u.profile.lastName}
+                    <span className="ml-1 text-green-600 font-normal text-xs">
+                      ({u.profile.email})
+                    </span>
+                  </span>
+                  <button
+                    onClick={() => handleRevokeFollower(u.id)}
+                    className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 ml-3 cursor-pointer"
+                    aria-label={`Revoke ${u.profile.firstName}'s access`}
+                  >
+                    <ShieldOff size={13} />
+                    Revoke
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* Archive — connections revoked by others */}
+        {revokedConnections.length > 0 && (
+          <section className="bg-white rounded-2xl shadow p-5">
+            <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide mb-3 flex items-center gap-2">
+              <Archive size={14} className="text-gray-400" />
+              Archive
+            </h3>
+            <ul className="space-y-2">
+              {revokedConnections.map((rc) => {
+                const revoker = allUsers.find((u) => u.id === rc.userId);
+                const displayName = revoker
+                  ? `${revoker.profile.firstName} ${revoker.profile.lastName}`
+                  : "Unknown user";
+                const alreadySent = sentIds.includes(rc.userId);
+                return (
+                  <li
+                    key={rc.userId}
+                    className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                  >
+                    <span className="text-gray-700">
+                      <span className="font-medium">{displayName}</span>
+                      <span className="ml-2 text-gray-500 text-xs">
+                        Connection removed on {formatUtcDate(rc.date)}
+                      </span>
+                    </span>
+                    {alreadySent ? (
+                      <span className="text-xs text-amber-600 font-medium ml-3">Pending</span>
+                    ) : (
+                      <button
+                        onClick={() => handleReconnect(rc.userId)}
+                        className="text-xs text-indigo-600 hover:text-indigo-800 ml-3 cursor-pointer font-medium"
+                        aria-label={`Request to reconnect with ${displayName}`}
+                      >
+                        Request to reconnect
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
       </main>
 
       {/* What are connections? info modal */}
@@ -277,7 +410,7 @@ export default function ConnectionsPage() {
             <button
               onClick={() => setShowInfoModal(false)}
               aria-label="Close"
-              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 cursor-pointer"
             >
               <X size={18} />
             </button>

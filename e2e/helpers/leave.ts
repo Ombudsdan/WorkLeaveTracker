@@ -70,13 +70,10 @@ export async function addLeave(page: Page, startDate: string, endDate: string): 
   await modal.getByRole("button", { name: startDate }).click();
   await modal.getByRole("button", { name: endDate }).click();
 
-  // Select type and status using the LeaveOptionPicker buttons
-  await modal.getByRole("button", { name: "Holiday" }).click();
-
   // Fill the required Reason field
   await modal.getByLabel("Reason").fill("Test leave");
 
-  // Select Planned status
+  // Select Planned status (type is auto-set to Holiday when sick leave is disabled)
   await modal.getByRole("button", { name: "Planned" }).click();
 
   // Save — use dispatchEvent to fire the DOM click directly, bypassing

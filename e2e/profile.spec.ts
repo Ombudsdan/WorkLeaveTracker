@@ -46,7 +46,7 @@ test.describe("Profile", () => {
     await page.goto("/connections");
 
     // Alice has Bob connected in data.example.json
-    await expect(page.getByText(/bob/i)).toBeVisible();
+    await expect(page.getByText(/bob/i).first()).toBeVisible();
     await expect(page.getByText(/no connections yet/i)).not.toBeVisible();
   });
 

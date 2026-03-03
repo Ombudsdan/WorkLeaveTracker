@@ -257,3 +257,31 @@ describe("usersController.fetchCompanies", () => {
     expect(result).toEqual([]);
   });
 });
+
+describe("usersController.revokeConnection", () => {
+  it("calls POST /api/users/revoke-connection and returns ok:true on success", async () => {
+    mockFetch({}, true);
+    const result = await usersController.revokeConnection("u2");
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/users/revoke-connection",
+      expect.objectContaining({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ followerId: "u2" }),
+      })
+    );
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("returns ok:false with error message when the API rejects", async () => {
+    mockFetch({ error: "Not a follower" }, false, 409);
+    const result = await usersController.revokeConnection("u2");
+    expect(result).toEqual({ ok: false, error: "Not a follower" });
+  });
+
+  it("returns fallback error when API returns no error field", async () => {
+    mockFetch({}, false, 500);
+    const result = await usersController.revokeConnection("u2");
+    expect(result).toEqual({ ok: false, error: "Failed to revoke connection" });
+  });
+});

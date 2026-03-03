@@ -6,6 +6,8 @@ import { v4 as uuidv4 } from "uuid";
 import { LeaveStatus, LeaveType } from "@/types";
 import type { LeaveEntry } from "@/types";
 
+const SICK_LEAVE_ENABLED = process.env.NEXT_PUBLIC_ENABLE_FEATURE_SICK_LEAVE === "true";
+
 /** GET /api/entries - get current user's entries */
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -20,7 +22,10 @@ export async function GET() {
   }
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  return NextResponse.json(user.entries);
+  const entries = SICK_LEAVE_ENABLED
+    ? user.entries
+    : user.entries.filter((e) => e.type !== LeaveType.Sick);
+  return NextResponse.json(entries);
 }
 
 /** POST /api/entries - create a new entry for the current user */
