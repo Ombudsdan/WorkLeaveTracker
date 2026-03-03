@@ -11,7 +11,9 @@ export default function NavBar({ activePage, pendingRequestCount = 0 }: NavBarPr
 
   return (
     <nav className="bg-white border-b px-6 py-3 flex items-center justify-between">
-      <h1 className="text-lg font-bold text-indigo-700">Work Leave Tracker</h1>
+      <a href="/dashboard" className="text-lg font-bold text-indigo-700 hover:text-indigo-800">
+        Work Leave Tracker
+      </a>
       <div className="flex items-center gap-4 text-sm">
         <a
           href="/dashboard"
@@ -55,7 +57,7 @@ export default function NavBar({ activePage, pendingRequestCount = 0 }: NavBarPr
             <span className="text-gray-600">{session.user?.name}</span>
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}
-              className="text-red-500 hover:text-red-700"
+              className="text-red-500 hover:text-red-700 cursor-pointer"
             >
               Sign Out
             </button>

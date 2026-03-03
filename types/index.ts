@@ -85,6 +85,8 @@ export interface UserProfile {
   pendingPinRequestsReceived?: string[];
   /** UK country for country-specific bank holidays */
   country?: UkCountry;
+  /** Connections that were revoked by the other person (they removed me from their followers) */
+  revokedConnections?: Array<{ userId: string; date: string }>;
 }
 
 export interface AppUser {

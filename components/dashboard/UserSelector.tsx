@@ -20,7 +20,7 @@ export default function UserSelector({
   ];
 
   return (
-    <div className="flex px-2 pt-2 gap-1" role="tablist" aria-label="Calendar view">
+    <div className="flex overflow-x-auto" role="tablist" aria-label="Calendar view">
       {tabs.map((tab) => {
         const isActive = tab.id === viewingUserId;
         return (
@@ -29,10 +29,10 @@ export default function UserSelector({
             role="tab"
             aria-selected={isActive}
             onClick={() => onSelectUser(tab.id)}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer focus:outline-none whitespace-nowrap ${
+            className={`px-5 py-3 text-sm font-medium transition-colors cursor-pointer focus:outline-none whitespace-nowrap border-b-2 ${
               isActive
-                ? "bg-indigo-600 text-white"
-                : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                ? "border-indigo-600 text-indigo-700"
+                : "border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300"
             }`}
           >
             {tab.label}

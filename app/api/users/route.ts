@@ -3,8 +3,11 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { listAllUsers, updateUser, addUser, findUserByEmail, findUserById } from "@/lib/db";
 import type { AppUser } from "@/types";
+import { LeaveType } from "@/types";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
+
+const SICK_LEAVE_ENABLED = process.env.NEXT_PUBLIC_ENABLE_FEATURE_SICK_LEAVE === "true";
 
 /** GET /api/users - list all users (profiles only, no passwords) */
 export async function GET() {
@@ -13,7 +16,12 @@ export async function GET() {
 
   const allUsers = await listAllUsers();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const users = allUsers.map(({ password: _p, ...rest }) => rest);
+  const users = allUsers.map(({ password: _p, ...rest }) => {
+    if (!SICK_LEAVE_ENABLED) {
+      return { ...rest, entries: rest.entries.filter((e) => e.type !== LeaveType.Sick) };
+    }
+    return rest;
+  });
   return NextResponse.json(users, {
     headers: { "Cache-Control": "no-store, max-age=0" },
   });

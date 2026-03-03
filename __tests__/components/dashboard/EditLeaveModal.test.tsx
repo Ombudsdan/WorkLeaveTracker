@@ -64,10 +64,11 @@ describe("EditLeaveModal — rendering", () => {
     expect(screen.getByText("2026-03-13")).toBeInTheDocument();
   });
 
-  it("pre-selects the entry's type pill (Holiday; Sick hidden when feature flag is off)", () => {
+  it("does not show the Type section when sick leave is disabled (Holiday auto-set)", () => {
     renderModal(<EditLeaveModal entry={entry} onClose={jest.fn()} onSave={jest.fn()} />);
-    expect(screen.getByRole("button", { name: "Holiday" })).toHaveAttribute("aria-pressed", "true");
-    // Sick button is hidden behind feature flag
+    // Type section hidden when SICK_LEAVE_ENABLED=false
+    expect(screen.queryByText("Type")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Holiday" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Sick" })).toBeNull();
   });
 
@@ -94,13 +95,14 @@ describe("EditLeaveModal — rendering", () => {
     expect(screen.getByRole("button", { name: "Approved" })).toBeInTheDocument();
   });
 
-  it("hides the status pills for sick-leave entries", () => {
+  it("shows status picker for a sick-entry since type is normalised to Holiday when feature is off", () => {
     const sickEntry = { ...entry, type: LeaveType.Sick };
     renderModal(<EditLeaveModal entry={sickEntry} onClose={jest.fn()} onSave={jest.fn()} />);
-    expect(screen.queryByRole("button", { name: "Planned" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Requested" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Approved" })).toBeNull();
-    expect(screen.getByText(/automatically set to/i)).toBeInTheDocument();
+    // Type is normalised to Holiday when SICK_LEAVE_ENABLED=false, so status picker is shown
+    expect(screen.getByRole("button", { name: "Planned" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Requested" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Approved" })).toBeInTheDocument();
+    expect(screen.queryByText(/automatically set to/i)).toBeNull();
   });
 
   it("renders the Save Changes and Cancel buttons", () => {
@@ -144,13 +146,17 @@ describe("EditLeaveModal — onSave", () => {
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ id: "e1" }));
   });
 
-  it("forces Approved status for sick leave regardless of any clicks", async () => {
+  it("saves with Holiday type (normalised from sick) when sick leave is disabled", async () => {
     const user = setup();
     const sickEntry = { ...entry, type: LeaveType.Sick, status: LeaveStatus.Requested };
     const onSave = jest.fn();
     renderModal(<EditLeaveModal entry={sickEntry} onClose={jest.fn()} onSave={onSave} />);
+    // Type is normalised to Holiday; status picker visible — select Planned
+    await user.click(screen.getByRole("button", { name: /Planned/i }));
     await user.click(screen.getByRole("button", { name: "Save Changes" }));
-    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ status: LeaveStatus.Approved }));
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ type: LeaveType.Holiday, status: LeaveStatus.Planned })
+    );
   });
 });
 
@@ -268,12 +274,13 @@ describe("EditLeaveModal — half-day editing", () => {
     );
   });
 
-  it("preserves type and notes when Duration is changed", async () => {
+  it("preserves notes when Duration is changed (Type section hidden when sick leave disabled)", async () => {
     const user = setup();
     renderModal(<EditLeaveModal entry={halfDayEntry} onClose={jest.fn()} onSave={jest.fn()} />);
-    // Change duration — type and notes should still be present
+    // Change duration — type section is hidden but notes should still be present
     await user.click(screen.getByRole("button", { name: "Full day(s)" }));
-    expect(screen.getByRole("button", { name: "Holiday" })).toHaveAttribute("aria-pressed", "true");
+    // Type picker is hidden when SICK_LEAVE_ENABLED=false
+    expect(screen.queryByText("Type")).toBeNull();
     expect(screen.getByLabelText("Reason")).toHaveValue("Dentist");
   });
 });

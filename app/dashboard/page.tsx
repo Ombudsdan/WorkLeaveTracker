@@ -167,7 +167,7 @@ export default function DashboardPage() {
 
         {/* Tab strip — only rendered when the user has pinned connections */}
         {(currentUser.profile.pinnedUserIds ?? []).length > 0 && (
-          <div className="bg-white rounded-2xl shadow mb-6">
+          <div className="bg-white rounded-2xl shadow mb-6 border-b border-gray-200 overflow-hidden">
             <UserSelector
               currentUser={currentUser}
               allUsers={allUsers}
