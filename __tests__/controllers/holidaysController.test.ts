@@ -43,4 +43,14 @@ describe("holidaysController.fetchBankHolidays", () => {
     const result = await holidaysController.fetchBankHolidays();
     expect(result).toEqual([]);
   });
+
+  it("calls GET /api/holidays?country=... when a country is provided", async () => {
+    mockFetch([]);
+    const result = await holidaysController.fetchBankHolidays("england-and-wales");
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/holidays?country=england-and-wales",
+      { cache: "no-store" }
+    );
+    expect(result).toEqual([]);
+  });
 });

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 import { FormValidationProvider } from "@/contexts/FormValidationContext";
@@ -110,6 +110,17 @@ describe("YearAllowanceModal — interactions", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it("does not call onSave when required fields are invalid", async () => {
+    const user = setup();
+    const onSave = jest.fn();
+    renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={onSave} />);
+    // Clear the required Holiday Year field so validation fails
+    const yearInput = screen.getByLabelText("Holiday Year");
+    await user.clear(yearInput);
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
   it("calls onSave with the correct values when Save is clicked", async () => {
     const user = setup();
     const onSave = jest.fn();
@@ -209,4 +220,14 @@ it("calls onSave with the updated holidayStartMonth when month is changed", asyn
   await user.selectOptions(monthSelect, "4");
   await user.click(screen.getByRole("button", { name: "Save" }));
   expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ holidayStartMonth: 4 }));
+});
+
+it("merges companies fetched from the API into the company dropdown", async () => {
+  // Return a non-empty list so the setCompanies branch (lines 51-53) is exercised
+  mockFetchCompanies.mockResolvedValue(["FetchedCo"]);
+  renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={jest.fn()} />);
+  // Wait for the useEffect to run and update the companies list
+  await waitFor(() =>
+    expect(screen.getByRole("option", { name: "FetchedCo" })).toBeInTheDocument()
+  );
 });

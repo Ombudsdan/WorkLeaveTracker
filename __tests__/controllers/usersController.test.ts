@@ -40,6 +40,12 @@ describe("usersController.fetchAll", () => {
     const result = await usersController.fetchAll();
     expect(result).toEqual([]);
   });
+
+  it("returns an empty array when the API responds with a non-ok status", async () => {
+    mockFetch(null, false, 500);
+    const result = await usersController.fetchAll();
+    expect(result).toEqual([]);
+  });
 });
 
 describe("usersController.updateProfile", () => {
@@ -95,6 +101,44 @@ describe("usersController.addYearAllowance", () => {
     const result = await usersController.addYearAllowance(yearAllowance);
     expect(result).toBeNull();
   });
+
+  it("returns a conflict object when the API responds with 409 and company_change_required", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 409,
+      json: jest.fn().mockResolvedValue({
+        error: "company_change_required",
+        existingCompany: "OldCo",
+        message: "Company change detected",
+      }),
+    } as unknown as Response);
+    const result = await usersController.addYearAllowance(yearAllowance);
+    expect(result).toEqual({
+      conflict: true,
+      existingCompany: "OldCo",
+      message: "Company change detected",
+    });
+  });
+
+  it("uses empty string fallbacks for missing existingCompany/message in the 409 conflict body", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 409,
+      json: jest.fn().mockResolvedValue({ error: "company_change_required" }),
+    } as unknown as Response);
+    const result = await usersController.addYearAllowance(yearAllowance);
+    expect(result).toEqual({ conflict: true, existingCompany: "", message: "" });
+  });
+
+  it("returns null when the API responds with 409 but a non-conflict error", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 409,
+      json: jest.fn().mockResolvedValue({ error: "other_error" }),
+    } as unknown as Response);
+    const result = await usersController.addYearAllowance(yearAllowance);
+    expect(result).toBeNull();
+  });
 });
 
 describe("usersController.register", () => {
@@ -131,5 +175,85 @@ describe("usersController.register", () => {
     const result = await usersController.register(data);
     expect(result.ok).toBe(false);
     expect(result.error).toBe("Registration failed");
+  });
+});
+
+describe("usersController.sendPinRequest", () => {
+  it("calls POST /api/users/pin-request and returns ok:true on success", async () => {
+    mockFetch({}, true);
+    const result = await usersController.sendPinRequest("u2");
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/users/pin-request",
+      expect.objectContaining({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetUserId: "u2" }),
+      })
+    );
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("returns ok:false with error message when the API rejects", async () => {
+    mockFetch({ error: "Request already sent" }, false, 409);
+    const result = await usersController.sendPinRequest("u2");
+    expect(result).toEqual({ ok: false, error: "Request already sent" });
+  });
+
+  it("returns fallback error when API returns no error field", async () => {
+    mockFetch({}, false, 500);
+    const result = await usersController.sendPinRequest("u2");
+    expect(result).toEqual({ ok: false, error: "Failed to send request" });
+  });
+});
+
+describe("usersController.respondToPinRequest", () => {
+  it("calls POST /api/users/pin-request/respond and returns ok:true on success", async () => {
+    mockFetch({}, true);
+    const result = await usersController.respondToPinRequest("u2", true);
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/users/pin-request/respond",
+      expect.objectContaining({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requesterId: "u2", accept: true }),
+      })
+    );
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("calls POST with accept=false when declining", async () => {
+    mockFetch({}, true);
+    await usersController.respondToPinRequest("u2", false);
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/users/pin-request/respond",
+      expect.objectContaining({ body: JSON.stringify({ requesterId: "u2", accept: false }) })
+    );
+  });
+
+  it("returns ok:false with error message when the API rejects", async () => {
+    mockFetch({ error: "Not found" }, false, 404);
+    const result = await usersController.respondToPinRequest("u2", true);
+    expect(result).toEqual({ ok: false, error: "Not found" });
+  });
+
+  it("returns fallback error when API returns no error field", async () => {
+    mockFetch({}, false, 500);
+    const result = await usersController.respondToPinRequest("u2", true);
+    expect(result).toEqual({ ok: false, error: "Failed to respond" });
+  });
+});
+
+describe("usersController.fetchCompanies", () => {
+  it("calls GET /api/companies and returns the parsed list", async () => {
+    mockFetch(["Acme Ltd", "Globex"]);
+    const result = await usersController.fetchCompanies();
+    expect(fetch).toHaveBeenCalledWith("/api/companies", { cache: "no-store" });
+    expect(result).toEqual(["Acme Ltd", "Globex"]);
+  });
+
+  it("returns an empty array when the API responds with a non-ok status", async () => {
+    mockFetch(null, false, 500);
+    const result = await usersController.fetchCompanies();
+    expect(result).toEqual([]);
   });
 });

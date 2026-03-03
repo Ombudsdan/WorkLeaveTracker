@@ -141,6 +141,32 @@ describe("SummaryCard — single-ring donut", () => {
     // There should be exactly 1 circle (the track; segments are paths when value > 0)
     expect(circles.length).toBe(1);
   });
+
+  it("uses largeArc=1 when a segment spans more than half the ring (pct > 0.5)", () => {
+    // approved = 14 out of 25 total → pct = 56% → arc = 201.6° > 180° → largeArc flag = 1
+    // This means the path 'd' attribute will contain ' 1 1 ' (largeArcFlag=1, sweepFlag=1)
+    const userWith14Days: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e-large-arc",
+          startDate: "2026-03-09",
+          endDate: "2026-03-26", // Mon 9 → Thu 26: 14 working days
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    const { container } = render(
+      <SummaryCard user={userWith14Days} bankHolidays={[]} isOwnProfile={true} />
+    );
+    const svg = container.querySelector("svg");
+    expect(svg).toBeInTheDocument();
+    // The arc path element should have largeArcFlag=1 in its 'd' attribute
+    const paths = svg!.querySelectorAll("path");
+    const hasLargeArc = Array.from(paths).some((p) => p.getAttribute("d")?.includes(" 1 1 "));
+    expect(hasLargeArc).toBe(true);
+  });
 });
 
 describe("SummaryCard — no year allowances (legacy/missing data)", () => {
@@ -223,6 +249,69 @@ describe("SummaryCard — donut uses total allowance as ring denominator", () =>
     const paths = svg!.querySelectorAll("path");
     // 5/25 = 20%, so the approved segment is a path (< 100%)
     expect(paths.length).toBeGreaterThan(0);
+  });
+
+  it("renders a circle (not a path) when a single segment fills the entire ring (pct=1)", () => {
+    // total allowance = 1, one approved day → pct = 1/1 = 1 → circle rendered
+    const userAllUsed: PublicUser = {
+      ...alice,
+      yearAllowances: [
+        { year: 2026, company: "Acme", holidayStartMonth: 1, core: 1, bought: 0, carried: 0 },
+      ],
+      entries: [
+        {
+          id: "e-full",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    const { container } = render(
+      <SummaryCard user={userAllUsed} bankHolidays={[]} isOwnProfile={true} />
+    );
+    const svg = container.querySelector("svg");
+    expect(svg).toBeInTheDocument();
+    // Two circles: the gray track + the 100%-segment circle
+    const circles = svg!.querySelectorAll("circle");
+    expect(circles.length).toBe(2);
+  });
+});
+
+describe("SummaryCard — breakdown Remaining row colour when over-allocated", () => {
+  it("shows text-red-600 on the Remaining value when leave used exceeds total allowance", async () => {
+    const user = setup();
+    // core=1, bought=0, carried=0 → total=1; two 1-day approved entries → used=2, remaining=-1
+    const overAllocated: PublicUser = {
+      ...alice,
+      yearAllowances: [
+        { year: 2026, company: "Acme", holidayStartMonth: 1, core: 1, bought: 0, carried: 0 },
+      ],
+      entries: [
+        {
+          id: "ea",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+        {
+          id: "eb",
+          startDate: "2026-03-10",
+          endDate: "2026-03-10",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    render(<SummaryCard user={overAllocated} bankHolidays={[]} isOwnProfile={true} />);
+    await user.click(screen.getByRole("button", { name: /view breakdown/i }));
+    // The remaining value span should have the red colour class
+    const remainingLabel = screen.getByText("Remaining");
+    const row = remainingLabel.closest("div");
+    const valueSpan = row?.querySelector("span:last-child");
+    expect(valueSpan?.className).toContain("text-red-600");
   });
 });
 
