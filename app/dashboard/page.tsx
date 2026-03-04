@@ -206,7 +206,9 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className={`lg:col-span-1 space-y-4 ${mobileView === "list" ? "block" : "hidden"} lg:block`}>
+          <div
+            className={`lg:col-span-1 space-y-4 ${mobileView === "list" ? "block" : "hidden"} lg:block`}
+          >
             <SummaryCard
               user={displayedUser}
               bankHolidays={bankHolidays}
@@ -221,7 +223,9 @@ export default function DashboardPage() {
             />
           </div>
 
-          <div className={`lg:col-span-2 ${mobileView === "calendar" ? "block" : "hidden"} lg:block`}>
+          <div
+            className={`lg:col-span-2 ${mobileView === "calendar" ? "block" : "hidden"} lg:block`}
+          >
             <CalendarView
               user={displayedUser}
               bankHolidays={bankHolidays}

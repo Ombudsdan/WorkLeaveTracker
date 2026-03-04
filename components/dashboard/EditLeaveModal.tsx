@@ -3,7 +3,13 @@ import LeaveForm, { durationFromEntry } from "@/components/LeaveForm";
 import type { LeaveEntry, PublicUser, BankHolidayEntry } from "@/types";
 import { FormValidationProvider } from "@/contexts/FormValidationContext";
 
-export default function EditLeaveModal({ entry, onClose, onSave, user, bankHolidays }: EditLeaveModalProps) {
+export default function EditLeaveModal({
+  entry,
+  onClose,
+  onSave,
+  user,
+  bankHolidays,
+}: EditLeaveModalProps) {
   const initial = {
     duration: durationFromEntry(entry),
     startDate: entry.startDate,

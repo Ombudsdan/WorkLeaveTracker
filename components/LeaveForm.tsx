@@ -345,8 +345,8 @@ export default function LeaveForm({
             {limitCheck.shortfall !== 1 ? "s" : ""}
           </p>
           <p className="text-amber-700 mb-2">
-            Adding this leave would exceed your holiday allowance. To proceed you
-            would need to cancel some existing leave first.
+            Adding this leave would exceed your holiday allowance. To proceed you would need to
+            cancel some existing leave first.
           </p>
           {limitCheck.cancellable.length > 0 ? (
             <>
@@ -355,10 +355,7 @@ export default function LeaveForm({
               </p>
               <ul className="space-y-1">
                 {limitCheck.cancellable.map(({ entry, days }) => (
-                  <li
-                    key={entry.id}
-                    className="flex items-center justify-between gap-2 text-xs"
-                  >
+                  <li key={entry.id} className="flex items-center justify-between gap-2 text-xs">
                     <span className="text-gray-700">
                       {formatDateRange(entry.startDate, entry.endDate)}
                     </span>
@@ -376,8 +373,8 @@ export default function LeaveForm({
             </>
           ) : (
             <p className="text-amber-700 text-xs">
-              No upcoming leave found to cancel. Please adjust the dates or duration of
-              this request.
+              No upcoming leave found to cancel. Please adjust the dates or duration of this
+              request.
             </p>
           )}
         </div>

@@ -41,7 +41,9 @@ test.describe("Profile", () => {
     await expect(page.getByRole("tab", { name: /connections/i })).toBeVisible();
   });
 
-  test("connections tab on profile page shows Bob (connected to Alice in seed data)", async ({ page }) => {
+  test("connections tab on profile page shows Bob (connected to Alice in seed data)", async ({
+    page,
+  }) => {
     await loginAs(page, ALICE.email, ALICE.password);
     await page.goto("/profile");
 

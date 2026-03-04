@@ -139,9 +139,7 @@ export default function ConnectionsPanel({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">
-          Connections
-        </h3>
+        <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Connections</h3>
         <button
           onClick={() => setShowPinModal(true)}
           disabled={pinnedIds.length >= 3}

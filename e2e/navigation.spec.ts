@@ -70,9 +70,7 @@ test.describe("Navigation data freshness", () => {
     await expect(page.getByText(/2025|2026/).first()).toBeVisible();
   });
 
-  test("connections are accessible from Profile page Connections tab", async ({
-    page,
-  }) => {
+  test("connections are accessible from Profile page Connections tab", async ({ page }) => {
     await loginAs(page, ALICE.email, ALICE.password);
 
     // dashboard → profile

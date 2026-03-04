@@ -300,10 +300,7 @@ describe("DateRangePicker — startDate prop syncs calendar month", () => {
       const [end, setEnd] = React.useState("");
       return (
         <>
-          <button
-            type="button"
-            onClick={() => setStart("2026-03-20")}
-          >
+          <button type="button" onClick={() => setStart("2026-03-20")}>
             Same month
           </button>
           <DateRangePicker

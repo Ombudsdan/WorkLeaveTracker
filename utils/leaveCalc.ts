@@ -1,10 +1,6 @@
 import { LeaveStatus, LeaveType, LeaveDuration } from "@/types";
 import type { PublicUser } from "@/types";
-import {
-  countWorkingDays,
-  getActiveYearAllowance,
-  getEntryDuration,
-} from "@/utils/dateHelpers";
+import { countWorkingDays, getActiveYearAllowance, getEntryDuration } from "@/utils/dateHelpers";
 
 export interface LeaveSummary {
   total: number;
@@ -39,9 +35,7 @@ export function calcLeaveSummary(user: PublicUser, bankHolidays: string[]): Leav
   const relevantBankHolidays = bankHolidays.filter((d) => {
     const date = new Date(d);
     return (
-      date >= start &&
-      date < endExclusive &&
-      !user.profile.nonWorkingDays.includes(date.getDay())
+      date >= start && date < endExclusive && !user.profile.nonWorkingDays.includes(date.getDay())
     );
   });
 

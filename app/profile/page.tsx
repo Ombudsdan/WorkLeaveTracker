@@ -220,13 +220,15 @@ export default function ProfilePage() {
 
         {/* Tab strip */}
         <div className="flex mb-6 bg-white rounded-2xl shadow overflow-hidden border border-gray-200">
-          {(
-            [
-              { id: "profile" as ProfileTab, label: "Profile", badge: undefined },
-              { id: "past-leave" as ProfileTab, label: "Past Leave", badge: undefined },
-              { id: "connections" as ProfileTab, label: "Connections", badge: pendingConnectionRequests },
-            ]
-          ).map(({ id, label, badge }) => (
+          {[
+            { id: "profile" as ProfileTab, label: "Profile", badge: undefined },
+            { id: "past-leave" as ProfileTab, label: "Past Leave", badge: undefined },
+            {
+              id: "connections" as ProfileTab,
+              label: "Connections",
+              badge: pendingConnectionRequests,
+            },
+          ].map(({ id, label, badge }) => (
             <button
               key={id}
               type="button"
