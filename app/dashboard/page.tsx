@@ -180,14 +180,14 @@ export default function DashboardPage() {
         )}
 
         {/* Mobile-only toggle between Upcoming Leave list and Calendar */}
-        <div className="flex lg:hidden mb-4 bg-white rounded-xl shadow overflow-hidden">
+        <div className="flex lg:hidden mb-4 bg-white rounded-xl shadow border border-gray-100 overflow-hidden">
           <button
             type="button"
             onClick={() => setMobileView("list")}
-            className={`flex-1 py-2 text-sm font-medium transition-colors cursor-pointer ${
+            className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer ${
               mobileView === "list"
-                ? "bg-indigo-600 text-white"
-                : "text-gray-600 hover:bg-gray-50"
+                ? "border-indigo-500 text-indigo-700"
+                : "border-transparent text-gray-500 hover:text-gray-700"
             }`}
           >
             Upcoming Leave
@@ -195,10 +195,10 @@ export default function DashboardPage() {
           <button
             type="button"
             onClick={() => setMobileView("calendar")}
-            className={`flex-1 py-2 text-sm font-medium transition-colors cursor-pointer ${
+            className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer ${
               mobileView === "calendar"
-                ? "bg-indigo-600 text-white"
-                : "text-gray-600 hover:bg-gray-50"
+                ? "border-indigo-500 text-indigo-700"
+                : "border-transparent text-gray-500 hover:text-gray-700"
             }`}
           >
             Calendar
@@ -235,7 +235,12 @@ export default function DashboardPage() {
       </main>
 
       {showAddModal && (
-        <AddLeaveModal onClose={() => setShowAddModal(false)} onSave={handleAddEntry} />
+        <AddLeaveModal
+          onClose={() => setShowAddModal(false)}
+          onSave={handleAddEntry}
+          user={currentUser}
+          bankHolidays={bankHolidays}
+        />
       )}
 
       {editingEntry && (
@@ -243,6 +248,8 @@ export default function DashboardPage() {
           entry={editingEntry}
           onClose={() => setEditingEntry(null)}
           onSave={handleUpdateEntry}
+          user={currentUser}
+          bankHolidays={bankHolidays}
         />
       )}
 

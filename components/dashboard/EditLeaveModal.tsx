@@ -1,9 +1,9 @@
 "use client";
 import LeaveForm, { durationFromEntry } from "@/components/LeaveForm";
-import type { LeaveEntry } from "@/types";
+import type { LeaveEntry, PublicUser, BankHolidayEntry } from "@/types";
 import { FormValidationProvider } from "@/contexts/FormValidationContext";
 
-export default function EditLeaveModal({ entry, onClose, onSave }: EditLeaveModalProps) {
+export default function EditLeaveModal({ entry, onClose, onSave, user, bankHolidays }: EditLeaveModalProps) {
   const initial = {
     duration: durationFromEntry(entry),
     startDate: entry.startDate,
@@ -23,6 +23,9 @@ export default function EditLeaveModal({ entry, onClose, onSave }: EditLeaveModa
             saveLabel="Save Changes"
             onSave={(values) => onSave({ ...values, id: entry.id })}
             onClose={onClose}
+            user={user}
+            bankHolidays={bankHolidays}
+            editingEntryId={entry.id}
           />
         </div>
       </div>
@@ -34,4 +37,6 @@ interface EditLeaveModalProps {
   entry: LeaveEntry;
   onClose: () => void;
   onSave: (entry: LeaveEntry) => void;
+  user?: PublicUser;
+  bankHolidays?: BankHolidayEntry[];
 }

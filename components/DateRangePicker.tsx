@@ -53,6 +53,28 @@ export default function DateRangePicker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  // When the startDate prop is set to a date in a different month/year than
+  // the calendar is currently showing, navigate to that month.  This ensures:
+  //  • EditLeaveModal always opens with the calendar on the entry's month.
+  //  • After clearing startDate (e.g. duration change), re-picking a date
+  //    correctly updates the displayed month to wherever the user clicked.
+  // We skip the sync when the user is actively picking an end date so that
+  // navigating to a future month for the end date is preserved.
+  useEffect(() => {
+    if (!startDate || isPickingEnd) return;
+    const parts = startDate.split("-");
+    if (parts.length !== 3) return;
+    const y = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10) - 1;
+    if (!isNaN(y) && !isNaN(m) && (y !== calYear || m !== calMonth)) {
+      setCalYear(y);
+      setCalMonth(m);
+    }
+    // We intentionally omit calYear/calMonth so the effect only runs when
+    // startDate changes, not on every navigation click.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startDate]);
+
   function validate(start: string, end: string): boolean {
     if (!start) {
       setError(id, "Please select a start date");

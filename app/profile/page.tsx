@@ -149,6 +149,33 @@ export default function ProfilePage() {
     setActiveTab(tab);
   }
 
+  // Derive "past leave" data from state up here — before any conditional returns — so
+  // that useMemo is always called unconditionally (Rules of Hooks).
+  const pastPeriods = [...yearAllowances]
+    .sort((a, b) => b.year - a.year || (a.active === false ? -1 : 1))
+    .filter((ya) => {
+      const periodEnd = new Date(ya.year + 1, (ya.holidayStartMonth ?? 1) - 1, 1);
+      periodEnd.setDate(periodEnd.getDate() - 1);
+      return periodEnd < new Date();
+    });
+
+  const selectedPeriodYa = pastPeriods.find(
+    (ya) => `${ya.year}-${ya.company}` === selectedPastPeriod
+  );
+
+  const pastLeaveEntries = useMemo(() => {
+    if (!selectedPeriodYa) return [];
+    const sm = selectedPeriodYa.holidayStartMonth ?? 1;
+    const start = new Date(selectedPeriodYa.year, sm - 1, 1);
+    const end = new Date(selectedPeriodYa.year + 1, sm - 1, 1);
+    end.setDate(end.getDate() - 1);
+    return entries.filter((e) => {
+      const es = new Date(e.startDate);
+      const ee = new Date(e.endDate);
+      return ee >= start && es <= end;
+    });
+  }, [entries, selectedPeriodYa]);
+
   if (status === "loading" || loading) {
     return <LoadingSpinner />;
   }
@@ -181,31 +208,6 @@ export default function ProfilePage() {
   const currentHolidayYear = activeYa?.year ?? new Date().getFullYear();
   const existingCompanies = [...new Set(yearAllowances.map((ya) => ya.company).filter(Boolean))];
   const pendingConnectionRequests = (currentUser?.profile.pendingPinRequestsReceived ?? []).length;
-
-  const pastPeriods = [...yearAllowances]
-    .sort((a, b) => b.year - a.year || (a.active === false ? -1 : 1))
-    .filter((ya) => {
-      const periodEnd = new Date(ya.year + 1, (ya.holidayStartMonth ?? 1) - 1, 1);
-      periodEnd.setDate(periodEnd.getDate() - 1);
-      return periodEnd < new Date();
-    });
-
-  const selectedPeriodYa = pastPeriods.find(
-    (ya) => `${ya.year}-${ya.company}` === selectedPastPeriod
-  );
-
-  const pastLeaveEntries = useMemo(() => {
-    if (!selectedPeriodYa) return [];
-    const sm = selectedPeriodYa.holidayStartMonth ?? 1;
-    const start = new Date(selectedPeriodYa.year, sm - 1, 1);
-    const end = new Date(selectedPeriodYa.year + 1, sm - 1, 1);
-    end.setDate(end.getDate() - 1);
-    return entries.filter((e) => {
-      const es = new Date(e.startDate);
-      const ee = new Date(e.endDate);
-      return ee >= start && es <= end;
-    });
-  }, [entries, selectedPeriodYa]);
 
   const nonWorkingDays = ALL_DAYS.filter((d) => !workingDays.includes(d));
 

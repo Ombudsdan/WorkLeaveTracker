@@ -4,7 +4,7 @@ import { LeaveStatus, LeaveType } from "@/types";
 import type { PublicUser, BankHolidayEntry } from "@/types";
 import { STATUS_DOT } from "@/variables/colours";
 import { calcLeaveSummary } from "@/utils/leaveCalc";
-import { countEntryDays, getHolidayYearBounds, getActiveYearAllowance } from "@/utils/dateHelpers";
+import { countEntryDays, getActiveYearAllowance } from "@/utils/dateHelpers";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { SICK_LEAVE_ENABLED } from "@/utils/features";
 
@@ -133,7 +133,12 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
   const bankHolidayDates = bankHolidays.map((bh) => bh.date);
   const summary = calcLeaveSummary(user, bankHolidayDates);
   const activeYa = getActiveYearAllowance(user.yearAllowances);
-  const { start: hyStart, end: hyEnd } = getHolidayYearBounds(activeYa?.holidayStartMonth ?? 1);
+  // Use the allowance's own year for the displayed date range so it always matches
+  // what calcLeaveSummary actually counted.
+  const sm = activeYa?.holidayStartMonth ?? 1;
+  const yr = activeYa?.year ?? new Date().getFullYear();
+  const hyStart = new Date(yr, sm - 1, 1);
+  const hyEnd = new Date(yr + 1, sm - 1, 0); // last day before the next period starts
 
   const remaining = Math.max(0, summary.remaining);
 
