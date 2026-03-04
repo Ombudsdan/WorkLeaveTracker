@@ -149,7 +149,6 @@ export default function LeaveForm({
       !status ||
       !type ||
       type !== LeaveType.Holiday ||
-      status === "" ||
       endDate < startDate
     ) {
       return null;
