@@ -371,6 +371,31 @@ describe("getActiveYearAllowance", () => {
     expect(result?.company).toBe("NewCo");
   });
 
+  it("returns explicitly active: true allowance even when its holiday year doesn't contain today", () => {
+    // Dan's scenario: today = Mar 4 2026; 2025 allowance (holidayStartMonth: 4) covers
+    // Apr 2025–Apr 2026 which contains today; but 2026 allowance is explicitly active: true.
+    // The explicit active flag must win over the date-based match on the older record.
+    const ya2025April: YearAllowance = {
+      year: 2025,
+      company: "Test",
+      holidayStartMonth: 4,
+      core: 27,
+      bought: 2,
+      carried: 3,
+    };
+    const ya2026April: YearAllowance = {
+      year: 2026,
+      company: "Test",
+      holidayStartMonth: 4,
+      core: 27,
+      bought: 2,
+      carried: 4,
+      active: true,
+    };
+    const result = getActiveYearAllowance([ya2025April, ya2026April]);
+    expect(result?.year).toBe(2026);
+  });
+
   it("falls back to an inactive allowance when no active one covers today", () => {
     // Only an inactive 2026 allowance exists; should still return it as a fallback
     const inactive2026: YearAllowance = { ...ya2026, company: "OldCo", active: false };

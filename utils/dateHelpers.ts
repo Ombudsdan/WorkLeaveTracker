@@ -38,9 +38,12 @@ export function countWorkingDays(
  */
 export function getActiveYearAllowance(allowances: YearAllowance[]): YearAllowance | undefined {
   const today = new Date();
-  // Prefer allowances that haven't been deactivated (company-change replacements)
-  const active = allowances.filter((ya) => ya.active !== false);
-  const search = active.length > 0 ? active : allowances;
+  // If any allowance is explicitly flagged active: true, restrict to those first.
+  // Otherwise fall back to allowances that haven't been deactivated (active !== false).
+  const explicitlyActive = allowances.filter((ya) => ya.active === true);
+  const notDeactivated = allowances.filter((ya) => ya.active !== false);
+  const preferred = explicitlyActive.length > 0 ? explicitlyActive : notDeactivated;
+  const search = preferred.length > 0 ? preferred : allowances;
   for (const ya of search) {
     const sm = ya.holidayStartMonth ?? 1;
     const start = new Date(ya.year, sm - 1, 1);
