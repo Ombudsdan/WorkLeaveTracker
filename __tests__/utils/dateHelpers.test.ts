@@ -363,6 +363,72 @@ describe("getActiveYearAllowance", () => {
     expect(result?.year).toBe(2027);
   });
 
+  it("prefers active allowances over inactive ones when both cover today", () => {
+    // Two allowances for 2026: one inactive (came first) and one active
+    const inactive2026: YearAllowance = { ...ya2026, company: "OldCo", active: false };
+    const active2026: YearAllowance = { ...ya2026, company: "NewCo" };
+    const result = getActiveYearAllowance([inactive2026, active2026]);
+    expect(result?.company).toBe("NewCo");
+  });
+
+  it("returns the pre-configured next-year allowance when its start is within 60 days", () => {
+    // Dan's scenario: today = Mar 15 2026; 2025 allowance (holidayStartMonth: 4) covers
+    // Apr 2025–Apr 2026 which contains today, but the 2026 allowance has been set up in
+    // advance and its start (Apr 1, 2026) is only ~17 days away — within the 60-day
+    // lookahead — so the newer year should win WITHOUT needing any active: true flag.
+    const ya2025April: YearAllowance = {
+      year: 2025,
+      company: "Test",
+      holidayStartMonth: 4,
+      core: 27,
+      bought: 2,
+      carried: 3,
+    };
+    const ya2026April: YearAllowance = {
+      year: 2026,
+      company: "Test",
+      holidayStartMonth: 4,
+      core: 27,
+      bought: 2,
+      carried: 4,
+      // No active: true needed — the lookahead handles it
+    };
+    const result = getActiveYearAllowance([ya2025April, ya2026April]);
+    expect(result?.year).toBe(2026);
+  });
+
+  it("does not prefer the next-year allowance when its start is more than 60 days away", () => {
+    // Same April-start setup, but today is fixed to mid-January 2026 (76 days before
+    // April 1) so the 2026 year is outside the 60-day lookahead window.
+    jest.setSystemTime(new Date("2026-01-15"));
+    const ya2025April: YearAllowance = {
+      year: 2025,
+      company: "Test",
+      holidayStartMonth: 4,
+      core: 27,
+      bought: 2,
+      carried: 3,
+    };
+    const ya2026April: YearAllowance = {
+      year: 2026,
+      company: "Test",
+      holidayStartMonth: 4,
+      core: 27,
+      bought: 2,
+      carried: 4,
+    };
+    // Jan 15 + 60 days = Mar 16, which is before Apr 1 → 2026 outside lookahead
+    const result = getActiveYearAllowance([ya2025April, ya2026April]);
+    expect(result?.year).toBe(2025);
+  });
+
+  it("falls back to an inactive allowance when no active one covers today", () => {
+    // Only an inactive 2026 allowance exists; should still return it as a fallback
+    const inactive2026: YearAllowance = { ...ya2026, company: "OldCo", active: false };
+    const result = getActiveYearAllowance([inactive2026]);
+    expect(result?.company).toBe("OldCo");
+  });
+
   it("defaults holidayStartMonth to 1 when the field is missing in the primary loop (backward compat)", () => {
     // Simulate legacy data without holidayStartMonth — but year 2026 still matches today
     const legacy = {

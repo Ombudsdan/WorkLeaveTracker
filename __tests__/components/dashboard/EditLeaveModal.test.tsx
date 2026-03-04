@@ -284,3 +284,76 @@ describe("EditLeaveModal — half-day editing", () => {
     expect(screen.getByLabelText("Reason")).toHaveValue("Dentist");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Allowance limit validation (edit mode — editingEntryId exclusion)
+// ---------------------------------------------------------------------------
+import type { PublicUser, BankHolidayEntry } from "@/types";
+
+const userWithTightAllowance: PublicUser = {
+  id: "u1",
+  profile: {
+    firstName: "Alice",
+    lastName: "Smith",
+    email: "alice@example.com",
+    nonWorkingDays: [0, 6],
+  },
+  // 5-day allowance
+  yearAllowances: [
+    { year: 2026, company: "Acme", holidayStartMonth: 1, core: 5, bought: 0, carried: 0 },
+  ],
+  // One existing 5-day approved entry (exactly fills the allowance)
+  entries: [
+    {
+      id: "e1",
+      startDate: "2026-03-09",
+      endDate: "2026-03-13",
+      status: LeaveStatus.Planned,
+      type: LeaveType.Holiday,
+    },
+  ],
+};
+
+const noBankHolidaysEdit: BankHolidayEntry[] = [];
+
+function renderEditModal(ui: React.ReactElement) {
+  return render(<FormValidationProvider>{ui}</FormValidationProvider>);
+}
+
+describe("EditLeaveModal — allowance limit validation", () => {
+  it("does not show the limit warning when editing the same entry (excludes it from total)", async () => {
+    // Editing the existing 5-day entry (e1) — the allowance is exactly 5 days.
+    // Without the editingEntryId exclusion this would trigger the warning because
+    // the virtual user would have 10 days used against a 5-day allowance.
+    renderEditModal(
+      <EditLeaveModal
+        entry={entry}
+        onClose={jest.fn()}
+        onSave={jest.fn()}
+        user={userWithTightAllowance}
+        bankHolidays={noBankHolidaysEdit}
+      />
+    );
+    // The form pre-fills dates and status — warning should NOT appear
+    expect(screen.queryByText(/Allowance exceeded/i)).toBeNull();
+    expect(screen.getByRole("button", { name: "Save Changes" })).not.toBeDisabled();
+  });
+
+  it("shows the limit warning when editing an entry to be longer than the allowance permits", async () => {
+    const user = setup();
+    renderEditModal(
+      <EditLeaveModal
+        entry={entry}
+        onClose={jest.fn()}
+        onSave={jest.fn()}
+        user={userWithTightAllowance}
+        bankHolidays={noBankHolidaysEdit}
+      />
+    );
+    // Navigate to a week later and extend the entry to 10 days (double the allowance)
+    await user.click(screen.getByRole("button", { name: "2026-03-16" }));
+    await user.click(screen.getByRole("button", { name: "2026-03-27" }));
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByText(/Allowance exceeded/i)).toBeInTheDocument();
+  });
+});

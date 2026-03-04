@@ -1,19 +1,26 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { LeaveStatus, LeaveType, LeaveDuration } from "@/types";
-import type { LeaveEntry } from "@/types";
+import type { LeaveEntry, PublicUser, BankHolidayEntry } from "@/types";
 import {
   LEAVE_STATUS_ORDER,
   LEAVE_STATUS_LABELS,
   LEAVE_TYPE_ORDER,
   LEAVE_TYPE_LABELS,
 } from "@/variables/leaveConfig";
+import { STATUS_COLORS } from "@/variables/colours";
 import FormField from "@/components/FormField";
 import DateRangePicker from "@/components/DateRangePicker";
 import LeaveOptionPicker from "@/components/LeaveOptionPicker";
 import Button from "@/components/Button";
 import { useFormValidation } from "@/contexts/FormValidationContext";
-import { getEntryDuration } from "@/utils/dateHelpers";
+import {
+  getEntryDuration,
+  countEntryDays,
+  getActiveYearAllowance,
+  toIsoDate,
+} from "@/utils/dateHelpers";
+import { calcLeaveSummary } from "@/utils/leaveCalc";
 import { SICK_LEAVE_ENABLED } from "@/utils/features";
 
 export type DurationType = "full" | "am" | "pm";
@@ -43,6 +50,14 @@ export function durationFromEntry(entry: LeaveEntry): DurationType {
   return durationEnumToType(getEntryDuration(entry));
 }
 
+function formatDateRange(start: string, end: string): string {
+  const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" };
+  const s = new Date(start).toLocaleDateString("en-GB", opts);
+  if (start === end) return s;
+  const e = new Date(end).toLocaleDateString("en-GB", opts);
+  return `${s} – ${e}`;
+}
+
 export interface LeaveFormInitial {
   duration: DurationType;
   startDate: string;
@@ -67,6 +82,18 @@ export interface LeaveFormProps {
    */
   onSave: (entry: Omit<LeaveEntry, "id">) => void;
   onClose: () => void;
+  /**
+   * If provided, the form will validate that adding / editing this leave
+   * does not exceed the user's holiday allowance.
+   */
+  user?: PublicUser;
+  bankHolidays?: BankHolidayEntry[];
+  /**
+   * The ID of the entry currently being edited.  When provided, that entry
+   * is excluded from the running total so that editing it doesn't inflate
+   * the "used" count.
+   */
+  editingEntryId?: string;
 }
 
 /**
@@ -80,6 +107,9 @@ export default function LeaveForm({
   saveLabel = "Save",
   onSave,
   onClose,
+  user,
+  bankHolidays,
+  editingEntryId,
 }: LeaveFormProps) {
   const { triggerAllValidations, hasErrors } = useFormValidation();
 
@@ -108,6 +138,78 @@ export default function LeaveForm({
     label: LEAVE_STATUS_LABELS[s],
   }));
 
+  // ---------------------------------------------------------------------------
+  // Allowance limit check (only for holiday-type entries with a valid user)
+  // ---------------------------------------------------------------------------
+  const limitCheck = useMemo(() => {
+    if (
+      !user ||
+      !startDate ||
+      !endDate ||
+      !status ||
+      !type ||
+      type !== LeaveType.Holiday ||
+      endDate < startDate
+    ) {
+      return null;
+    }
+
+    const bankHolidayDates = (bankHolidays ?? []).map((bh) => bh.date);
+    const nonWorkingDays = user.profile.nonWorkingDays;
+
+    const prospectiveEntry: LeaveEntry = {
+      id: "__new__",
+      startDate,
+      endDate,
+      status: status as LeaveStatus,
+      type: type as LeaveType,
+      duration: DURATION_TYPE_TO_ENUM[duration],
+    };
+
+    // Build a virtual user that excludes the entry being edited and includes
+    // the prospective new entry.
+    const filteredEntries = user.entries.filter((e) => e.id !== editingEntryId);
+    const virtualUser: PublicUser = {
+      ...user,
+      entries: [...filteredEntries, prospectiveEntry],
+    };
+
+    const summary = calcLeaveSummary(virtualUser, bankHolidayDates);
+    if (summary.remaining >= 0) return null; // within allowance
+
+    const shortfall = -summary.remaining;
+
+    // Find holiday entries that are future/in-progress and could be cancelled.
+    const todayStr = toIsoDate(new Date());
+    // activeYa is always defined here — calcLeaveSummary only yields negative remaining
+    // when it finds an active allowance, so getActiveYearAllowance returns a value.
+    const activeYa = getActiveYearAllowance(user.yearAllowances)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    /* c8 ignore next -- holidayStartMonth is required in YearAllowance; fallback is unreachable */
+    const sm = activeYa.holidayStartMonth ?? 1;
+    const yrStart = new Date(activeYa.year, sm - 1, 1);
+    const yrEnd = new Date(activeYa.year + 1, sm - 1, 1);
+
+    const cancellable = user.entries
+      .filter(
+        (e) =>
+          e.type === LeaveType.Holiday &&
+          e.id !== editingEntryId &&
+          e.endDate >= todayStr &&
+          new Date(e.startDate) < yrEnd &&
+          new Date(e.endDate) >= yrStart
+      )
+      .map((e) => ({
+        entry: e,
+        days: countEntryDays(e, nonWorkingDays, bankHolidayDates),
+      }))
+      .filter((x) => x.days > 0)
+      .sort((a, b) => a.entry.startDate.localeCompare(b.entry.startDate));
+
+    return { shortfall, cancellable };
+  }, [user, startDate, endDate, status, type, duration, editingEntryId, bankHolidays]);
+
+  const isLimitExceeded = limitCheck !== null;
+
   function handleDurationChange(value: DurationType) {
     setDuration(value);
     // Clear dates only — type, notes and status are intentionally preserved
@@ -131,6 +233,11 @@ export default function LeaveForm({
       setShowTopError(true);
       return;
     }
+    /* c8 ignore start -- defensive guard; Save button is already disabled when limit exceeded */
+    if (isLimitExceeded) {
+      return;
+    }
+    /* c8 ignore stop */
     setShowTopError(false);
     const resolvedStatus = isSick ? LeaveStatus.Approved : (status as LeaveStatus);
     onSave({
@@ -226,9 +333,56 @@ export default function LeaveForm({
         </p>
       )}
 
+      {/* Allowance limit warning */}
+      {isLimitExceeded && limitCheck && (
+        <div
+          role="alert"
+          aria-live="polite"
+          className="bg-amber-50 border border-amber-300 rounded-lg px-3 py-3 text-sm"
+        >
+          <p className="font-semibold text-amber-800 mb-1">
+            ⚠ Allowance exceeded by {limitCheck.shortfall} day
+            {limitCheck.shortfall !== 1 ? "s" : ""}
+          </p>
+          <p className="text-amber-700 mb-2">
+            Adding this leave would exceed your holiday allowance. To proceed you would need to
+            cancel some existing leave first.
+          </p>
+          {limitCheck.cancellable.length > 0 ? (
+            <>
+              <p className="text-amber-800 font-medium mb-1 text-xs uppercase tracking-wide">
+                Upcoming leave you could cancel:
+              </p>
+              <ul className="space-y-1">
+                {limitCheck.cancellable.map(({ entry, days }) => (
+                  <li key={entry.id} className="flex items-center justify-between gap-2 text-xs">
+                    <span className="text-gray-700">
+                      {formatDateRange(entry.startDate, entry.endDate)}
+                    </span>
+                    <span
+                      className={`px-1.5 py-0.5 rounded border text-xs font-medium ${STATUS_COLORS[entry.status]}`}
+                    >
+                      {entry.status.charAt(0).toUpperCase() + entry.status.slice(1)}
+                    </span>
+                    <span className="text-gray-600 ml-auto">
+                      {days} day{days !== 1 ? "s" : ""}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <p className="text-amber-700 text-xs">
+              No upcoming leave found to cancel. Please adjust the dates or duration of this
+              request.
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Action buttons */}
       <div className="flex gap-2">
-        <Button variant="primary" fullWidth onClick={handleSave}>
+        <Button variant="primary" fullWidth onClick={handleSave} disabled={isLimitExceeded}>
           {saveLabel}
         </Button>
         <Button variant="secondary" fullWidth onClick={onClose}>

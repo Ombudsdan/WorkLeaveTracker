@@ -34,6 +34,8 @@ export default function DashboardPage() {
   const [editingEntry, setEditingEntry] = useState<LeaveEntry | null>(null);
   const [showAllowanceWarningModal, setShowAllowanceWarningModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  /** Mobile-only: which panel is currently visible ("list" | "calendar") */
+  const [mobileView, setMobileView] = useState<"list" | "calendar">("list");
 
   // Track whether the user was previously authenticated in this browser tab so
   // we can distinguish a genuine "session expired" event from a first visit.
@@ -177,8 +179,36 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* Mobile-only toggle between Upcoming Leave list and Calendar */}
+        <div className="flex lg:hidden mb-4 bg-white rounded-xl shadow border border-gray-100 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setMobileView("list")}
+            className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer ${
+              mobileView === "list"
+                ? "border-indigo-500 text-indigo-700"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            Upcoming Leave
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileView("calendar")}
+            className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer ${
+              mobileView === "calendar"
+                ? "border-indigo-500 text-indigo-700"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            Calendar
+          </button>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1 space-y-4">
+          <div
+            className={`lg:col-span-1 space-y-4 ${mobileView === "list" ? "block" : "hidden"} lg:block`}
+          >
             <SummaryCard
               user={displayedUser}
               bankHolidays={bankHolidays}
@@ -193,7 +223,9 @@ export default function DashboardPage() {
             />
           </div>
 
-          <div className="lg:col-span-2">
+          <div
+            className={`lg:col-span-2 ${mobileView === "calendar" ? "block" : "hidden"} lg:block`}
+          >
             <CalendarView
               user={displayedUser}
               bankHolidays={bankHolidays}
@@ -207,7 +239,12 @@ export default function DashboardPage() {
       </main>
 
       {showAddModal && (
-        <AddLeaveModal onClose={() => setShowAddModal(false)} onSave={handleAddEntry} />
+        <AddLeaveModal
+          onClose={() => setShowAddModal(false)}
+          onSave={handleAddEntry}
+          user={currentUser}
+          bankHolidays={bankHolidays}
+        />
       )}
 
       {editingEntry && (
@@ -215,6 +252,8 @@ export default function DashboardPage() {
           entry={editingEntry}
           onClose={() => setEditingEntry(null)}
           onSave={handleUpdateEntry}
+          user={currentUser}
+          bankHolidays={bankHolidays}
         />
       )}
 

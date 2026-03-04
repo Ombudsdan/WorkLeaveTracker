@@ -70,25 +70,17 @@ test.describe("Navigation data freshness", () => {
     await expect(page.getByText(/2025|2026/).first()).toBeVisible();
   });
 
-  test("connections are NOT empty after dashboard → profile → dashboard → connections", async ({
-    page,
-  }) => {
+  test("connections are accessible from Profile page Connections tab", async ({ page }) => {
     await loginAs(page, ALICE.email, ALICE.password);
 
     // dashboard → profile
     await page.getByRole("link", { name: "Profile" }).click();
     await page.waitForURL(/\/profile/);
 
-    await page.getByRole("link", { name: "Dashboard" }).click();
-    await page.waitForURL(/\/dashboard/);
+    // Click the Connections tab
+    await page.getByRole("tab", { name: /connections/i }).click();
 
-    // Navigate to connections page — Bob should be listed
-    await page.getByRole("link", { name: /connections/i }).click();
-    await page.waitForURL(/\/connections/);
-
-    // My Connections must show Bob (Alice has him connected in seed data),
-    // not the empty-state "No connections yet." message
-    await expect(page.getByText(/no connections yet/i)).not.toBeVisible();
+    // Connections content should be visible — Bob should be listed
     await expect(page.getByText(/bob/i).first()).toBeVisible();
   });
 
@@ -155,7 +147,7 @@ test.describe("Navigation data freshness", () => {
     // next/link adds a data-prefetch attribute; plain <a> tags do not.
     // This test ensures the NavBar keeps using plain <a> for hard navigation.
     const dashboardLink = page.getByRole("link", { name: "Dashboard" });
-    const profileLink = page.getByRole("link", { name: "Profile" });
+    const profileLink = page.locator("nav a[href='/profile']").first();
 
     await expect(dashboardLink).toBeVisible();
     await expect(profileLink).toBeVisible();

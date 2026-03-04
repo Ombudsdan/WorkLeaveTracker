@@ -30,24 +30,45 @@ export function countWorkingDays(
 }
 
 /**
- * Find the year allowance whose holiday year contains today.
- * Iterates allowances using each one's own holidayStartMonth so no external
- * start month is needed. Falls back to the most recently started allowance.
+ * Find the year allowance that is most relevant to today.
+ *
+ * Uses a two-tier date-based approach on non-deactivated allowances:
+ *  1. **Primary** — the allowance whose holiday year window contains today.
+ *  2. **Lookahead** — if a newer year's allowance has been pre-configured and
+ *     its holiday year starts within the next 60 days, prefer it over the
+ *     current year. This handles the common case where an admin sets up the
+ *     upcoming year in advance (e.g. configuring April 2026 in early March).
+ *
+ * Among all candidates the one with the highest year wins.
+ * Falls back to the most recently started allowance, then the earliest future one.
  */
 export function getActiveYearAllowance(allowances: YearAllowance[]): YearAllowance | undefined {
   const today = new Date();
-  for (const ya of allowances) {
+  // Prefer allowances that haven't been deactivated (company-change replacements)
+  const notDeactivated = allowances.filter((ya) => ya.active !== false);
+  const search = notDeactivated.length > 0 ? notDeactivated : allowances;
+
+  const lookahead = new Date(today);
+  lookahead.setDate(lookahead.getDate() + 60);
+
+  const candidates = search.filter((ya) => {
     const sm = ya.holidayStartMonth ?? 1;
     const start = new Date(ya.year, sm - 1, 1);
     const end = new Date(ya.year + 1, sm - 1, 1); // exclusive upper bound
-    if (today >= start && today < end) return ya;
-  }
-  // Fallback: the most recently started allowance
-  const past = allowances.filter(
+    const containsToday = today >= start && today < end;
+    const startsVerySoon = start > today && start <= lookahead;
+    return containsToday || startsVerySoon;
+  });
+
+  // Among all candidates prefer the latest year
+  if (candidates.length > 0) return candidates.sort((a, b) => b.year - a.year)[0];
+
+  // Fallback: the most recently started allowance from the search set
+  const past = search.filter(
     (ya) => today >= new Date(ya.year, (ya.holidayStartMonth ?? 1) - 1, 1)
   );
   if (past.length > 0) return past.sort((a, b) => b.year - a.year)[0];
-  return [...allowances].sort((a, b) => a.year - b.year)[0];
+  return [...search].sort((a, b) => a.year - b.year)[0];
 }
 
 export function getHolidayYearBounds(holidayStartMonth: number): { start: Date; end: Date } {

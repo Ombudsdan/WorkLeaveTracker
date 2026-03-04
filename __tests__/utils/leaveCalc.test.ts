@@ -264,6 +264,51 @@ describe("calcLeaveSummary — no allowance configured", () => {
     expect(summary.total).toBe(0);
     expect(summary.remaining).toBe(0);
   });
+
+  it("returns all zeros (early return) when yearAllowances is empty", () => {
+    const user: PublicUser = { ...baseUser, yearAllowances: [] };
+    const summary = calcLeaveSummary(user, []);
+    expect(summary).toEqual({
+      total: 0,
+      approved: 0,
+      requested: 0,
+      planned: 0,
+      used: 0,
+      remaining: 0,
+    });
+  });
+});
+
+describe("calcLeaveSummary — allowance without explicit holidayStartMonth", () => {
+  it("uses January as the default holidayStartMonth when the field is missing", () => {
+    // The allowance has no holidayStartMonth — the ?? 1 fallback should default to January.
+    const user: PublicUser = {
+      ...baseUser,
+      yearAllowances: [
+        {
+          year: 2026,
+          company: "Acme",
+          // No holidayStartMonth — should default to 1 (January)
+          holidayStartMonth: undefined as unknown as number,
+          core: 20,
+          bought: 0,
+          carried: 0,
+        },
+      ],
+      entries: [
+        {
+          id: "e-no-sm",
+          startDate: "2026-03-09",
+          endDate: "2026-03-13",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    const { approved } = calcLeaveSummary(user, []);
+    // Mon–Fri = 5 days, within Jan–Dec 2026
+    expect(approved).toBe(5);
+  });
 });
 
 describe("calcLeaveSummary — half-day entries count as 0.5", () => {

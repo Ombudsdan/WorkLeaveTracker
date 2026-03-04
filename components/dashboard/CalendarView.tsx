@@ -171,10 +171,15 @@ export default function CalendarView({
     const dow = (firstDay + day - 1) % 7;
     const isWeekdayNWD = isNWD && dow !== 0 && dow !== 6;
     const isToday = dateStr === todayStr;
-    const layout = getCellLayout(entries);
+    // Don't render leave entries on non-working days — the cell should always
+    // display its NWD styling regardless of whether a leave entry spans that day.
+    // Bank holidays with leave entries retain the leave colour (BH name is suppressed
+    // by the cell layout logic since the layout is non-empty).
+    const displayEntries = isNWD ? [] : entries;
+    const layout = getCellLayout(displayEntries);
 
     const defaultClass =
-      entries.length === 0
+      displayEntries.length === 0
         ? isBankHoliday
           ? CALENDAR_CELL_BANK_HOLIDAY
           : isNWD

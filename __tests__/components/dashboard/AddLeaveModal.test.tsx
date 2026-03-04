@@ -357,3 +357,284 @@ describe("AddLeaveModal — reason required", () => {
     expect(screen.getByText("Reason is required")).toBeInTheDocument();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Allowance limit validation
+// ---------------------------------------------------------------------------
+import type { PublicUser, BankHolidayEntry } from "@/types";
+import { LeaveDuration } from "@/types";
+
+const aliceOverLimit: PublicUser = {
+  id: "u1",
+  profile: {
+    firstName: "Alice",
+    lastName: "Smith",
+    email: "alice@example.com",
+    nonWorkingDays: [0, 6],
+  },
+  yearAllowances: [
+    { year: 2026, company: "Acme", holidayStartMonth: 1, core: 1, bought: 0, carried: 0 },
+  ],
+  // One existing approved entry that already uses 5 days — allowance is only 1 day.
+  entries: [
+    {
+      id: "e1",
+      startDate: "2026-03-09",
+      endDate: "2026-03-13",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      duration: LeaveDuration.Full,
+    },
+  ],
+};
+
+const aliceWithRoom: PublicUser = {
+  ...aliceOverLimit,
+  yearAllowances: [
+    { year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+  ],
+};
+
+const noBankHolidays: BankHolidayEntry[] = [];
+
+describe("AddLeaveModal — allowance limit validation", () => {
+  it("does not show the limit warning when no user is supplied", async () => {
+    const user = setup();
+    renderModal(<AddLeaveModal onClose={jest.fn()} onSave={jest.fn()} />);
+    await user.click(screen.getByRole("button", { name: "2026-03-16" }));
+    await user.click(screen.getByRole("button", { name: "2026-03-20" }));
+    await user.click(screen.getByRole("button", { name: /Planned/i }));
+    expect(screen.queryByText(/Allowance exceeded/i)).toBeNull();
+  });
+
+  it("shows the limit warning when adding leave would exceed the allowance", async () => {
+    const user = setup();
+    renderModal(
+      <AddLeaveModal
+        onClose={jest.fn()}
+        onSave={jest.fn()}
+        user={aliceOverLimit}
+        bankHolidays={noBankHolidays}
+      />
+    );
+    // Try to add Mon–Fri (5 days) — already over limit (1 day allowance, 5 used)
+    await user.click(screen.getByRole("button", { name: "2026-03-16" }));
+    await user.click(screen.getByRole("button", { name: "2026-03-20" }));
+    await user.click(screen.getByRole("button", { name: /Planned/i }));
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByText(/Allowance exceeded/i)).toBeInTheDocument();
+  });
+
+  it("disables the Save button when the allowance is exceeded", async () => {
+    const user = setup();
+    renderModal(
+      <AddLeaveModal
+        onClose={jest.fn()}
+        onSave={jest.fn()}
+        user={aliceOverLimit}
+        bankHolidays={noBankHolidays}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: "2026-03-16" }));
+    await user.click(screen.getByRole("button", { name: "2026-03-20" }));
+    await user.click(screen.getByRole("button", { name: /Planned/i }));
+    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
+  });
+
+  it("does not call onSave when limit is exceeded and Save is invoked", async () => {
+    const user = setup();
+    const onSave = jest.fn();
+    renderModal(
+      <AddLeaveModal
+        onClose={jest.fn()}
+        onSave={onSave}
+        user={aliceOverLimit}
+        bankHolidays={noBankHolidays}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: "2026-03-16" }));
+    await user.click(screen.getByRole("button", { name: "2026-03-20" }));
+    await user.type(screen.getByLabelText("Reason"), "Holiday");
+    await user.click(screen.getByRole("button", { name: /Planned/i }));
+    // Save is disabled — clicking it should have no effect
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it("shows the list of cancellable upcoming entries in the warning", async () => {
+    const user = setup();
+    renderModal(
+      <AddLeaveModal
+        onClose={jest.fn()}
+        onSave={jest.fn()}
+        user={aliceOverLimit}
+        bankHolidays={noBankHolidays}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: "2026-03-16" }));
+    await user.click(screen.getByRole("button", { name: "2026-03-20" }));
+    await user.click(screen.getByRole("button", { name: /Planned/i }));
+    // The existing entry (9–13 Mar) is an upcoming entry that could be cancelled
+    expect(screen.getByText(/Upcoming leave you could cancel/i)).toBeInTheDocument();
+  });
+
+  it("shows 'No upcoming leave' message when nothing can be cancelled", async () => {
+    const user = setup();
+    // User whose only entry is in the past
+    const aliceNoCancellable: PublicUser = {
+      ...aliceOverLimit,
+      entries: [
+        {
+          id: "e-past",
+          startDate: "2026-01-05",
+          endDate: "2026-01-09",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.Full,
+        },
+      ],
+    };
+    renderModal(
+      <AddLeaveModal
+        onClose={jest.fn()}
+        onSave={jest.fn()}
+        user={aliceNoCancellable}
+        bankHolidays={noBankHolidays}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: "2026-03-16" }));
+    await user.click(screen.getByRole("button", { name: "2026-03-20" }));
+    await user.click(screen.getByRole("button", { name: /Planned/i }));
+    expect(screen.getByText(/No upcoming leave found to cancel/i)).toBeInTheDocument();
+  });
+
+  it("does not show the warning when leave is within the allowance", async () => {
+    const user = setup();
+    renderModal(
+      <AddLeaveModal
+        onClose={jest.fn()}
+        onSave={jest.fn()}
+        user={aliceWithRoom}
+        bankHolidays={noBankHolidays}
+      />
+    );
+    // 1-day entry — well within 25 days
+    await user.click(screen.getByRole("button", { name: "2026-03-16" }));
+    await user.click(screen.getByRole("button", { name: "2026-03-16" }));
+    await user.click(screen.getByRole("button", { name: /Planned/i }));
+    expect(screen.queryByText(/Allowance exceeded/i)).toBeNull();
+    expect(screen.getByRole("button", { name: "Save" })).not.toBeDisabled();
+  });
+
+  it("shows the shortfall correctly (singular 'day' for shortfall of 1)", async () => {
+    const user = setup();
+    // 1 day allowance, 0 existing entries → adding 2 days = shortfall of 2 days
+    const aliceOne: PublicUser = {
+      ...aliceOverLimit,
+      entries: [],
+    };
+    renderModal(
+      <AddLeaveModal
+        onClose={jest.fn()}
+        onSave={jest.fn()}
+        user={aliceOne}
+        bankHolidays={noBankHolidays}
+      />
+    );
+    // Add 2 days (Mon–Tue) — 1 day allowance → shortfall 1 day (singular)
+    await user.click(screen.getByRole("button", { name: "2026-03-02" }));
+    await user.click(screen.getByRole("button", { name: "2026-03-03" }));
+    await user.click(screen.getByRole("button", { name: /Planned/i }));
+    // Check singular "day" (no trailing 's')
+    const alertEl = screen.getByRole("alert");
+    expect(alertEl.textContent).toContain("exceeded by 1 day");
+    expect(alertEl.textContent).not.toContain("exceeded by 1 days");
+  });
+
+  it("does not show the warning when type is not Holiday", async () => {
+    // Without SICK_LEAVE_ENABLED, type is always auto-set to Holiday.
+    // The warning should not appear when no dates/status are set (null limitCheck).
+    const user = setup();
+    renderModal(
+      <AddLeaveModal
+        onClose={jest.fn()}
+        onSave={jest.fn()}
+        user={aliceOverLimit}
+        bankHolidays={noBankHolidays}
+      />
+    );
+    // No dates selected — limitCheck should be null
+    expect(screen.queryByText(/Allowance exceeded/i)).toBeNull();
+  });
+});
+
+describe("AddLeaveModal — limit validation branch coverage", () => {
+  it("does not show warning when user is provided but bankHolidays prop is omitted", async () => {
+    // Covers the `bankHolidays ?? []` fallback branch.
+    const user = setup();
+    renderModal(
+      <AddLeaveModal
+        onClose={jest.fn()}
+        onSave={jest.fn()}
+        user={aliceWithRoom}
+        // bankHolidays intentionally omitted
+      />
+    );
+    await user.click(screen.getByRole("button", { name: "2026-03-16" }));
+    await user.click(screen.getByRole("button", { name: "2026-03-20" }));
+    await user.click(screen.getByRole("button", { name: /Planned/i }));
+    // Should not crash — still within allowance
+    expect(screen.queryByText(/Allowance exceeded/i)).toBeNull();
+  });
+
+  it("shows a single-day cancellable entry as '1 day' (singular)", async () => {
+    // Covers the `days !== 1 ? "s" : ""` false branch (singular day) and
+    // the `formatDateRange` start === end branch.
+    const user = setup();
+    const aliceWithSingleDayEntry: PublicUser = {
+      ...aliceOverLimit,
+      entries: [
+        {
+          id: "single",
+          startDate: "2026-03-20",
+          endDate: "2026-03-20", // single-day entry
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.Full,
+        },
+      ],
+    };
+    renderModal(
+      <AddLeaveModal
+        onClose={jest.fn()}
+        onSave={jest.fn()}
+        user={aliceWithSingleDayEntry}
+        bankHolidays={noBankHolidays}
+      />
+    );
+    // Add leave that pushes over the 1-day limit
+    await user.click(screen.getByRole("button", { name: "2026-03-16" }));
+    await user.click(screen.getByRole("button", { name: "2026-03-16" }));
+    await user.click(screen.getByRole("button", { name: /Planned/i }));
+    // The cancellable entry uses 1 day (singular) and is a single-day range
+    expect(screen.getByText("1 day")).toBeInTheDocument();
+  });
+
+  it("does not trigger limit check when endDate has not been set yet", async () => {
+    // Covers the `!endDate` true branch in the limitCheck guard.
+    const user = setup();
+    renderModal(
+      <AddLeaveModal
+        onClose={jest.fn()}
+        onSave={jest.fn()}
+        user={aliceOverLimit}
+        bankHolidays={noBankHolidays}
+      />
+    );
+    // Set only the start date — endDate is still empty
+    await user.click(screen.getByRole("button", { name: "2026-03-16" }));
+    await user.click(screen.getByRole("button", { name: /Planned/i }));
+    // No warning should appear without a complete date range
+    expect(screen.queryByText(/Allowance exceeded/i)).toBeNull();
+  });
+});

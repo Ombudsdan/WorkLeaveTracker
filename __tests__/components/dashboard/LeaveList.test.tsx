@@ -55,7 +55,7 @@ const singleDayEntry: LeaveEntry = {
 };
 
 describe("LeaveList — empty state", () => {
-  it("shows 'No leave entries yet.' for own empty list", () => {
+  it("shows 'No upcoming leave.' for own empty list", () => {
     render(
       <LeaveList
         user={alice}
@@ -65,10 +65,10 @@ describe("LeaveList — empty state", () => {
         onDelete={jest.fn()}
       />
     );
-    expect(screen.getByText("No leave entries yet.")).toBeInTheDocument();
+    expect(screen.getByText("No upcoming leave.")).toBeInTheDocument();
   });
 
-  it("shows 'No leave entries.' for another user's empty list", () => {
+  it("shows 'No upcoming leave.' for another user's empty list", () => {
     render(
       <LeaveList
         user={alice}
@@ -78,12 +78,40 @@ describe("LeaveList — empty state", () => {
         onDelete={jest.fn()}
       />
     );
-    expect(screen.getByText("No leave entries.")).toBeInTheDocument();
+    expect(screen.getByText("No upcoming leave.")).toBeInTheDocument();
+  });
+
+  it("hides past entries (endDate before today) from the list", () => {
+    const userWithPast: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "past",
+          startDate: "2026-01-05",
+          endDate: "2026-01-09",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          notes: "Past holiday",
+        },
+      ],
+    };
+    render(
+      <LeaveList
+        user={userWithPast}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    // Past entry should not be visible; empty state should show
+    expect(screen.queryByText("Past holiday")).toBeNull();
+    expect(screen.getByText("No upcoming leave.")).toBeInTheDocument();
   });
 });
 
 describe("LeaveList — headings", () => {
-  it("shows 'My Leave' heading for own profile", () => {
+  it("shows 'Upcoming Leave' heading for own profile", () => {
     render(
       <LeaveList
         user={alice}
@@ -93,7 +121,7 @@ describe("LeaveList — headings", () => {
         onDelete={jest.fn()}
       />
     );
-    expect(screen.getByText("My Leave")).toBeInTheDocument();
+    expect(screen.getByText("Upcoming Leave")).toBeInTheDocument();
   });
 
   it("shows the other user's first name + possessive in the heading", () => {
@@ -126,48 +154,52 @@ describe("LeaveList — add button", () => {
 });
 
 describe("LeaveList — with entries", () => {
-  const userWithEntries: PublicUser = { ...alice, entries: [entry, singleDayEntry] };
+  // singleDayEntry ends 2026-03-20 (>= today 2026-03-15) → visible
+  // entry ends 2026-03-13 (< today 2026-03-15) → filtered out as past leave
+  const userWithUpcoming: PublicUser = { ...alice, entries: [singleDayEntry] };
+  const userWithBoth: PublicUser = { ...alice, entries: [entry, singleDayEntry] };
 
-  it("renders each leave entry", () => {
+  it("renders upcoming leave entry (endDate >= today)", () => {
     render(
       <LeaveList
-        user={userWithEntries}
+        user={userWithUpcoming}
         bankHolidays={[]}
         isOwnProfile={true}
         onEdit={jest.fn()}
         onDelete={jest.fn()}
       />
     );
-    // entry spans 9–13 Mar; singleDayEntry is 20 Mar
-    expect(screen.getByText(/9 Mar/i)).toBeInTheDocument();
+    expect(screen.getByText(/20 Mar/i)).toBeInTheDocument();
+  });
+
+  it("does not render a past entry (endDate < today)", () => {
+    render(
+      <LeaveList
+        user={userWithBoth}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    // entry (ends 2026-03-13) should be filtered out
+    expect(screen.queryByText(/9 Mar/i)).toBeNull();
+    // singleDayEntry (ends 2026-03-20) should still show
     expect(screen.getByText(/20 Mar/i)).toBeInTheDocument();
   });
 
   it("shows the working day count for an entry", () => {
     render(
       <LeaveList
-        user={userWithEntries}
+        user={userWithUpcoming}
         bankHolidays={[]}
         isOwnProfile={true}
         onEdit={jest.fn()}
         onDelete={jest.fn()}
       />
     );
-    // Mon–Fri = 5 working days; shown as "(5d)"
-    expect(screen.getByText("(5d)")).toBeInTheDocument();
-  });
-
-  it("shows notes when present", () => {
-    render(
-      <LeaveList
-        user={userWithEntries}
-        bankHolidays={[]}
-        isOwnProfile={true}
-        onEdit={jest.fn()}
-        onDelete={jest.fn()}
-      />
-    );
-    expect(screen.getByText("Beach trip")).toBeInTheDocument();
+    // singleDayEntry is 1 working day
+    expect(screen.getByText("(1d)")).toBeInTheDocument();
   });
 
   it("shows a dash when notes are absent", () => {
@@ -183,37 +215,58 @@ describe("LeaveList — with entries", () => {
     expect(screen.getByText("–")).toBeInTheDocument();
   });
 
-  it("shows the status label for an entry", () => {
+  it("shows notes when present (upcoming entry)", () => {
+    const noteEntry: LeaveEntry = {
+      id: "note",
+      startDate: "2026-03-20",
+      endDate: "2026-03-20",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+      notes: "Beach trip",
+    };
     render(
       <LeaveList
-        user={{ ...alice, entries: [entry] }}
+        user={{ ...alice, entries: [noteEntry] }}
         bankHolidays={[]}
         isOwnProfile={true}
         onEdit={jest.fn()}
         onDelete={jest.fn()}
       />
     );
-    expect(screen.getByText("Approved")).toBeInTheDocument();
+    expect(screen.getByText("Beach trip")).toBeInTheDocument();
+  });
+
+  it("shows the status label for an entry", () => {
+    render(
+      <LeaveList
+        user={{ ...alice, entries: [singleDayEntry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    expect(screen.getByText("Planned")).toBeInTheDocument();
   });
 
   it("shows Edit and Delete icon buttons for own profile entries", () => {
     render(
       <LeaveList
-        user={userWithEntries}
+        user={userWithUpcoming}
         bankHolidays={[]}
         isOwnProfile={true}
         onEdit={jest.fn()}
         onDelete={jest.fn()}
       />
     );
-    expect(screen.getAllByRole("button", { name: "Edit" })).toHaveLength(2);
-    expect(screen.getAllByRole("button", { name: "Delete" })).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: "Edit" })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: "Delete" })).toHaveLength(1);
   });
 
   it("hides Edit and Delete buttons for other user's entries", () => {
     render(
       <LeaveList
-        user={userWithEntries}
+        user={userWithUpcoming}
         bankHolidays={[]}
         isOwnProfile={false}
         onEdit={jest.fn()}
@@ -229,7 +282,7 @@ describe("LeaveList — with entries", () => {
     const onEdit = jest.fn();
     render(
       <LeaveList
-        user={{ ...alice, entries: [entry] }}
+        user={{ ...alice, entries: [singleDayEntry] }}
         bankHolidays={[]}
         isOwnProfile={true}
         onEdit={onEdit}
@@ -237,7 +290,7 @@ describe("LeaveList — with entries", () => {
       />
     );
     await user.click(screen.getByRole("button", { name: "Edit" }));
-    expect(onEdit).toHaveBeenCalledWith(entry);
+    expect(onEdit).toHaveBeenCalledWith(singleDayEntry);
   });
 
   it("calls onDelete with the entry id when the Delete button is clicked", async () => {
@@ -245,7 +298,7 @@ describe("LeaveList — with entries", () => {
     const onDelete = jest.fn();
     render(
       <LeaveList
-        user={{ ...alice, entries: [entry] }}
+        user={{ ...alice, entries: [singleDayEntry] }}
         bankHolidays={[]}
         isOwnProfile={true}
         onEdit={jest.fn()}
@@ -253,14 +306,21 @@ describe("LeaveList — with entries", () => {
       />
     );
     await user.click(screen.getByRole("button", { name: "Delete" }));
-    expect(onDelete).toHaveBeenCalledWith(entry.id);
+    expect(onDelete).toHaveBeenCalledWith(singleDayEntry.id);
   });
 
-  it("deducts bank holidays from the working day count", () => {
+  it("deducts bank holidays from the working day count for an upcoming entry", () => {
+    const upcomingFiveDay: LeaveEntry = {
+      id: "five",
+      startDate: "2026-03-16",
+      endDate: "2026-03-20",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+    };
     render(
       <LeaveList
-        user={{ ...alice, entries: [entry] }}
-        bankHolidays={[bh("2026-03-09")]} // Monday is a bank holiday
+        user={{ ...alice, entries: [upcomingFiveDay] }}
+        bankHolidays={[bh("2026-03-16")]} // Monday is a bank holiday
         isOwnProfile={true}
         onEdit={jest.fn()}
         onDelete={jest.fn()}
@@ -274,8 +334,8 @@ describe("LeaveList — with entries", () => {
 describe("LeaveList — half-day entries", () => {
   const halfDayEntry: LeaveEntry = {
     id: "e3",
-    startDate: "2026-03-09",
-    endDate: "2026-03-09",
+    startDate: "2026-03-20",
+    endDate: "2026-03-20",
     status: LeaveStatus.Approved,
     type: LeaveType.Holiday,
     notes: "Dentist",
@@ -330,8 +390,8 @@ describe("LeaveList — half-day entries", () => {
   it("also handles legacy halfDay/halfDayPeriod fields for backward compat", () => {
     const legacyEntry: LeaveEntry = {
       id: "e-legacy",
-      startDate: "2026-03-09",
-      endDate: "2026-03-09",
+      startDate: "2026-03-20",
+      endDate: "2026-03-20",
       status: LeaveStatus.Approved,
       type: LeaveType.Holiday,
       notes: "Old format",
@@ -355,8 +415,8 @@ describe("LeaveList — half-day entries", () => {
 describe("LeaveList — sick leave entries", () => {
   const sickEntry: LeaveEntry = {
     id: "e-sick",
-    startDate: "2026-03-10",
-    endDate: "2026-03-10",
+    startDate: "2026-03-20",
+    endDate: "2026-03-20",
     status: LeaveStatus.Approved,
     type: LeaveType.Sick,
     notes: "Cold",
