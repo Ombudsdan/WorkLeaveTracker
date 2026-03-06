@@ -1,17 +1,16 @@
 "use client";
-import { useState, useMemo } from "react";
-import { LeaveStatus, LeaveType } from "@/types";
+import { useState, useMemo, useEffect } from "react";
+import { LeaveStatus, LeaveType, BankHolidayHandling } from "@/types";
 import type { PublicUser, BankHolidayEntry } from "@/types";
 import { STATUS_DOT } from "@/variables/colours";
 import { calcLeaveSummary } from "@/utils/leaveCalc";
-import { countEntryDays, getActiveYearAllowance } from "@/utils/dateHelpers";
+import { countEntryDays, getActiveYearAllowance, formatYearWindow } from "@/utils/dateHelpers";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { SICK_LEAVE_ENABLED } from "@/utils/features";
 
 interface SummaryCardProps {
   user: PublicUser;
   bankHolidays: BankHolidayEntry[];
-  isOwnProfile: boolean;
 }
 
 // Chart segment colours — match the Tailwind status colours used elsewhere
@@ -100,24 +99,15 @@ function SingleRingDonut({
       {/* Track (gray background ring) */}
       <circle cx={cx} cy={cy} r={R} fill="none" stroke="#f3f4f6" strokeWidth={strokeWidth} />
       {paths}
-      {/* Centre: remaining days */}
+      {/* Centre: remaining days (x=cx, y=cy — vertically centred now that the label is removed) */}
       <text
-        x="50"
-        y="46"
+        x={cx}
+        y={cy}
         textAnchor="middle"
         dominantBaseline="middle"
         style={{ fontSize: 16, fontWeight: "bold", fill: "#111827" }}
       >
         {centerValue}
-      </text>
-      <text
-        x="50"
-        y="58"
-        textAnchor="middle"
-        dominantBaseline="middle"
-        style={{ fontSize: 7, fill: "#9ca3af" }}
-      >
-        remaining
       </text>
     </svg>
   );
@@ -127,20 +117,43 @@ function SingleRingDonut({
 // SummaryCard
 // ---------------------------------------------------------------------------
 
-export default function SummaryCard({ user, bankHolidays, isOwnProfile }: SummaryCardProps) {
+export default function SummaryCard({ user, bankHolidays }: SummaryCardProps) {
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [activeTab, setActiveTab] = useState<"holiday" | "sick">("holiday");
-  const bankHolidayDates = bankHolidays.map((bh) => bh.date);
-  const summary = calcLeaveSummary(user, bankHolidayDates);
-  const activeYa = getActiveYearAllowance(user.yearAllowances);
-  // Use the allowance's own year for the displayed date range so it always matches
-  // what calcLeaveSummary actually counted.
-  const sm = activeYa?.holidayStartMonth ?? 1;
-  const yr = activeYa?.year ?? new Date().getFullYear();
-  const hyStart = new Date(yr, sm - 1, 1);
-  const hyEnd = new Date(yr + 1, sm - 1, 0); // last day before the next period starts
+  /** null = show the automatically-selected active window */
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
 
-  const remaining = Math.max(0, summary.remaining);
+  // Reset the selected window whenever the viewed user changes
+  useEffect(() => {
+    setSelectedYear(null);
+  }, [user.id]);
+
+  const bankHolidayDates = bankHolidays.map((bh) => bh.date);
+  const activeYa = getActiveYearAllowance(user.yearAllowances);
+
+  /** Non-deactivated allowances sorted oldest → newest, used to populate the selector */
+  const visibleAllowances = useMemo(() => {
+    const pool = user.yearAllowances.filter((ya) => ya.active !== false);
+    return [...(pool.length > 0 ? pool : user.yearAllowances)].sort((a, b) => a.year - b.year);
+  }, [user.yearAllowances]);
+
+  /** The year allowance whose window is currently displayed */
+  const effectiveYa = useMemo(() => {
+    if (selectedYear === null) return activeYa;
+    return (
+      visibleAllowances.find((ya) => ya.year === selectedYear) ?? /* c8 ignore next */ activeYa
+    );
+  }, [selectedYear, visibleAllowances, activeYa]);
+
+  const summary = calcLeaveSummary(user, bankHolidayDates, effectiveYa ?? undefined);
+
+  // Whether bank holidays consume annual leave for the active window
+  const deductBankHolidays = effectiveYa?.bankHolidayHandling === BankHolidayHandling.Deduct;
+  // Effective budget = raw total minus bank holidays on working days (only when deducting)
+  const effectiveTotal = deductBankHolidays
+    ? summary.total - summary.bankHolidaysOnWorkingDays
+    : summary.total;
+  const remaining = summary.remaining;
 
   // Sick-leave day count (total, all statuses) — memoised so it doesn't recalculate on unrelated renders
   const sickDays = useMemo(() => {
@@ -156,8 +169,8 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
   // Show tabs only when sick leave feature is on AND the user has sick entries
   const showTabs = SICK_LEAVE_ENABLED && hasSickEntries;
 
-  // Single ring: approved → requested → planned; denominator is total allowance
-  // so the gray track naturally shows the remaining unused portion
+  // Single ring: approved → requested → planned; denominator is effective total
+  // so the gray track represents the remaining bookable budget
   const ringSegments: DonutSegment[] = [
     { value: summary.approved, color: DONUT_COLORS.approved },
     { value: summary.requested, color: DONUT_COLORS.requested },
@@ -170,44 +183,36 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
     { label: "Planned", status: LeaveStatus.Planned, count: summary.planned },
   ];
 
-  const breakdownRows: { label: string; value: string }[] = [
-    { label: "Core Days", value: String(activeYa?.core ?? 0) },
-    { label: "Bought", value: `+${activeYa?.bought ?? 0}` },
-    { label: "Carried Over", value: `+${activeYa?.carried ?? 0}` },
-    { label: "Total", value: String(summary.total) },
-    { label: "Used so far", value: `${summary.used} days` },
-    { label: "Remaining", value: `${summary.remaining} days` },
-  ];
-
   return (
     <div className="bg-white rounded-2xl shadow p-5">
-      {/* Name + badge */}
-      <div className="flex items-center justify-between mb-1">
+      {/* Name */}
+      <div className="mb-1">
         <h2 className="font-bold text-gray-800">
           {user.profile.firstName} {user.profile.lastName}
         </h2>
-        {!isOwnProfile && (
-          <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-            Read-only
-          </span>
-        )}
       </div>
 
-      {/* Holiday year */}
-      <p className="text-xs text-gray-400 mb-4">
-        Holiday year:{" "}
-        {hyStart.toLocaleDateString("en-GB", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-        })}{" "}
-        –{" "}
-        {hyEnd.toLocaleDateString("en-GB", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-        })}
-      </p>
+      {/* Leave window — text only when single allowance; select only when multiple */}
+      <div className="mb-4">
+        {visibleAllowances.length > 1 && effectiveYa ? (
+          <select
+            value={effectiveYa.year}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            className="text-xs text-gray-600 border border-gray-200 rounded px-1.5 py-0.5 bg-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-indigo-300"
+            aria-label="Select leave window"
+          >
+            {visibleAllowances.map((ya) => (
+              <option key={ya.year} value={ya.year}>
+                {formatYearWindow(ya)}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <p className="text-xs text-gray-400">
+            {effectiveYa ? formatYearWindow(effectiveYa) : "–"}
+          </p>
+        )}
+      </div>
 
       {/* Tab toggle — only shown when the user has sick entries */}
       {showTabs && (
@@ -237,7 +242,7 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
           <div className="flex items-center gap-4 mb-4">
             <SingleRingDonut
               segments={ringSegments}
-              total={summary.total || 1}
+              total={Math.max(effectiveTotal, 1)}
               centerValue={remaining}
             />
             <div className="flex-1 space-y-1.5">
@@ -250,6 +255,23 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
                   <span className="text-gray-800 font-semibold">{count} days</span>
                 </div>
               ))}
+              <hr className="border-gray-200" />
+              <div className="flex justify-between text-sm">
+                <span
+                  className={`flex items-center gap-1.5 font-medium ${summary.remaining < 0 ? "text-red-600" : "text-gray-800"}`}
+                >
+                  <span
+                    className="w-2 h-2 rounded-full border border-gray-300"
+                    style={{ backgroundColor: "#f3f4f6" }}
+                  />
+                  Remaining
+                </span>
+                <span
+                  className={`font-semibold ${summary.remaining < 0 ? "text-red-600" : "text-gray-900"}`}
+                >
+                  {summary.remaining} days
+                </span>
+              </div>
             </div>
           </div>
 
@@ -266,37 +288,62 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
 
           {/* Breakdown details */}
           {showBreakdown && (
-            <div className="mt-3 space-y-1 border-t border-gray-100 pt-3">
-              {breakdownRows.map(({ label, value }, i) => {
-                const isUsedSoFar = i === breakdownRows.length - 2;
-                const isRemaining = i === breakdownRows.length - 1;
-                return (
-                  <div
-                    key={label}
-                    className={[
-                      "flex justify-between",
-                      isRemaining
-                        ? "font-bold text-sm text-gray-900 border-t border-gray-100 pt-1 mt-1"
-                        : isUsedSoFar
-                          ? "font-semibold text-sm text-gray-800"
-                          : "text-xs text-gray-600",
-                    ].join(" ")}
-                  >
-                    <span>{label}</span>
-                    <span
-                      className={
-                        isRemaining
-                          ? summary.remaining < 0
-                            ? "text-red-600"
-                            : "text-indigo-700"
-                          : ""
-                      }
-                    >
-                      {value}
-                    </span>
+            <div className="mt-3 border-t border-gray-100 pt-3">
+              {/* Entitlement rows */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs text-gray-600">
+                  <span>Core Days</span>
+                  <span>+{effectiveYa?.core ?? 0}</span>
+                </div>
+                <div className="flex justify-between text-xs text-gray-600">
+                  <span>Bought</span>
+                  <span>+{effectiveYa?.bought ?? 0}</span>
+                </div>
+                <div className="flex justify-between text-xs text-gray-600">
+                  <span>Carried Over</span>
+                  <span>+{effectiveYa?.carried ?? 0}</span>
+                </div>
+              </div>
+              {/* Total (bold) */}
+              <div className="flex justify-between text-sm font-bold text-gray-900 mt-2">
+                <span>Total</span>
+                <span>{summary.total}</span>
+              </div>
+              {/* Divider */}
+              <hr className="my-2 border-gray-200" />
+              {/* Deduction rows */}
+              <div className="space-y-1">
+                {deductBankHolidays && (
+                  <div className="flex justify-between text-xs text-gray-600">
+                    <span>Bank holidays on working days</span>
+                    <span>−{summary.bankHolidaysOnWorkingDays}</span>
                   </div>
-                );
-              })}
+                )}
+                <div className="flex justify-between text-xs text-gray-600">
+                  <span>Approved</span>
+                  <span>−{summary.approved}</span>
+                </div>
+                <div className="flex justify-between text-xs text-gray-600">
+                  <span>Requested</span>
+                  <span>−{summary.requested}</span>
+                </div>
+                <div className="flex justify-between text-xs text-gray-600">
+                  <span>Planned</span>
+                  <span>−{summary.planned}</span>
+                </div>
+              </div>
+              {/* Total Deductions (bold) */}
+              <hr className="my-2 border-gray-200" />
+              <div className="flex justify-between text-sm font-bold text-gray-900">
+                <span>Total Deductions</span>
+                <span>
+                  −
+                  {(deductBankHolidays ? summary.bankHolidaysOnWorkingDays : 0) +
+                    summary.approved +
+                    summary.requested +
+                    summary.planned}
+                </span>
+              </div>
             </div>
           )}
         </>

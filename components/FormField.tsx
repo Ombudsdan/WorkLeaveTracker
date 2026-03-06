@@ -12,6 +12,7 @@ export default function FormField({
   placeholder,
   min,
   max,
+  step,
   maxLength,
   required,
 }: FormFieldProps) {
@@ -51,6 +52,7 @@ export default function FormField({
         placeholder={placeholder}
         min={min}
         max={max}
+        step={step}
         maxLength={maxLength}
         className={`w-full border rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-indigo-400 focus:outline-none
           ${readOnly ? "bg-gray-50 text-gray-400" : ""}
@@ -123,6 +125,7 @@ interface FormFieldProps {
   placeholder?: string;
   min?: number;
   max?: number;
+  step?: number | "any";
   maxLength?: number;
   /**
    * Built-in required validation.

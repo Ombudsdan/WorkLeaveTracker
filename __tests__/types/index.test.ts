@@ -1,4 +1,4 @@
-import { LeaveStatus, LeaveType, ValidationRule } from "@/types";
+import { LeaveStatus, LeaveType, ValidationRule, BankHolidayHandling } from "@/types";
 
 describe("LeaveStatus enum", () => {
   it("has the correct string values", () => {
@@ -33,5 +33,16 @@ describe("ValidationRule enum", () => {
 
   it("has exactly three members", () => {
     expect(Object.keys(ValidationRule)).toHaveLength(3);
+  });
+});
+
+describe("BankHolidayHandling enum", () => {
+  it("has the correct string values", () => {
+    expect(BankHolidayHandling.None).toBe("none");
+    expect(BankHolidayHandling.Deduct).toBe("deduct");
+  });
+
+  it("has exactly two members", () => {
+    expect(Object.keys(BankHolidayHandling)).toHaveLength(2);
   });
 });

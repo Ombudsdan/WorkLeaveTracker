@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import type { Database, AppUser, LeaveEntry } from "@/types";
+import type { Database, AppUser, LeaveEntry, Company } from "@/types";
 
 // ---------------------------------------------------------------------------
 // File-based storage (local development fallback)
@@ -213,4 +213,48 @@ export async function deleteEntry(userId: string, entryId: string): Promise<bool
   if (user.entries.length === before) return false;
   writeDbFile(db);
   return true;
+}
+
+// ---------------------------------------------------------------------------
+// Company registry
+// ---------------------------------------------------------------------------
+
+/** List all companies from the global registry. */
+export async function listAllCompanies(): Promise<Company[]> {
+  if (isKvEnabled()) {
+    return (await kvGet<Company[]>("companies")) ?? [];
+  }
+  return readDbFile().companies ?? [];
+}
+
+/**
+ * Find a company by name (case-insensitive).
+ * Returns the matching Company or undefined if none is found.
+ */
+export async function findCompanyByName(name: string): Promise<Company | undefined> {
+  const normalised = name.trim().toLowerCase();
+  const companies = await listAllCompanies();
+  return companies.find((c) => c.name.trim().toLowerCase() === normalised);
+}
+
+/**
+ * Find or create a company with the given name.
+ * If a company with this name already exists (case-insensitive) it is returned
+ * unchanged. Otherwise a new company is created, persisted, and returned.
+ */
+export async function upsertCompany(name: string, id: string): Promise<Company> {
+  const existing = await findCompanyByName(name);
+  if (existing) return existing;
+  const company: Company = { id, name: name.trim() };
+  if (isKvEnabled()) {
+    const companies = await listAllCompanies();
+    companies.push(company);
+    await kvSet("companies", companies);
+  } else {
+    const db = readDbFile();
+    db.companies = db.companies ?? [];
+    db.companies.push(company);
+    writeDbFile(db);
+  }
+  return company;
 }

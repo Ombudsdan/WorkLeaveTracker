@@ -57,13 +57,13 @@ const userWithSick: PublicUser = {
 
 describe("SummaryCard — sick leave enabled: sickDays calculation", () => {
   it("computes sick days when SICK_LEAVE_ENABLED is true", () => {
-    render(<SummaryCard user={userWithSick} bankHolidays={[]} isOwnProfile={true} />);
+    render(<SummaryCard user={userWithSick} bankHolidays={[]} />);
     // The sick tab should appear (SICK_LEAVE_ENABLED=true and user has sick entries)
     expect(screen.getByRole("tab", { name: "Sick" })).toBeInTheDocument();
   });
 
   it("shows 0 sick days when the user has no sick entries", () => {
-    render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
+    render(<SummaryCard user={alice} bankHolidays={[]} />);
     // SICK_LEAVE_ENABLED=true but no sick entries → hasSickEntries=false → no sick tab
     expect(screen.queryByRole("tab", { name: "Sick" })).toBeNull();
   });
@@ -71,14 +71,14 @@ describe("SummaryCard — sick leave enabled: sickDays calculation", () => {
 
 describe("SummaryCard — sick leave enabled: tab strip", () => {
   it("shows both Holiday and Sick tabs when user has sick entries", () => {
-    render(<SummaryCard user={userWithSick} bankHolidays={[]} isOwnProfile={true} />);
+    render(<SummaryCard user={userWithSick} bankHolidays={[]} />);
     expect(screen.getByRole("tab", { name: "Holiday" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Sick" })).toBeInTheDocument();
   });
 
   it("switches to the Sick tab and shows sick day count", async () => {
     const user = setup();
-    render(<SummaryCard user={userWithSick} bankHolidays={[]} isOwnProfile={true} />);
+    render(<SummaryCard user={userWithSick} bankHolidays={[]} />);
     await user.click(screen.getByRole("tab", { name: "Sick" }));
     expect(screen.getByText(/sick days logged/i)).toBeInTheDocument();
     // 1 sick day (Mon 2026-03-10)
@@ -87,7 +87,7 @@ describe("SummaryCard — sick leave enabled: tab strip", () => {
 
   it("switches back to the Holiday tab after visiting Sick", async () => {
     const user = setup();
-    render(<SummaryCard user={userWithSick} bankHolidays={[]} isOwnProfile={true} />);
+    render(<SummaryCard user={userWithSick} bankHolidays={[]} />);
     await user.click(screen.getByRole("tab", { name: "Sick" }));
     await user.click(screen.getByRole("tab", { name: "Holiday" }));
     // Holiday tab content should be visible again

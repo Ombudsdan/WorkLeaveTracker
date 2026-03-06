@@ -2,6 +2,18 @@ import type { LeaveEntry, YearAllowance } from "@/types";
 import { LeaveDuration } from "@/types";
 
 /**
+ * Format a YearAllowance window as a human-readable date range string.
+ * e.g. "1 Apr 2025 – 31 Mar 2026" for year=2025, holidayStartMonth=4
+ */
+export function formatYearWindow(ya: YearAllowance): string {
+  const sm = ya.holidayStartMonth ?? 1;
+  const start = new Date(ya.year, sm - 1, 1);
+  const end = new Date(ya.year + 1, sm - 1, 0);
+  const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" };
+  return `${start.toLocaleDateString("en-GB", opts)} – ${end.toLocaleDateString("en-GB", opts)}`;
+}
+
+/**
  * Count working days between two ISO date strings (inclusive).
  *
  * @param startDate - ISO date string (YYYY-MM-DD) for the start of the period
@@ -69,6 +81,37 @@ export function getActiveYearAllowance(allowances: YearAllowance[]): YearAllowan
   );
   if (past.length > 0) return past.sort((a, b) => b.year - a.year)[0];
   return [...search].sort((a, b) => a.year - b.year)[0];
+}
+
+/**
+ * Compute the ISO start and end dates for a holiday year allowance.
+ *
+ * @param year - The calendar year in which the holiday period begins.
+ * @param holidayStartMonth - 1-12; e.g. 1 for Jan, 4 for Apr.
+ * @returns `{ startDate, endDate }` as YYYY-MM-DD strings.
+ *   - `startDate` is the 1st of that month/year.
+ *   - `endDate` is the day before the same date the following year.
+ */
+export function yearAllowanceDates(
+  year: number,
+  holidayStartMonth: number
+): { startDate: string; endDate: string } {
+  const start = new Date(year, holidayStartMonth - 1, 1);
+  const end = new Date(year + 1, holidayStartMonth - 1, 0); // last day of the month before
+  return { startDate: toIsoDate(start), endDate: toIsoDate(end) };
+}
+
+/**
+ * Returns true when two date ranges overlap (inclusive on both ends).
+ *
+ * @param a - An object with `startDate` and `endDate` as YYYY-MM-DD strings.
+ * @param b - An object with `startDate` and `endDate` as YYYY-MM-DD strings.
+ */
+export function yearAllowancesOverlap(
+  a: { startDate: string; endDate: string },
+  b: { startDate: string; endDate: string }
+): boolean {
+  return a.startDate <= b.endDate && b.startDate <= a.endDate;
 }
 
 export function getHolidayYearBounds(holidayStartMonth: number): { start: Date; end: Date } {

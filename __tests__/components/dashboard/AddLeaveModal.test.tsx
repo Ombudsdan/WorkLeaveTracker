@@ -638,3 +638,60 @@ describe("AddLeaveModal — limit validation branch coverage", () => {
     expect(screen.queryByText(/Allowance exceeded/i)).toBeNull();
   });
 });
+
+describe("AddLeaveModal — initialDate pre-selection", () => {
+  it("pre-fills the date picker when initialDate is provided", () => {
+    renderModal(<AddLeaveModal onClose={jest.fn()} onSave={jest.fn()} initialDate="2026-03-09" />);
+    // DateRangePicker shows the selected date in the summary
+    expect(screen.getAllByText("2026-03-09").length).toBeGreaterThan(0);
+  });
+
+  it("navigates the date picker calendar to the initialDate's month", () => {
+    // Navigate to a month other than the default (March 2026)
+    renderModal(<AddLeaveModal onClose={jest.fn()} onSave={jest.fn()} initialDate="2026-05-15" />);
+    // Calendar should show May 2026
+    expect(screen.getByText(/May 2026/i)).toBeInTheDocument();
+  });
+
+  it("renders with no pre-filled date when initialDate is omitted", () => {
+    renderModal(<AddLeaveModal onClose={jest.fn()} onSave={jest.fn()} />);
+    // Both From and To fields should show the placeholder dash
+    expect(screen.getByText("From:").nextSibling?.textContent).toBe("—");
+    expect(screen.getByText("To:").nextSibling?.textContent).toBe("—");
+  });
+});
+
+describe("AddLeaveModal — duration change retains start date", () => {
+  it("retains the selected date when switching from Full day to Half Day AM", async () => {
+    const user = setup();
+    renderModal(<AddLeaveModal onClose={jest.fn()} onSave={jest.fn()} />);
+    // Select a full-day start date
+    await user.click(screen.getByRole("button", { name: "2026-03-09" }));
+    await user.click(screen.getByRole("button", { name: "2026-03-09" }));
+    // Switch to Half Day AM
+    await user.click(screen.getByRole("button", { name: "Half Day AM" }));
+    // The date should still be shown (half-day shows "Date:" summary)
+    expect(screen.getAllByText("2026-03-09").length).toBeGreaterThan(0);
+  });
+
+  it("retains the start date when switching from Half Day AM back to Full day", async () => {
+    const user = setup();
+    renderModal(<AddLeaveModal onClose={jest.fn()} onSave={jest.fn()} />);
+    // Pick a half-day date first
+    await user.click(screen.getByRole("button", { name: "Half Day AM" }));
+    await user.click(screen.getByRole("button", { name: "2026-03-09" }));
+    // Switch back to Full day
+    await user.click(screen.getByRole("button", { name: "Full day(s)" }));
+    // startDate is preserved; endDate is cleared — summary shows "From: 2026-03-09"
+    expect(screen.getByText("From:").nextSibling?.textContent).toBe("2026-03-09");
+    expect(screen.getByText("To:").nextSibling?.textContent).toBe("—");
+  });
+
+  it("clears dates when switching duration with no date selected", async () => {
+    const user = setup();
+    renderModal(<AddLeaveModal onClose={jest.fn()} onSave={jest.fn()} />);
+    // No date selected — switching should not crash and dates stay empty
+    await user.click(screen.getByRole("button", { name: "Half Day AM" }));
+    expect(screen.getByText("Date:").nextSibling?.textContent).toBe("—");
+  });
+});

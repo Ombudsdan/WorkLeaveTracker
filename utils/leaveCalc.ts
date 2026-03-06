@@ -1,32 +1,59 @@
-import { LeaveStatus, LeaveType, LeaveDuration } from "@/types";
-import type { PublicUser } from "@/types";
+import { LeaveStatus, LeaveType, LeaveDuration, BankHolidayHandling } from "@/types";
+import type { PublicUser, YearAllowance } from "@/types";
 import { countWorkingDays, getActiveYearAllowance, getEntryDuration } from "@/utils/dateHelpers";
 
 export interface LeaveSummary {
+  /** Raw entitlement: core + bought + carried (never reduced by bank holidays) */
   total: number;
   approved: number;
   requested: number;
   planned: number;
   used: number;
+  /**
+   * Days remaining after bank holidays and all leave statuses are accounted for.
+   * = total - bankHolidaysOnWorkingDays - approved - requested - planned
+   */
   remaining: number;
+  /** Number of bank holidays that fall on a working day within this holiday year */
+  bankHolidaysOnWorkingDays: number;
 }
 
 /**
  * Calculate the leave summary for a user within their current holiday year.
- * Only holiday-type entries are counted; bank holidays on working days are excluded.
- * Half-day entries count as 0.5 working days.
+ * Only holiday-type entries are counted; bank holidays on working days are excluded
+ * from individual entry day counts.  Half-day entries count as 0.5 working days.
+ *
+ * `total` is always the raw entitlement (core + bought + carried).
+ * `remaining` deducts bank holidays on working days **only** when the allowance has
+ * `bankHolidayHandling === BankHolidayHandling.Deduct` — meaning the user's employer
+ * uses annual leave for bank holidays.  When handling is `None` (or unset) the bank
+ * holidays are informational only and do not reduce `remaining`.
  *
  * The holiday year bounds are derived from the **active allowance's own year** (not from
  * today's date) so that `total` and the entry date range are always consistent — even
  * when the function falls back to a past or future allowance.
+ *
+ * Pass `forYearAllowance` to override automatic selection and calculate the summary
+ * for a specific year window (e.g. when the user selects a past or future window).
  */
-export function calcLeaveSummary(user: PublicUser, bankHolidays: string[]): LeaveSummary {
-  const activeYa = getActiveYearAllowance(user.yearAllowances);
+export function calcLeaveSummary(
+  user: PublicUser,
+  bankHolidays: string[],
+  forYearAllowance?: YearAllowance
+): LeaveSummary {
+  const activeYa = forYearAllowance ?? getActiveYearAllowance(user.yearAllowances);
   if (!activeYa) {
-    return { total: 0, approved: 0, requested: 0, planned: 0, used: 0, remaining: 0 };
+    return {
+      total: 0,
+      approved: 0,
+      requested: 0,
+      planned: 0,
+      used: 0,
+      remaining: 0,
+      bankHolidaysOnWorkingDays: 0,
+    };
   }
 
-  const total = activeYa.core + activeYa.bought + activeYa.carried;
   const sm = activeYa.holidayStartMonth ?? 1;
   const start = new Date(activeYa.year, sm - 1, 1);
   const endExclusive = new Date(activeYa.year + 1, sm - 1, 1);
@@ -38,6 +65,11 @@ export function calcLeaveSummary(user: PublicUser, bankHolidays: string[]): Leav
       date >= start && date < endExclusive && !user.profile.nonWorkingDays.includes(date.getDay())
     );
   });
+
+  const bankHolidaysOnWorkingDays = relevantBankHolidays.length;
+
+  // total is always the raw entitlement
+  const total = activeYa.core + activeYa.bought + activeYa.carried;
 
   let approved = 0;
   let requested = 0;
@@ -70,6 +102,16 @@ export function calcLeaveSummary(user: PublicUser, bankHolidays: string[]): Leav
     requested,
     planned,
     used: approved + requested + planned,
-    remaining: total - approved - requested - planned,
+    // Only deduct bank holidays from remaining when the allowance is configured to
+    // use annual leave for bank holidays on working days.
+    remaining:
+      total -
+      (activeYa.bankHolidayHandling === BankHolidayHandling.Deduct
+        ? bankHolidaysOnWorkingDays
+        : 0) -
+      approved -
+      requested -
+      planned,
+    bankHolidaysOnWorkingDays,
   };
 }

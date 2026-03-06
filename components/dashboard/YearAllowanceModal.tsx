@@ -1,17 +1,20 @@
 "use client";
 import { useState, useEffect } from "react";
+import { BankHolidayHandling } from "@/types";
 import type { YearAllowance } from "@/types";
 import FormField from "@/components/FormField";
 import Button from "@/components/Button";
-import CompanySelect from "@/components/CompanySelect";
+import CompanyCombobox from "@/components/CompanyCombobox";
 import { FormValidationProvider, useFormValidation } from "@/contexts/FormValidationContext";
 import { MONTH_NAMES_LONG } from "@/variables/calendar";
 import { usersController } from "@/controllers/usersController";
+import { yearAllowanceDates, yearAllowancesOverlap } from "@/utils/dateHelpers";
 
 export default function YearAllowanceModal({
   initialYear,
   existing,
   existingCompanies,
+  existingAllowances,
   onClose,
   onSave,
 }: YearAllowanceModalProps) {
@@ -21,6 +24,7 @@ export default function YearAllowanceModal({
         initialYear={initialYear}
         existing={existing}
         existingCompanies={existingCompanies}
+        existingAllowances={existingAllowances}
         onClose={onClose}
         onSave={onSave}
       />
@@ -32,6 +36,7 @@ function YearAllowanceModalInner({
   initialYear,
   existing,
   existingCompanies = [],
+  existingAllowances = [],
   onClose,
   onSave,
 }: YearAllowanceModalProps) {
@@ -39,9 +44,51 @@ function YearAllowanceModalInner({
   const [year, setYear] = useState(existing?.year ?? initialYear ?? new Date().getFullYear());
   const [company, setCompany] = useState(existing?.company ?? "");
   const [holidayStartMonth, setHolidayStartMonth] = useState(existing?.holidayStartMonth ?? 1);
-  const [core, setCore] = useState(existing?.core ?? 25);
-  const [bought, setBought] = useState(existing?.bought ?? 0);
-  const [carried, setCarried] = useState(existing?.carried ?? 0);
+
+  // Hours vs Days toggle — restored from the saved allowance preference
+  const initialUseHours = existing?.useHoursDisplay ?? false;
+  const initialCoreHoursPerDay = existing?.coreHoursPerDay ?? 7.5;
+  const [useHoursDisplay, setUseHoursDisplay] = useState(initialUseHours);
+  const [coreHoursPerDay, setCoreHoursPerDay] = useState(initialCoreHoursPerDay);
+
+  // Compute initial display values: if loading an existing allowance in Hours mode,
+  // convert the stored decimal days to hours using the stored conversion rate.
+  const toInitialHours = (days: number) => parseFloat((days * initialCoreHoursPerDay).toFixed(4));
+
+  const [core, setCore] = useState(() => {
+    if (!existing) return initialUseHours ? 25 * initialCoreHoursPerDay : 25;
+    return initialUseHours ? toInitialHours(existing.core) : existing.core;
+  });
+  const [bought, setBought] = useState(() => {
+    if (!existing) return 0;
+    return initialUseHours ? toInitialHours(existing.bought) : existing.bought;
+  });
+  const [carried, setCarried] = useState(() => {
+    if (!existing) return 0;
+    return initialUseHours ? toInitialHours(existing.carried) : existing.carried;
+  });
+  const [bankHolidayHandling, setBankHolidayHandling] = useState<BankHolidayHandling>(
+    existing?.bankHolidayHandling ?? BankHolidayHandling.None
+  );
+  const [overlapError, setOverlapError] = useState("");
+
+  // Re-convert field values whenever the user flips the toggle so the displayed
+  // number stays consistent with the selected unit.
+  function handleToggleUnit(toHours: boolean) {
+    if (toHours === useHoursDisplay) return;
+    if (toHours) {
+      // days → hours
+      setCore((v) => parseFloat((v * coreHoursPerDay).toFixed(4)));
+      setBought((v) => parseFloat((v * coreHoursPerDay).toFixed(4)));
+      setCarried((v) => parseFloat((v * coreHoursPerDay).toFixed(4)));
+    } else {
+      // hours → days
+      setCore((v) => parseFloat((v / coreHoursPerDay).toFixed(4)));
+      setBought((v) => parseFloat((v / coreHoursPerDay).toFixed(4)));
+      setCarried((v) => parseFloat((v / coreHoursPerDay).toFixed(4)));
+    }
+    setUseHoursDisplay(toHours);
+  }
 
   // Merge prop-provided companies with anything fetched from the API
   const [companies, setCompanies] = useState<string[]>(existingCompanies);
@@ -69,12 +116,12 @@ function YearAllowanceModalInner({
             max={2100}
             required
           />
-          <CompanySelect
+          <CompanyCombobox
             id="ya-company"
             label="Company"
             value={company}
             onChange={setCompany}
-            companies={companies}
+            suggestions={companies}
           />
           <div>
             <label
@@ -96,37 +143,105 @@ function YearAllowanceModalInner({
               ))}
             </select>
           </div>
+
+          {/* Hours / Days toggle */}
+          <div>
+            <span className="block text-sm font-medium text-gray-600 mb-1">Allowance Unit</span>
+            <div className="flex rounded-lg overflow-hidden border border-gray-300 text-sm">
+              <button
+                type="button"
+                aria-pressed={!useHoursDisplay}
+                onClick={() => handleToggleUnit(false)}
+                className={`flex-1 py-1.5 font-medium transition-colors cursor-pointer ${
+                  !useHoursDisplay
+                    ? "bg-indigo-600 text-white"
+                    : "bg-white text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                Days
+              </button>
+              <button
+                type="button"
+                aria-pressed={useHoursDisplay}
+                onClick={() => handleToggleUnit(true)}
+                className={`flex-1 py-1.5 font-medium transition-colors cursor-pointer ${
+                  useHoursDisplay
+                    ? "bg-indigo-600 text-white"
+                    : "bg-white text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                Hours
+              </button>
+            </div>
+          </div>
+
+          {/* Core Daily Hours — only shown when Hours mode is active */}
+          {useHoursDisplay && (
+            <FormField
+              id="ya-coreHoursPerDay"
+              label="Core Daily Hours"
+              type="number"
+              value={coreHoursPerDay}
+              onChange={(v) => setCoreHoursPerDay(Number(v))}
+              min={0.1}
+              max={24}
+              step={0.5}
+            />
+          )}
+
           <FormField
             id="ya-core"
-            label="Core Days"
+            label={useHoursDisplay ? "Core Hours" : "Core Days"}
             type="number"
             value={core}
             onChange={(v) => setCore(Number(v))}
-            min={1}
-            max={365}
+            min={useHoursDisplay ? 0.1 : 1}
+            max={useHoursDisplay ? 9999 : 365}
+            step={useHoursDisplay ? 0.5 : 1}
             required
           />
           <FormField
             id="ya-bought"
-            label="Days Bought"
+            label={useHoursDisplay ? "Hours Bought" : "Days Bought"}
             type="number"
             value={bought}
             onChange={(v) => setBought(Number(v))}
             min={0}
-            max={365}
+            max={useHoursDisplay ? 9999 : 365}
+            step={useHoursDisplay ? 0.5 : 1}
           />
           <FormField
             id="ya-carried"
-            label="Days Carried Over"
+            label={useHoursDisplay ? "Hours Carried Over" : "Days Carried Over"}
             type="number"
             value={carried}
             onChange={(v) => setCarried(Number(v))}
             min={0}
-            max={365}
+            max={useHoursDisplay ? 9999 : 365}
+            step={useHoursDisplay ? 0.5 : 1}
           />
-          <p className="text-sm text-gray-500">
-            Total: <strong>{core + bought + carried}</strong> days
-          </p>
+          <div>
+            <label
+              htmlFor="ya-bankHolidayHandling"
+              className="block text-sm font-medium text-gray-600 mb-1"
+            >
+              Bank Holidays
+            </label>
+            <select
+              id="ya-bankHolidayHandling"
+              value={bankHolidayHandling}
+              onChange={(e) => setBankHolidayHandling(e.target.value as BankHolidayHandling)}
+              className="w-full border rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+            >
+              <option value={BankHolidayHandling.None}>
+                Do not use annual leave for bank holidays
+              </option>
+              <option value={BankHolidayHandling.Deduct}>
+                Use annual leave for bank holidays on working days
+              </option>
+            </select>
+          </div>
+          {overlapError && <p className="text-red-500 text-sm">{overlapError}</p>}
         </div>
         <div className="flex gap-2 mt-5">
           <Button variant="primary" fullWidth onClick={handleSave}>
@@ -142,15 +257,71 @@ function YearAllowanceModalInner({
 
   function handleSave() {
     if (!triggerAllValidations()) return;
-    onSave({ year, company, holidayStartMonth, core, bought, carried });
+
+    // Check for overlapping date ranges within the same company
+    const normalizedCompany = company.trim().toLowerCase();
+    const { startDate, endDate } = yearAllowanceDates(year, holidayStartMonth);
+    const conflict = existingAllowances.find((a) => {
+      // Skip the allowance being edited and inactive allowances
+      if (a.active === false) return false;
+      if (
+        existing &&
+        a.year === existing.year &&
+        a.company.trim().toLowerCase() === existing.company.trim().toLowerCase()
+      ) {
+        return false;
+      }
+      // Only check allowances for the same company (empty company only matches empty company)
+      if (a.company.trim().toLowerCase() !== normalizedCompany) return false;
+      const aComputed = yearAllowanceDates(a.year, a.holidayStartMonth ?? 1);
+      const aStart = a.startDate ?? aComputed.startDate;
+      const aEnd = a.endDate ?? aComputed.endDate;
+      return yearAllowancesOverlap({ startDate, endDate }, { startDate: aStart, endDate: aEnd });
+    });
+
+    if (conflict) {
+      const conflictStart =
+        conflict.startDate ??
+        yearAllowanceDates(conflict.year, conflict.holidayStartMonth ?? 1).startDate;
+      const conflictEnd =
+        conflict.endDate ??
+        yearAllowanceDates(conflict.year, conflict.holidayStartMonth ?? 1).endDate;
+      setOverlapError(
+        `This date range overlaps with an existing allowance (${conflictStart} – ${conflictEnd}).`
+      );
+      return;
+    }
+
+    setOverlapError("");
+
+    // When the user is working in Hours mode, convert the displayed values back
+    // to decimal days before persisting.  The `useHoursDisplay` preference and
+    // the `coreHoursPerDay` rate are stored alongside the allowance so the
+    // modal can restore the same unit next time it opens.
+    const toDays = (v: number) =>
+      useHoursDisplay ? parseFloat((v / coreHoursPerDay).toFixed(10)) : v;
+
+    onSave({
+      year,
+      company,
+      holidayStartMonth,
+      core: toDays(core),
+      bought: toDays(bought),
+      carried: toDays(carried),
+      bankHolidayHandling,
+      useHoursDisplay,
+      coreHoursPerDay: useHoursDisplay ? coreHoursPerDay : undefined,
+    });
   }
 }
 
 interface YearAllowanceModalProps {
   initialYear?: number;
   existing?: YearAllowance;
-  /** Existing company names to pre-populate the selector (will be merged with API results) */
+  /** Existing company names to pre-populate the suggestions list (will be merged with API results) */
   existingCompanies?: string[];
+  /** All current allowances — used to detect overlapping date ranges before saving */
+  existingAllowances?: YearAllowance[];
   onClose: () => void;
   onSave: (allowance: YearAllowance) => void;
 }
