@@ -258,12 +258,16 @@ export default function SummaryCard({ user, bankHolidays }: SummaryCardProps) {
               <hr className="border-gray-200" />
               <div className="flex justify-between text-sm">
                 <span
-                  className={`font-semibold ${summary.remaining < 0 ? "text-red-600" : "text-gray-800"}`}
+                  className={`flex items-center gap-1.5 font-medium ${summary.remaining < 0 ? "text-red-600" : "text-gray-800"}`}
                 >
+                  <span
+                    className="w-2 h-2 rounded-full border border-gray-300"
+                    style={{ backgroundColor: "#f3f4f6" }}
+                  />
                   Remaining
                 </span>
                 <span
-                  className={`font-bold ${summary.remaining < 0 ? "text-red-600" : "text-gray-900"}`}
+                  className={`font-semibold ${summary.remaining < 0 ? "text-red-600" : "text-gray-900"}`}
                 >
                   {summary.remaining} days
                 </span>

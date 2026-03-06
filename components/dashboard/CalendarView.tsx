@@ -201,7 +201,7 @@ export default function CalendarView({
     const todayRing = isToday ? "ring-2 ring-indigo-500" : "";
 
     if (layout.kind === "empty") {
-      const isClickable = !isNWD && isOwnProfile && !!onAdd;
+      const isClickable = !isNWD && !isBankHoliday && isOwnProfile && !!onAdd;
       return (
         <div
           key={day}
