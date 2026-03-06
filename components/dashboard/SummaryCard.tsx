@@ -156,8 +156,9 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
   // Show tabs only when sick leave feature is on AND the user has sick entries
   const showTabs = SICK_LEAVE_ENABLED && hasSickEntries;
 
-  // Single ring: approved → requested → planned; denominator is total allowance
-  // so the gray track naturally shows the remaining unused portion
+  // Single ring: approved → requested → planned; denominator is effective total
+  // (raw total minus bank holidays) so the gray track represents days still bookable.
+  const effectiveTotal = summary.total - summary.bankHolidaysOnWorkingDays;
   const ringSegments: DonutSegment[] = [
     { value: summary.approved, color: DONUT_COLORS.approved },
     { value: summary.requested, color: DONUT_COLORS.requested },
@@ -173,19 +174,48 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
   const bankHolidaysDeducted =
     activeYa?.bankHolidayHandling === BankHolidayHandling.Deduct;
 
-  const breakdownRows: { label: string; value: string }[] = [
+  // "Actual leave remaining" = effective budget minus only confirmed (approved) leave.
+  // "Planned leave remaining" = effective budget minus all leave statuses (summary.remaining).
+  const actualRemaining = effectiveTotal - summary.approved;
+
+  interface BreakdownRow {
+    label: string;
+    value: string;
+    /** Semibold text with coloured value — used for key subtotals */
+    emphasis?: boolean;
+    /** Bold text with separator and coloured value — used for the final figure */
+    final?: boolean;
+    /** Whether this row's numeric value is negative (triggers red colour) */
+    negativeValue?: boolean;
+  }
+
+  const breakdownRows: BreakdownRow[] = [
     { label: "Core Days", value: String(activeYa?.core ?? 0) },
     { label: "Bought", value: `+${activeYa?.bought ?? 0}` },
     { label: "Carried Over", value: `+${activeYa?.carried ?? 0}` },
+    { label: "Total", value: String(summary.total) },
     {
       label: "Bank holidays on working days",
       value: bankHolidaysDeducted
         ? `−${summary.bankHolidaysOnWorkingDays}`
         : String(summary.bankHolidaysOnWorkingDays),
     },
-    { label: "Total", value: String(summary.total) },
-    { label: "Used so far", value: `${summary.used} days` },
-    { label: "Remaining", value: `${summary.remaining} days` },
+    // Only show "Actual No. of Days" when bank holidays are present (otherwise it equals Total)
+    ...(summary.bankHolidaysOnWorkingDays > 0
+      ? [{ label: "Actual No. of Days", value: String(effectiveTotal) }]
+      : []),
+    {
+      label: "Actual leave remaining",
+      value: `${actualRemaining} days`,
+      emphasis: true,
+      negativeValue: actualRemaining < 0,
+    },
+    {
+      label: "Planned leave remaining",
+      value: `${summary.remaining} days`,
+      final: true,
+      negativeValue: summary.remaining < 0,
+    },
   ];
 
   return (
@@ -246,7 +276,7 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
           <div className="flex items-center gap-4 mb-4">
             <SingleRingDonut
               segments={ringSegments}
-              total={summary.total || 1}
+              total={Math.max(effectiveTotal, 1)}
               centerValue={remaining}
             />
             <div className="flex-1 space-y-1.5">
@@ -276,36 +306,32 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
           {/* Breakdown details */}
           {showBreakdown && (
             <div className="mt-3 space-y-1 border-t border-gray-100 pt-3">
-              {breakdownRows.map(({ label, value }, i) => {
-                const isUsedSoFar = i === breakdownRows.length - 2;
-                const isRemaining = i === breakdownRows.length - 1;
-                return (
-                  <div
-                    key={label}
-                    className={[
-                      "flex justify-between",
-                      isRemaining
-                        ? "font-bold text-sm text-gray-900 border-t border-gray-100 pt-1 mt-1"
-                        : isUsedSoFar
-                          ? "font-semibold text-sm text-gray-800"
-                          : "text-xs text-gray-600",
-                    ].join(" ")}
+              {breakdownRows.map(({ label, value, emphasis, final, negativeValue }) => (
+                <div
+                  key={label}
+                  className={[
+                    "flex justify-between",
+                    final
+                      ? "font-bold text-sm text-gray-900 border-t border-gray-100 pt-1 mt-1"
+                      : emphasis
+                        ? "font-semibold text-sm text-gray-800"
+                        : "text-xs text-gray-600",
+                  ].join(" ")}
+                >
+                  <span>{label}</span>
+                  <span
+                    className={
+                      emphasis || final
+                        ? negativeValue
+                          ? "text-red-600"
+                          : "text-indigo-700"
+                        : ""
+                    }
                   >
-                    <span>{label}</span>
-                    <span
-                      className={
-                        isRemaining
-                          ? summary.remaining < 0
-                            ? "text-red-600"
-                            : "text-indigo-700"
-                          : ""
-                      }
-                    >
-                      {value}
-                    </span>
-                  </div>
-                );
-              })}
+                    {value}
+                  </span>
+                </div>
+              ))}
             </div>
           )}
         </>

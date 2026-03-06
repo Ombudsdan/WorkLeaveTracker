@@ -412,7 +412,36 @@ describe("calcLeaveSummary — bankHolidayHandling", () => {
     expect(summary.total).toBe(26);
   });
 
-  it("reduces total by bank holidays on working days when handling is Deduct", () => {
+  it("always deducts bank holidays from remaining regardless of handling (None)", () => {
+    // With handling=None: total stays raw, but remaining still deducts bank holidays
+    const user: PublicUser = {
+      ...baseUser,
+      yearAllowances: [
+        {
+          year: 2026,
+          company: "Acme",
+          holidayStartMonth: 1,
+          core: 26,
+          bought: 0,
+          carried: 0,
+          bankHolidayHandling: BankHolidayHandling.None,
+        },
+      ],
+    };
+    const summary = calcLeaveSummary(user, [
+      "2026-01-01",
+      "2026-04-03",
+      "2026-12-25",
+      "2026-12-28",
+    ]);
+    expect(summary.total).toBe(26); // raw total unchanged
+    expect(summary.bankHolidaysOnWorkingDays).toBe(4);
+    // remaining = 26 - 4 (bank holidays) - 0 (no leave used) = 22
+    expect(summary.remaining).toBe(22);
+  });
+
+  it("total is always raw (not reduced) even when handling is Deduct", () => {
+    // bankHolidayHandling=Deduct only affects UI display; total stays raw in LeaveSummary
     const user: PublicUser = {
       ...baseUser,
       yearAllowances: [
@@ -427,16 +456,16 @@ describe("calcLeaveSummary — bankHolidayHandling", () => {
         },
       ],
     };
-    // 4 bank holidays on working days → total becomes 26 - 4 = 22
+    // 4 bank holidays on working days → remaining = 26 - 4 = 22 (no leave used)
     const summary = calcLeaveSummary(user, [
       "2026-01-01",
       "2026-04-03",
       "2026-12-25",
       "2026-12-28",
     ]);
-    expect(summary.total).toBe(22);
+    expect(summary.total).toBe(26); // raw, not reduced
     expect(summary.bankHolidaysOnWorkingDays).toBe(4);
-    expect(summary.remaining).toBe(22);
+    expect(summary.remaining).toBe(22); // = 26 - 4 bank holidays
   });
 
   it("does not deduct bank holidays on non-working days even with Deduct handling", () => {
@@ -460,8 +489,9 @@ describe("calcLeaveSummary — bankHolidayHandling", () => {
     expect(summary.bankHolidaysOnWorkingDays).toBe(0);
   });
 
-  it("accounts for remaining correctly after deduction and leave usage", () => {
-    // core=26, deduct 4 BH → total=22; 5 approved days → remaining=17
+  it("accounts for remaining correctly after bank holidays and leave usage", () => {
+    // core=26, 4 bank holidays on working days, 5 approved leave days
+    // remaining = 26 - 4 (bank holidays) - 5 (approved) = 17
     const user: PublicUser = {
       ...baseUser,
       yearAllowances: [
@@ -491,8 +521,8 @@ describe("calcLeaveSummary — bankHolidayHandling", () => {
       "2026-12-25",
       "2026-12-28",
     ]);
-    expect(summary.total).toBe(22);
+    expect(summary.total).toBe(26); // raw total
     expect(summary.approved).toBe(5);
-    expect(summary.remaining).toBe(17);
+    expect(summary.remaining).toBe(17); // 26 - 4 bank holidays - 5 approved
   });
 });

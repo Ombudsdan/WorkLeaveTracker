@@ -110,7 +110,9 @@ describe("SummaryCard — with approved entries", () => {
     const user = setup();
     render(<SummaryCard user={userWithEntries} bankHolidays={[]} isOwnProfile={true} />);
     await user.click(screen.getByRole("button", { name: /view breakdown/i }));
-    expect(screen.getByText("20 days")).toBeInTheDocument();
+    // Both "Actual leave remaining" and "Planned leave remaining" show 20 days
+    // (no bank holidays, no requested/planned leave) — at least one must show "20 days"
+    expect(screen.getAllByText("20 days").length).toBeGreaterThanOrEqual(1);
   });
 });
 
@@ -211,11 +213,11 @@ describe("SummaryCard — allowance breakdown toggle", () => {
 });
 
 describe("SummaryCard — breakdown Remaining row readability", () => {
-  it("shows Remaining in the breakdown with visible styling (text-gray-900)", async () => {
+  it("shows 'Planned leave remaining' in the breakdown with visible styling (text-gray-900)", async () => {
     const user = setup();
     render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
     await user.click(screen.getByRole("button", { name: /view breakdown/i }));
-    const remaining = screen.getByText("Remaining");
+    const remaining = screen.getByText("Planned leave remaining");
     // Should have an explicit dark text colour class (text-gray-900 via the parent div)
     expect(remaining).toBeInTheDocument();
     const parentDiv = remaining.closest("div");
@@ -280,9 +282,10 @@ describe("SummaryCard — donut uses total allowance as ring denominator", () =>
 });
 
 describe("SummaryCard — breakdown Remaining row colour when over-allocated", () => {
-  it("shows text-red-600 on the Remaining value when leave used exceeds total allowance", async () => {
+  it("shows text-red-600 on the 'Planned leave remaining' value when leave exceeds budget", async () => {
     const user = setup();
-    // core=1, bought=0, carried=0 → total=1; two 1-day approved entries → used=2, remaining=-1
+    // core=1, bought=0, carried=0 → total=1; two 1-day approved entries → used=2
+    // remaining = 1 - 0 (BH) - 2 (approved) = -1 → red
     const overAllocated: PublicUser = {
       ...alice,
       yearAllowances: [
@@ -307,9 +310,42 @@ describe("SummaryCard — breakdown Remaining row colour when over-allocated", (
     };
     render(<SummaryCard user={overAllocated} bankHolidays={[]} isOwnProfile={true} />);
     await user.click(screen.getByRole("button", { name: /view breakdown/i }));
-    // The remaining value span should have the red colour class
-    const remainingLabel = screen.getByText("Remaining");
+    // The "Planned leave remaining" value span should have the red colour class
+    const remainingLabel = screen.getByText("Planned leave remaining");
     const row = remainingLabel.closest("div");
+    const valueSpan = row?.querySelector("span:last-child");
+    expect(valueSpan?.className).toContain("text-red-600");
+  });
+
+  it("shows text-red-600 on 'Actual leave remaining' when approved leave exceeds budget", async () => {
+    const user = setup();
+    // core=1, two approved days → actualRemaining = 1 - 0 - 2 = -1
+    const overAllocated: PublicUser = {
+      ...alice,
+      yearAllowances: [
+        { year: 2026, company: "Acme", holidayStartMonth: 1, core: 1, bought: 0, carried: 0 },
+      ],
+      entries: [
+        {
+          id: "ea",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+        {
+          id: "eb",
+          startDate: "2026-03-10",
+          endDate: "2026-03-10",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    render(<SummaryCard user={overAllocated} bankHolidays={[]} isOwnProfile={true} />);
+    await user.click(screen.getByRole("button", { name: /view breakdown/i }));
+    const actualLabel = screen.getByText("Actual leave remaining");
+    const row = actualLabel.closest("div");
     const valueSpan = row?.querySelector("span:last-child");
     expect(valueSpan?.className).toContain("text-red-600");
   });
@@ -388,6 +424,115 @@ describe("SummaryCard — bank holidays on working days in breakdown", () => {
     await user.click(screen.getByRole("button", { name: /view breakdown/i }));
     const row = screen.getByText("Bank holidays on working days").closest("div");
     expect(row?.querySelector("span:last-child")?.textContent).toBe("−1");
+  });
+});
+
+describe("SummaryCard — Actual No. of Days row", () => {
+  it("shows 'Actual No. of Days' row when bank holidays fall on working days", async () => {
+    const user = setup();
+    // Thursday 2026-01-01 is a working day for alice
+    render(
+      <SummaryCard
+        user={alice}
+        bankHolidays={[{ date: "2026-01-01", title: "New Year's Day" }]}
+        isOwnProfile={true}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: /view breakdown/i }));
+    expect(screen.getByText("Actual No. of Days")).toBeInTheDocument();
+    const row = screen.getByText("Actual No. of Days").closest("div");
+    // Alice: 25 core - 1 BH on working day = 24
+    expect(row?.querySelector("span:last-child")?.textContent).toBe("24");
+  });
+
+  it("does NOT show 'Actual No. of Days' row when no bank holidays are on working days", async () => {
+    const user = setup();
+    // No bank holidays at all
+    render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
+    await user.click(screen.getByRole("button", { name: /view breakdown/i }));
+    expect(screen.queryByText("Actual No. of Days")).toBeNull();
+  });
+});
+
+describe("SummaryCard — breakdown two remaining rows", () => {
+  it("shows both 'Actual leave remaining' and 'Planned leave remaining' rows", async () => {
+    const user = setup();
+    render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
+    await user.click(screen.getByRole("button", { name: /view breakdown/i }));
+    expect(screen.getByText("Actual leave remaining")).toBeInTheDocument();
+    expect(screen.getByText("Planned leave remaining")).toBeInTheDocument();
+  });
+
+  it("'Actual leave remaining' shows effectiveTotal minus approved only", async () => {
+    const user = setup();
+    // alice: 25 core, 1 BH on working day → effectiveTotal=24; 5 approved days
+    // actualRemaining = 24 - 5 = 19 days
+    const userWith5Approved: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e1",
+          startDate: "2026-03-09",
+          endDate: "2026-03-13",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    render(
+      <SummaryCard
+        user={userWith5Approved}
+        bankHolidays={[{ date: "2026-01-01", title: "New Year's Day" }]}
+        isOwnProfile={true}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: /view breakdown/i }));
+    const row = screen.getByText("Actual leave remaining").closest("div");
+    expect(row?.querySelector("span:last-child")?.textContent).toBe("19 days");
+  });
+
+  it("'Planned leave remaining' shows effectiveTotal minus all statuses", async () => {
+    const user = setup();
+    // alice: 25 core, 1 BH on working day → effectiveTotal=24
+    // 5 approved + 2 planned = 7 used; remaining = 24 - 7 = 17
+    const userWithMixedLeave: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e1",
+          startDate: "2026-03-09",
+          endDate: "2026-03-13",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+        {
+          id: "e2",
+          startDate: "2026-04-07",
+          endDate: "2026-04-08",
+          status: LeaveStatus.Planned,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    render(
+      <SummaryCard
+        user={userWithMixedLeave}
+        bankHolidays={[{ date: "2026-01-01", title: "New Year's Day" }]}
+        isOwnProfile={true}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: /view breakdown/i }));
+    const row = screen.getByText("Planned leave remaining").closest("div");
+    expect(row?.querySelector("span:last-child")?.textContent).toBe("17 days");
+  });
+
+  it("'Planned leave remaining' row has text-gray-900 styling (bold, final row)", async () => {
+    const user = setup();
+    render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
+    await user.click(screen.getByRole("button", { name: /view breakdown/i }));
+    const planned = screen.getByText("Planned leave remaining");
+    const parentDiv = planned.closest("div");
+    expect(parentDiv?.className).toContain("text-gray-900");
   });
 });
 

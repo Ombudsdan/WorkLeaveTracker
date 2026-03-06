@@ -1,13 +1,18 @@
-import { LeaveStatus, LeaveType, LeaveDuration, BankHolidayHandling } from "@/types";
+import { LeaveStatus, LeaveType, LeaveDuration } from "@/types";
 import type { PublicUser } from "@/types";
 import { countWorkingDays, getActiveYearAllowance, getEntryDuration } from "@/utils/dateHelpers";
 
 export interface LeaveSummary {
+  /** Raw entitlement: core + bought + carried (never reduced by bank holidays) */
   total: number;
   approved: number;
   requested: number;
   planned: number;
   used: number;
+  /**
+   * Days remaining after bank holidays and all leave statuses are accounted for.
+   * = total - bankHolidaysOnWorkingDays - approved - requested - planned
+   */
   remaining: number;
   /** Number of bank holidays that fall on a working day within this holiday year */
   bankHolidaysOnWorkingDays: number;
@@ -15,11 +20,15 @@ export interface LeaveSummary {
 
 /**
  * Calculate the leave summary for a user within their current holiday year.
- * Only holiday-type entries are counted; bank holidays on working days are excluded.
- * Half-day entries count as 0.5 working days.
+ * Only holiday-type entries are counted; bank holidays on working days are excluded
+ * from individual entry day counts.  Half-day entries count as 0.5 working days.
  *
- * When the active allowance has bankHolidayHandling set to Deduct, the total
- * allowance is reduced by the number of bank holidays that fall on working days.
+ * `total` is always the raw entitlement (core + bought + carried).
+ * `remaining` always deducts bank holidays on working days regardless of the
+ * `bankHolidayHandling` setting — because bank holidays are effectively blocked
+ * days whether or not they officially consume annual leave.  The
+ * `bankHolidayHandling` setting on the allowance only controls how bank holidays
+ * are labelled in the UI (deducted vs informational).
  *
  * The holiday year bounds are derived from the **active allowance's own year** (not from
  * today's date) so that `total` and the entry date range are always consistent — even
@@ -53,11 +62,8 @@ export function calcLeaveSummary(user: PublicUser, bankHolidays: string[]): Leav
 
   const bankHolidaysOnWorkingDays = relevantBankHolidays.length;
 
-  const baseTotal = activeYa.core + activeYa.bought + activeYa.carried;
-  const total =
-    activeYa.bankHolidayHandling === BankHolidayHandling.Deduct
-      ? baseTotal - bankHolidaysOnWorkingDays
-      : baseTotal;
+  // total is always the raw entitlement
+  const total = activeYa.core + activeYa.bought + activeYa.carried;
 
   let approved = 0;
   let requested = 0;
@@ -90,7 +96,9 @@ export function calcLeaveSummary(user: PublicUser, bankHolidays: string[]): Leav
     requested,
     planned,
     used: approved + requested + planned,
-    remaining: total - approved - requested - planned,
+    // remaining always deducts bank holidays so the figure reflects days
+    // the person can actually still take as annual leave
+    remaining: total - bankHolidaysOnWorkingDays - approved - requested - planned,
     bankHolidaysOnWorkingDays,
   };
 }
