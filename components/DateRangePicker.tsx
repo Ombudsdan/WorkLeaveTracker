@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useFormValidation } from "@/contexts/FormValidationContext";
-import { MONTH_NAMES_SHORT, DAY_NAMES_SHORT } from "@/variables/calendar";
+import { MONTH_NAMES_LONG, DAY_NAMES_SHORT } from "@/variables/calendar";
 import { getDaysInMonth, getFirstDayOfMonth, toIsoDate } from "@/utils/dateHelpers";
 
 interface DateRangePickerProps {
@@ -154,7 +154,7 @@ export default function DateRangePicker({
             <ChevronLeft size={14} />
           </button>
           <span className="text-sm font-medium text-gray-700">
-            {MONTH_NAMES_SHORT[calMonth]} {calYear}
+            {MONTH_NAMES_LONG[calMonth]} {calYear}
           </span>
           <button
             type="button"
@@ -175,7 +175,7 @@ export default function DateRangePicker({
           ))}
         </div>
 
-        {/* Day cells */}
+        {/* Day cells — always render 42 cells (6 rows) so the calendar height is stable */}
         <div className="grid grid-cols-7 gap-0.5">
           {Array.from({ length: firstDay }).map((_, i) => (
             <div key={`pad-${i}`} />
@@ -213,6 +213,9 @@ export default function DateRangePicker({
               </button>
             );
           })}
+          {Array.from({ length: 42 - firstDay - daysInMonth }).map((_, i) => (
+            <div key={`trail-${i}`} />
+          ))}
         </div>
       </div>
 

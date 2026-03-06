@@ -34,7 +34,7 @@ describe("AddLeaveModal — rendering", () => {
   it("renders the date range calendar", () => {
     renderModal(<AddLeaveModal onClose={jest.fn()} onSave={jest.fn()} />);
     // The DateRangePicker renders a calendar for March 2026
-    expect(screen.getByText(/Mar 2026/i)).toBeInTheDocument();
+    expect(screen.getByText(/March 2026/i)).toBeInTheDocument();
   });
 
   it("does not render the Type section when sick leave is disabled", () => {
