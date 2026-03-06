@@ -1,4 +1,4 @@
-import { LeaveStatus, LeaveType, LeaveDuration } from "@/types";
+import { LeaveStatus, LeaveType, LeaveDuration, BankHolidayHandling } from "@/types";
 import type { PublicUser, YearAllowance } from "@/types";
 import { countWorkingDays, getActiveYearAllowance, getEntryDuration } from "@/utils/dateHelpers";
 
@@ -24,11 +24,10 @@ export interface LeaveSummary {
  * from individual entry day counts.  Half-day entries count as 0.5 working days.
  *
  * `total` is always the raw entitlement (core + bought + carried).
- * `remaining` always deducts bank holidays on working days regardless of the
- * `bankHolidayHandling` setting — because bank holidays are effectively blocked
- * days whether or not they officially consume annual leave.  The
- * `bankHolidayHandling` setting on the allowance only controls how bank holidays
- * are labelled in the UI (deducted vs informational).
+ * `remaining` deducts bank holidays on working days **only** when the allowance has
+ * `bankHolidayHandling === BankHolidayHandling.Deduct` — meaning the user's employer
+ * uses annual leave for bank holidays.  When handling is `None` (or unset) the bank
+ * holidays are informational only and do not reduce `remaining`.
  *
  * The holiday year bounds are derived from the **active allowance's own year** (not from
  * today's date) so that `total` and the entry date range are always consistent — even
@@ -103,9 +102,16 @@ export function calcLeaveSummary(
     requested,
     planned,
     used: approved + requested + planned,
-    // remaining always deducts bank holidays so the figure reflects days
-    // the person can actually still take as annual leave
-    remaining: total - bankHolidaysOnWorkingDays - approved - requested - planned,
+    // Only deduct bank holidays from remaining when the allowance is configured to
+    // use annual leave for bank holidays on working days.
+    remaining:
+      total -
+      (activeYa.bankHolidayHandling === BankHolidayHandling.Deduct
+        ? bankHolidaysOnWorkingDays
+        : 0) -
+      approved -
+      requested -
+      planned,
     bankHolidaysOnWorkingDays,
   };
 }

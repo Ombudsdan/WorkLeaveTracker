@@ -410,10 +410,12 @@ describe("calcLeaveSummary — bankHolidayHandling", () => {
     };
     const summary = calcLeaveSummary(user, ["2026-01-01", "2026-04-03"]);
     expect(summary.total).toBe(26);
+    // remaining is NOT reduced by bank holidays when handling is absent
+    expect(summary.remaining).toBe(26);
   });
 
-  it("always deducts bank holidays from remaining regardless of handling (None)", () => {
-    // With handling=None: total stays raw, but remaining still deducts bank holidays
+  it("does NOT deduct bank holidays from remaining when handling is None", () => {
+    // With handling=None: total stays raw, and remaining does NOT deduct bank holidays
     const user: PublicUser = {
       ...baseUser,
       yearAllowances: [
@@ -436,8 +438,8 @@ describe("calcLeaveSummary — bankHolidayHandling", () => {
     ]);
     expect(summary.total).toBe(26); // raw total unchanged
     expect(summary.bankHolidaysOnWorkingDays).toBe(4);
-    // remaining = 26 - 4 (bank holidays) - 0 (no leave used) = 22
-    expect(summary.remaining).toBe(22);
+    // remaining = 26 - 0 (bank holidays NOT deducted) - 0 (no leave used) = 26
+    expect(summary.remaining).toBe(26);
   });
 
   it("total is always raw (not reduced) even when handling is Deduct", () => {

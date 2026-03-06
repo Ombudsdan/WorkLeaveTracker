@@ -1,6 +1,6 @@
 "use client";
 import { useState, useMemo, useEffect } from "react";
-import { LeaveStatus, LeaveType } from "@/types";
+import { LeaveStatus, LeaveType, BankHolidayHandling } from "@/types";
 import type { PublicUser, BankHolidayEntry } from "@/types";
 import { STATUS_DOT } from "@/variables/colours";
 import { calcLeaveSummary } from "@/utils/leaveCalc";
@@ -156,8 +156,12 @@ export default function SummaryCard({ user, bankHolidays }: SummaryCardProps) {
 
   const summary = calcLeaveSummary(user, bankHolidayDates, effectiveYa ?? undefined);
 
-  // Effective budget = raw total minus bank holidays on working days
-  const effectiveTotal = summary.total - summary.bankHolidaysOnWorkingDays;
+  // Whether bank holidays consume annual leave for the active window
+  const deductBankHolidays = effectiveYa?.bankHolidayHandling === BankHolidayHandling.Deduct;
+  // Effective budget = raw total minus bank holidays on working days (only when deducting)
+  const effectiveTotal = deductBankHolidays
+    ? summary.total - summary.bankHolidaysOnWorkingDays
+    : summary.total;
   const remaining = Math.max(0, summary.remaining);
 
   // Sick-leave day count (total, all statuses) — memoised so it doesn't recalculate on unrelated renders
@@ -301,10 +305,12 @@ export default function SummaryCard({ user, bankHolidays }: SummaryCardProps) {
               <hr className="my-2 border-gray-200" />
               {/* Deduction rows */}
               <div className="space-y-1">
-                <div className="flex justify-between text-xs text-gray-600">
-                  <span>Bank holidays on working days</span>
-                  <span>−{summary.bankHolidaysOnWorkingDays}</span>
-                </div>
+                {deductBankHolidays && (
+                  <div className="flex justify-between text-xs text-gray-600">
+                    <span>Bank holidays on working days</span>
+                    <span>−{summary.bankHolidaysOnWorkingDays}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-xs text-gray-600">
                   <span>Approved</span>
                   <span>−{summary.approved}</span>
