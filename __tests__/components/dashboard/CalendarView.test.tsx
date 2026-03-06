@@ -1045,3 +1045,62 @@ describe("CalendarView — split-cell click opens popover for top and bottom ent
     expect(screen.getByRole("tooltip")).toBeInTheDocument();
   });
 });
+
+describe("CalendarView — clicking empty date cells opens Add Leave", () => {
+  it("calls onAdd with the date string when a non-working-day-free empty cell is clicked on own profile", async () => {
+    const user = setup();
+    const onAdd = jest.fn();
+    // alice has nonWorkingDays [0, 6] (Sun+Sat); 2026-03-09 is a Monday → no NWD, no leave
+    render(
+      <CalendarView user={alice} bankHolidays={[]} isOwnProfile={true} onAdd={onAdd} />
+    );
+    // "9" renders the 9th of March 2026 (Monday — not a NWD)
+    await user.click(screen.getByText("9"));
+    expect(onAdd).toHaveBeenCalledWith("2026-03-09");
+  });
+
+  it("does not call onAdd when a non-working-day cell is clicked", async () => {
+    const user = setup();
+    const onAdd = jest.fn();
+    // 2026-03-07 is a Saturday → NWD for alice (nonWorkingDays includes 6)
+    render(
+      <CalendarView user={alice} bankHolidays={[]} isOwnProfile={true} onAdd={onAdd} />
+    );
+    await user.click(screen.getByText("7"));
+    expect(onAdd).not.toHaveBeenCalled();
+  });
+
+  it("does not call onAdd when isOwnProfile is false", async () => {
+    const user = setup();
+    const onAdd = jest.fn();
+    render(
+      <CalendarView user={alice} bankHolidays={[]} isOwnProfile={false} onAdd={onAdd} />
+    );
+    await user.click(screen.getByText("9"));
+    expect(onAdd).not.toHaveBeenCalled();
+  });
+
+  it("does not call onAdd on an empty cell when onAdd is not provided", async () => {
+    const user = setup();
+    // No onAdd prop — should not throw
+    render(<CalendarView user={alice} bankHolidays={[]} isOwnProfile={true} />);
+    await user.click(screen.getByText("9"));
+    // No assertion needed — test passes if no error is thrown
+  });
+
+  it("calls onAdd with the bank holiday date when an empty bank holiday cell is clicked", async () => {
+    const user = setup();
+    const onAdd = jest.fn();
+    // 2026-03-09 is Monday — mark it as a bank holiday
+    render(
+      <CalendarView
+        user={alice}
+        bankHolidays={[bh("2026-03-09", "Test BH")]}
+        isOwnProfile={true}
+        onAdd={onAdd}
+      />
+    );
+    await user.click(screen.getByText("9"));
+    expect(onAdd).toHaveBeenCalledWith("2026-03-09");
+  });
+});
