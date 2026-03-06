@@ -68,7 +68,10 @@ export default function LeaveList({
             const baseNote = entry.notes ?? "–";
             const noteText = isHalf && entry.notes ? `${entry.notes} (${periodLabel})` : baseNote;
             return (
-              <div key={entry.id} className={`border rounded-lg p-3 sm:p-2 text-sm sm:text-xs ${cardClass}`}>
+              <div
+                key={entry.id}
+                className={`border rounded-lg p-3 sm:p-2 text-sm sm:text-xs ${cardClass}`}
+              >
                 {/* Line 1: Reason (left) | Status (right) */}
                 <div className="flex items-center justify-between">
                   <span className="font-medium truncate mr-2">{noteText}</span>

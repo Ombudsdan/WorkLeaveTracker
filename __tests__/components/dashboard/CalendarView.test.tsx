@@ -1090,9 +1090,7 @@ describe("CalendarView — mobile bottom sheet popover", () => {
       status: LeaveStatus.Approved,
       type: LeaveType.Holiday,
     };
-    render(
-      <CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />
-    );
+    render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
     await user.click(screen.getByText("9"));
     expect(screen.getByTestId("mobile-backdrop")).toBeInTheDocument();
   });
@@ -1106,9 +1104,7 @@ describe("CalendarView — mobile bottom sheet popover", () => {
       status: LeaveStatus.Approved,
       type: LeaveType.Holiday,
     };
-    render(
-      <CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />
-    );
+    render(<CalendarView user={{ ...alice, entries: [entry] }} bankHolidays={[]} />);
     await user.click(screen.getByText("9"));
     expect(screen.getByRole("tooltip")).toBeInTheDocument();
     await user.click(screen.getByTestId("mobile-backdrop"));
