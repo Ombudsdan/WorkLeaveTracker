@@ -344,7 +344,7 @@ describe("SummaryCard — bank holidays on working days in breakdown", () => {
     expect(row?.querySelector("span:last-child")?.textContent).toBe("0");
   });
 
-  it("shows correct count when bank holidays fall on working days", async () => {
+  it("shows plain count (no prefix) when bankHolidayHandling is None", async () => {
     const user = setup();
     // Thursday 2026-01-01 is a working day for alice
     render(
@@ -360,6 +360,34 @@ describe("SummaryCard — bank holidays on working days in breakdown", () => {
     await user.click(screen.getByRole("button", { name: /view breakdown/i }));
     const row = screen.getByText("Bank holidays on working days").closest("div");
     expect(row?.querySelector("span:last-child")?.textContent).toBe("2");
+  });
+
+  it("shows '−N' prefix when bankHolidayHandling is Deduct", async () => {
+    const user = setup();
+    const userWithDeduct: PublicUser = {
+      ...alice,
+      yearAllowances: [
+        {
+          year: 2026,
+          company: "Acme",
+          holidayStartMonth: 1,
+          core: 25,
+          bought: 0,
+          carried: 0,
+          bankHolidayHandling: "deduct" as import("@/types").BankHolidayHandling,
+        },
+      ],
+    };
+    render(
+      <SummaryCard
+        user={userWithDeduct}
+        bankHolidays={[{ date: "2026-01-01", title: "New Year's Day" }]}
+        isOwnProfile={true}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: /view breakdown/i }));
+    const row = screen.getByText("Bank holidays on working days").closest("div");
+    expect(row?.querySelector("span:last-child")?.textContent).toBe("−1");
   });
 });
 

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useMemo } from "react";
-import { LeaveStatus, LeaveType } from "@/types";
+import { LeaveStatus, LeaveType, BankHolidayHandling } from "@/types";
 import type { PublicUser, BankHolidayEntry } from "@/types";
 import { STATUS_DOT } from "@/variables/colours";
 import { calcLeaveSummary } from "@/utils/leaveCalc";
@@ -170,13 +170,18 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
     { label: "Planned", status: LeaveStatus.Planned, count: summary.planned },
   ];
 
+  const bankHolidaysDeducted =
+    activeYa?.bankHolidayHandling === BankHolidayHandling.Deduct;
+
   const breakdownRows: { label: string; value: string }[] = [
     { label: "Core Days", value: String(activeYa?.core ?? 0) },
     { label: "Bought", value: `+${activeYa?.bought ?? 0}` },
     { label: "Carried Over", value: `+${activeYa?.carried ?? 0}` },
     {
       label: "Bank holidays on working days",
-      value: String(summary.bankHolidaysOnWorkingDays),
+      value: bankHolidaysDeducted
+        ? `−${summary.bankHolidaysOnWorkingDays}`
+        : String(summary.bankHolidaysOnWorkingDays),
     },
     { label: "Total", value: String(summary.total) },
     { label: "Used so far", value: `${summary.used} days` },
