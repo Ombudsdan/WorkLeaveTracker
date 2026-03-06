@@ -127,7 +127,7 @@ function SingleRingDonut({
 // SummaryCard
 // ---------------------------------------------------------------------------
 
-export default function SummaryCard({ user, bankHolidays, isOwnProfile }: SummaryCardProps) {
+export default function SummaryCard({ user, bankHolidays }: SummaryCardProps) {
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [activeTab, setActiveTab] = useState<"holiday" | "sick">("holiday");
   /** null = show the automatically-selected active window */
@@ -185,36 +185,24 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
     { label: "Planned", status: LeaveStatus.Planned, count: summary.planned },
   ];
 
-  const breakdownRows: { label: string; value: string }[] = [
+  const allocationRows: { label: string; value: string }[] = [
     { label: "Core Days", value: String(effectiveYa?.core ?? 0) },
     { label: "Bought", value: `+${effectiveYa?.bought ?? 0}` },
     { label: "Carried Over", value: `+${effectiveYa?.carried ?? 0}` },
-    { label: "Total", value: String(summary.total) },
-    { label: "Used so far", value: `${summary.used} days` },
-    { label: "Remaining", value: `${summary.remaining} days` },
   ];
 
   return (
     <div className="bg-white rounded-2xl shadow p-5">
-      {/* Name + badge */}
-      <div className="flex items-center justify-between mb-1">
+      {/* Name */}
+      <div className="mb-1">
         <h2 className="font-bold text-gray-800">
           {user.profile.firstName} {user.profile.lastName}
         </h2>
-        {!isOwnProfile && (
-          <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-            Read-only
-          </span>
-        )}
       </div>
 
-      {/* Leave window */}
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-xs text-gray-400">
-          Leave window:{" "}
-          {effectiveYa ? formatYearWindow(effectiveYa) : "–"}
-        </p>
-        {visibleAllowances.length > 1 && effectiveYa && (
+      {/* Leave window — text only when single allowance; select only when multiple */}
+      <div className="mb-4">
+        {visibleAllowances.length > 1 && effectiveYa ? (
           <select
             value={effectiveYa.year}
             onChange={(e) => setSelectedYear(Number(e.target.value))}
@@ -227,6 +215,10 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
               </option>
             ))}
           </select>
+        ) : (
+          <p className="text-xs text-gray-400">
+            {effectiveYa ? formatYearWindow(effectiveYa) : "–"}
+          </p>
         )}
       </div>
 
@@ -287,37 +279,27 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
 
           {/* Breakdown details */}
           {showBreakdown && (
-            <div className="mt-3 space-y-1 border-t border-gray-100 pt-3">
-              {breakdownRows.map(({ label, value }, i) => {
-                const isUsedSoFar = i === breakdownRows.length - 2;
-                const isRemaining = i === breakdownRows.length - 1;
-                return (
-                  <div
-                    key={label}
-                    className={[
-                      "flex justify-between",
-                      isRemaining
-                        ? "font-bold text-sm text-gray-900 border-t border-gray-100 pt-1 mt-1"
-                        : isUsedSoFar
-                          ? "font-semibold text-sm text-gray-800"
-                          : "text-xs text-gray-600",
-                    ].join(" ")}
-                  >
+            <div className="mt-3 border-t border-gray-100 pt-3">
+              <div className="space-y-1">
+                {allocationRows.map(({ label, value }) => (
+                  <div key={label} className="flex justify-between text-xs text-gray-600">
                     <span>{label}</span>
-                    <span
-                      className={
-                        isRemaining
-                          ? summary.remaining < 0
-                            ? "text-red-600"
-                            : "text-indigo-700"
-                          : ""
-                      }
-                    >
-                      {value}
-                    </span>
+                    <span>{value}</span>
                   </div>
-                );
-              })}
+                ))}
+              </div>
+              <div className="border-t border-gray-100 mt-2 pt-2">
+                <div className="flex justify-between text-sm font-semibold text-gray-800">
+                  <span>Used</span>
+                  <span>
+                    <span className={summary.used > summary.total ? "text-red-600" : ""}>
+                      {summary.used}
+                    </span>
+                    {" / "}
+                    {summary.total} days
+                  </span>
+                </div>
+              </div>
             </div>
           )}
         </>

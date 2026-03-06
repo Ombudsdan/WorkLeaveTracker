@@ -40,7 +40,7 @@ describe("SummaryCard — basic display", () => {
 
   it("shows the holiday year range", () => {
     render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
-    // Leave window: Jan 2026 – Dec 2026 (shown as text when there is only one allowance)
+    // Single allowance → plain text showing the window dates
     expect(screen.getByText(/1 Jan 2026/)).toBeInTheDocument();
     expect(screen.getByText(/31 Dec 2026/)).toBeInTheDocument();
   });
@@ -49,7 +49,7 @@ describe("SummaryCard — basic display", () => {
     const user = setup();
     render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
     await user.click(screen.getByRole("button", { name: /view breakdown/i }));
-    expect(screen.getByText("Total")).toBeInTheDocument();
+    expect(screen.getByText("Core Days")).toBeInTheDocument();
   });
 
   it("shows the donut SVG always (not just in breakdown)", () => {
@@ -66,14 +66,14 @@ describe("SummaryCard — basic display", () => {
     expect(screen.getByText("Planned")).toBeInTheDocument();
   });
 
-  it("does not show the Read-only badge for own profile", () => {
+  it("does not show the Read-only badge for any profile", () => {
     render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
     expect(screen.queryByText("Read-only")).toBeNull();
   });
 
-  it("shows the Read-only badge when isOwnProfile is false", () => {
+  it("does not show the Read-only badge for other user profiles either", () => {
     render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={false} />);
-    expect(screen.getByText("Read-only")).toBeInTheDocument();
+    expect(screen.queryByText("Read-only")).toBeNull();
   });
 });
 
@@ -106,11 +106,13 @@ describe("SummaryCard — with approved entries", () => {
     expect(svg.textContent).toContain("20");
   });
 
-  it("shows remaining days in the breakdown", async () => {
+  it("shows used / total days in the breakdown", async () => {
     const user = setup();
     render(<SummaryCard user={userWithEntries} bankHolidays={[]} isOwnProfile={true} />);
     await user.click(screen.getByRole("button", { name: /view breakdown/i }));
-    expect(screen.getByText("20 days")).toBeInTheDocument();
+    // The summary row shows "Used" label and "5 / 25 days"
+    expect(screen.getByText("Used")).toBeInTheDocument();
+    expect(screen.getByText(/25 days/)).toBeInTheDocument();
   });
 });
 
@@ -210,16 +212,14 @@ describe("SummaryCard — allowance breakdown toggle", () => {
   });
 });
 
-describe("SummaryCard — breakdown Remaining row readability", () => {
-  it("shows Remaining in the breakdown with visible styling (text-gray-900)", async () => {
+describe("SummaryCard — breakdown used/total summary", () => {
+  it("shows 'Used' label and 'X / Y days' value in the breakdown", async () => {
     const user = setup();
     render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
     await user.click(screen.getByRole("button", { name: /view breakdown/i }));
-    const remaining = screen.getByText("Remaining");
-    // Should have an explicit dark text colour class (text-gray-900 via the parent div)
-    expect(remaining).toBeInTheDocument();
-    const parentDiv = remaining.closest("div");
-    expect(parentDiv?.className).toContain("text-gray-900");
+    expect(screen.getByText("Used")).toBeInTheDocument();
+    // 0 used, 25 total
+    expect(screen.getByText(/25 days/)).toBeInTheDocument();
   });
 });
 
@@ -279,10 +279,10 @@ describe("SummaryCard — donut uses total allowance as ring denominator", () =>
   });
 });
 
-describe("SummaryCard — breakdown Remaining row colour when over-allocated", () => {
-  it("shows text-red-600 on the Remaining value when leave used exceeds total allowance", async () => {
+describe("SummaryCard — breakdown used colour when over-allocated", () => {
+  it("shows text-red-600 on the used count when leave used exceeds total allowance", async () => {
     const user = setup();
-    // core=1, bought=0, carried=0 → total=1; two 1-day approved entries → used=2, remaining=-1
+    // core=1, bought=0, carried=0 → total=1; two 1-day approved entries → used=2, total=1
     const overAllocated: PublicUser = {
       ...alice,
       yearAllowances: [
@@ -307,11 +307,11 @@ describe("SummaryCard — breakdown Remaining row colour when over-allocated", (
     };
     render(<SummaryCard user={overAllocated} bankHolidays={[]} isOwnProfile={true} />);
     await user.click(screen.getByRole("button", { name: /view breakdown/i }));
-    // The remaining value span should have the red colour class
-    const remainingLabel = screen.getByText("Remaining");
-    const row = remainingLabel.closest("div");
-    const valueSpan = row?.querySelector("span:last-child");
-    expect(valueSpan?.className).toContain("text-red-600");
+    // The used count span should have the red colour class
+    const usedLabel = screen.getByText("Used");
+    const row = usedLabel.closest("div");
+    const usedCountSpan = row?.querySelector("span span");
+    expect(usedCountSpan?.className).toContain("text-red-600");
   });
 });
 
@@ -368,19 +368,18 @@ describe("SummaryCard — leave window selector", () => {
     ],
   };
 
-  it("shows a 'Leave window:' label", () => {
+  it("shows plain text window range when there is only one allowance", () => {
     render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
-    expect(screen.getByText(/leave window:/i)).toBeInTheDocument();
-  });
-
-  it("does not show the select when there is only one allowance", () => {
-    render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
+    // Single allowance → text visible, no select
+    expect(screen.getByText(/1 Jan 2026/)).toBeInTheDocument();
     expect(screen.queryByRole("combobox", { name: /select leave window/i })).toBeNull();
   });
 
-  it("shows the select when there are multiple allowances", () => {
+  it("shows the select (not the text label) when there are multiple allowances", () => {
     render(<SummaryCard user={multiWindowUser} bankHolidays={[]} isOwnProfile={true} />);
     expect(screen.getByRole("combobox", { name: /select leave window/i })).toBeInTheDocument();
+    // The plain text paragraph should not be rendered when the select is shown
+    expect(screen.queryByText(/Leave window:/i)).toBeNull();
   });
 
   it("the select defaults to the active year", () => {
