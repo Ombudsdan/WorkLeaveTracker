@@ -3,6 +3,7 @@ import { useState, useEffect, type FormEvent } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
+import { BankHolidayHandling } from "@/types";
 import { FormValidationProvider, useFormValidation } from "@/contexts/FormValidationContext";
 import FormField from "@/components/FormField";
 import FormErrorOutlet from "@/components/FormErrorOutlet";
@@ -35,6 +36,9 @@ function SetupPageInner() {
   const [coreDays, setCoreDays] = useState(25);
   const [boughtDays, setBoughtDays] = useState(0);
   const [carriedDays, setCarriedDays] = useState(0);
+  const [bankHolidayHandling, setBankHolidayHandling] = useState<BankHolidayHandling>(
+    BankHolidayHandling.None
+  );
   const [submitError, setSubmitError] = useState("");
   const [saving, setSaving] = useState(false);
   const [checking, setChecking] = useState(true);
@@ -174,6 +178,27 @@ function SetupPageInner() {
                 min={0}
                 max={365}
               />
+              <div>
+                <label
+                  htmlFor="setup-bankHolidayHandling"
+                  className="block text-sm font-medium text-gray-600 mb-1"
+                >
+                  Bank Holidays
+                </label>
+                <select
+                  id="setup-bankHolidayHandling"
+                  value={bankHolidayHandling}
+                  onChange={(e) => setBankHolidayHandling(e.target.value as BankHolidayHandling)}
+                  className="w-full border rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+                >
+                  <option value={BankHolidayHandling.None}>
+                    Do not use annual leave for bank holidays
+                  </option>
+                  <option value={BankHolidayHandling.Deduct}>
+                    Use annual leave for bank holidays on working days
+                  </option>
+                </select>
+              </div>
               <p className="text-sm text-gray-500">
                 Total: <strong>{total}</strong> days
               </p>
@@ -232,6 +257,7 @@ function SetupPageInner() {
       core: coreDays,
       bought: boughtDays,
       carried: carriedDays,
+      bankHolidayHandling,
     });
 
     setSaving(false);

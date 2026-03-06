@@ -1,6 +1,6 @@
 "use client";
 import { useState, useMemo, useEffect } from "react";
-import { LeaveStatus, LeaveType } from "@/types";
+import { LeaveStatus, LeaveType, BankHolidayHandling } from "@/types";
 import type { PublicUser, BankHolidayEntry } from "@/types";
 import { STATUS_DOT } from "@/variables/colours";
 import { calcLeaveSummary } from "@/utils/leaveCalc";
@@ -99,24 +99,15 @@ function SingleRingDonut({
       {/* Track (gray background ring) */}
       <circle cx={cx} cy={cy} r={R} fill="none" stroke="#f3f4f6" strokeWidth={strokeWidth} />
       {paths}
-      {/* Centre: remaining days */}
+      {/* Centre: remaining days (x=cx, y=cy — vertically centred now that the label is removed) */}
       <text
-        x="50"
-        y="46"
+        x={cx}
+        y={cy}
         textAnchor="middle"
         dominantBaseline="middle"
         style={{ fontSize: 16, fontWeight: "bold", fill: "#111827" }}
       >
         {centerValue}
-      </text>
-      <text
-        x="50"
-        y="58"
-        textAnchor="middle"
-        dominantBaseline="middle"
-        style={{ fontSize: 7, fill: "#9ca3af" }}
-      >
-        remaining
       </text>
     </svg>
   );
@@ -156,7 +147,13 @@ export default function SummaryCard({ user, bankHolidays }: SummaryCardProps) {
 
   const summary = calcLeaveSummary(user, bankHolidayDates, effectiveYa ?? undefined);
 
-  const remaining = Math.max(0, summary.remaining);
+  // Whether bank holidays consume annual leave for the active window
+  const deductBankHolidays = effectiveYa?.bankHolidayHandling === BankHolidayHandling.Deduct;
+  // Effective budget = raw total minus bank holidays on working days (only when deducting)
+  const effectiveTotal = deductBankHolidays
+    ? summary.total - summary.bankHolidaysOnWorkingDays
+    : summary.total;
+  const remaining = summary.remaining;
 
   // Sick-leave day count (total, all statuses) — memoised so it doesn't recalculate on unrelated renders
   const sickDays = useMemo(() => {
@@ -172,8 +169,8 @@ export default function SummaryCard({ user, bankHolidays }: SummaryCardProps) {
   // Show tabs only when sick leave feature is on AND the user has sick entries
   const showTabs = SICK_LEAVE_ENABLED && hasSickEntries;
 
-  // Single ring: approved → requested → planned; denominator is total allowance
-  // so the gray track naturally shows the remaining unused portion
+  // Single ring: approved → requested → planned; denominator is effective total
+  // so the gray track represents the remaining bookable budget
   const ringSegments: DonutSegment[] = [
     { value: summary.approved, color: DONUT_COLORS.approved },
     { value: summary.requested, color: DONUT_COLORS.requested },
@@ -184,12 +181,6 @@ export default function SummaryCard({ user, bankHolidays }: SummaryCardProps) {
     { label: "Approved", status: LeaveStatus.Approved, count: summary.approved },
     { label: "Requested", status: LeaveStatus.Requested, count: summary.requested },
     { label: "Planned", status: LeaveStatus.Planned, count: summary.planned },
-  ];
-
-  const allocationRows: { label: string; value: string }[] = [
-    { label: "Core Days", value: String(effectiveYa?.core ?? 0) },
-    { label: "Bought", value: `+${effectiveYa?.bought ?? 0}` },
-    { label: "Carried Over", value: `+${effectiveYa?.carried ?? 0}` },
   ];
 
   return (
@@ -251,7 +242,7 @@ export default function SummaryCard({ user, bankHolidays }: SummaryCardProps) {
           <div className="flex items-center gap-4 mb-4">
             <SingleRingDonut
               segments={ringSegments}
-              total={summary.total || 1}
+              total={Math.max(effectiveTotal, 1)}
               centerValue={remaining}
             />
             <div className="flex-1 space-y-1.5">
@@ -264,6 +255,19 @@ export default function SummaryCard({ user, bankHolidays }: SummaryCardProps) {
                   <span className="text-gray-800 font-semibold">{count} days</span>
                 </div>
               ))}
+              <hr className="border-gray-200" />
+              <div className="flex justify-between text-sm">
+                <span
+                  className={`font-semibold ${summary.remaining < 0 ? "text-red-600" : "text-gray-800"}`}
+                >
+                  Remaining
+                </span>
+                <span
+                  className={`font-bold ${summary.remaining < 0 ? "text-red-600" : "text-gray-900"}`}
+                >
+                  {summary.remaining} days
+                </span>
+              </div>
             </div>
           </div>
 
@@ -281,25 +285,60 @@ export default function SummaryCard({ user, bankHolidays }: SummaryCardProps) {
           {/* Breakdown details */}
           {showBreakdown && (
             <div className="mt-3 border-t border-gray-100 pt-3">
+              {/* Entitlement rows */}
               <div className="space-y-1">
-                {allocationRows.map(({ label, value }) => (
-                  <div key={label} className="flex justify-between text-xs text-gray-600">
-                    <span>{label}</span>
-                    <span>{value}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="border-t border-gray-100 mt-2 pt-2">
-                <div className="flex justify-between text-sm font-semibold text-gray-800">
-                  <span>Used</span>
-                  <span>
-                    <span className={summary.used > summary.total ? "text-red-600" : ""}>
-                      {summary.used}
-                    </span>
-                    {" / "}
-                    {summary.total} days
-                  </span>
+                <div className="flex justify-between text-xs text-gray-600">
+                  <span>Core Days</span>
+                  <span>+{effectiveYa?.core ?? 0}</span>
                 </div>
+                <div className="flex justify-between text-xs text-gray-600">
+                  <span>Bought</span>
+                  <span>+{effectiveYa?.bought ?? 0}</span>
+                </div>
+                <div className="flex justify-between text-xs text-gray-600">
+                  <span>Carried Over</span>
+                  <span>+{effectiveYa?.carried ?? 0}</span>
+                </div>
+              </div>
+              {/* Total (bold) */}
+              <div className="flex justify-between text-sm font-bold text-gray-900 mt-2">
+                <span>Total</span>
+                <span>{summary.total}</span>
+              </div>
+              {/* Divider */}
+              <hr className="my-2 border-gray-200" />
+              {/* Deduction rows */}
+              <div className="space-y-1">
+                {deductBankHolidays && (
+                  <div className="flex justify-between text-xs text-gray-600">
+                    <span>Bank holidays on working days</span>
+                    <span>−{summary.bankHolidaysOnWorkingDays}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-xs text-gray-600">
+                  <span>Approved</span>
+                  <span>−{summary.approved}</span>
+                </div>
+                <div className="flex justify-between text-xs text-gray-600">
+                  <span>Requested</span>
+                  <span>−{summary.requested}</span>
+                </div>
+                <div className="flex justify-between text-xs text-gray-600">
+                  <span>Planned</span>
+                  <span>−{summary.planned}</span>
+                </div>
+              </div>
+              {/* Total Deductions (bold) */}
+              <hr className="my-2 border-gray-200" />
+              <div className="flex justify-between text-sm font-bold text-gray-900">
+                <span>Total Deductions</span>
+                <span>
+                  −
+                  {(deductBankHolidays ? summary.bankHolidaysOnWorkingDays : 0) +
+                    summary.approved +
+                    summary.requested +
+                    summary.planned}
+                </span>
               </div>
             </div>
           )}
