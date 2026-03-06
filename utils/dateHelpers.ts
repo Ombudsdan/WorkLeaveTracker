@@ -2,6 +2,18 @@ import type { LeaveEntry, YearAllowance } from "@/types";
 import { LeaveDuration } from "@/types";
 
 /**
+ * Format a YearAllowance window as a human-readable date range string.
+ * e.g. "1 Apr 2025 – 31 Mar 2026" for year=2025, holidayStartMonth=4
+ */
+export function formatYearWindow(ya: YearAllowance): string {
+  const sm = ya.holidayStartMonth ?? 1;
+  const start = new Date(ya.year, sm - 1, 1);
+  const end = new Date(ya.year + 1, sm - 1, 0);
+  const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" };
+  return `${start.toLocaleDateString("en-GB", opts)} – ${end.toLocaleDateString("en-GB", opts)}`;
+}
+
+/**
  * Count working days between two ISO date strings (inclusive).
  *
  * @param startDate - ISO date string (YYYY-MM-DD) for the start of the period

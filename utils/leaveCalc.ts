@@ -1,5 +1,5 @@
 import { LeaveStatus, LeaveType, LeaveDuration } from "@/types";
-import type { PublicUser } from "@/types";
+import type { PublicUser, YearAllowance } from "@/types";
 import { countWorkingDays, getActiveYearAllowance, getEntryDuration } from "@/utils/dateHelpers";
 
 export interface LeaveSummary {
@@ -19,9 +19,16 @@ export interface LeaveSummary {
  * The holiday year bounds are derived from the **active allowance's own year** (not from
  * today's date) so that `total` and the entry date range are always consistent — even
  * when the function falls back to a past or future allowance.
+ *
+ * Pass `forYearAllowance` to override automatic selection and calculate the summary
+ * for a specific year window (e.g. when the user selects a past or future window).
  */
-export function calcLeaveSummary(user: PublicUser, bankHolidays: string[]): LeaveSummary {
-  const activeYa = getActiveYearAllowance(user.yearAllowances);
+export function calcLeaveSummary(
+  user: PublicUser,
+  bankHolidays: string[],
+  forYearAllowance?: YearAllowance
+): LeaveSummary {
+  const activeYa = forYearAllowance ?? getActiveYearAllowance(user.yearAllowances);
   if (!activeYa) {
     return { total: 0, approved: 0, requested: 0, planned: 0, used: 0, remaining: 0 };
   }

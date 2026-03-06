@@ -212,7 +212,6 @@ export default function DashboardPage() {
             <SummaryCard
               user={displayedUser}
               bankHolidays={bankHolidays}
-              isOwnProfile={isOwnProfile}
             />
             <LeaveList
               user={displayedUser}

@@ -7,9 +7,10 @@ import {
   getEntriesForDate,
   isNonWorkingDay,
   toIsoDate,
+  formatYearWindow,
 } from "@/utils/dateHelpers";
 import { LeaveStatus, LeaveType } from "@/types";
-import type { LeaveEntry } from "@/types";
+import type { LeaveEntry, YearAllowance } from "@/types";
 
 // ---------------------------------------------------------------------------
 // countWorkingDays
@@ -455,5 +456,51 @@ describe("getActiveYearAllowance", () => {
     const result = getActiveYearAllowance([legacy]);
     // Jan 2024 start, Jan 2025 end → today (Mar 2026) is past → falls back to most recent past
     expect(result?.year).toBe(2024);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// formatYearWindow
+// ---------------------------------------------------------------------------
+describe("formatYearWindow", () => {
+  it("formats a January-start window as 'D Jan YYYY – D Dec YYYY'", () => {
+    const ya: YearAllowance = {
+      year: 2026,
+      company: "Acme",
+      holidayStartMonth: 1,
+      core: 25,
+      bought: 0,
+      carried: 0,
+    };
+    const result = formatYearWindow(ya);
+    expect(result).toMatch(/1 Jan 2026/);
+    expect(result).toMatch(/31 Dec 2026/);
+  });
+
+  it("formats an April-start window as 'D Apr YYYY – D Mar YYYY+1'", () => {
+    const ya: YearAllowance = {
+      year: 2025,
+      company: "Acme",
+      holidayStartMonth: 4,
+      core: 25,
+      bought: 0,
+      carried: 0,
+    };
+    const result = formatYearWindow(ya);
+    expect(result).toMatch(/1 Apr 2025/);
+    expect(result).toMatch(/31 Mar 2026/);
+  });
+
+  it("defaults to January when holidayStartMonth is missing", () => {
+    const ya = {
+      year: 2026,
+      company: "Acme",
+      core: 25,
+      bought: 0,
+      carried: 0,
+    } as YearAllowance;
+    const result = formatYearWindow(ya);
+    expect(result).toMatch(/1 Jan 2026/);
+    expect(result).toMatch(/31 Dec 2026/);
   });
 });
