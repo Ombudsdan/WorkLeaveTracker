@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useMemo, type FormEvent } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import type { PublicUser, YearAllowance, UkCountry, LeaveEntry } from "@/types";
-import { CheckCircle, Check } from "lucide-react";
+import { CheckCircle, Check, Circle } from "lucide-react";
 import { LeaveType, LeaveDuration } from "@/types";
 import NavBar from "@/components/NavBar";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -361,7 +361,7 @@ export default function ProfilePage() {
                       return (
                         <div
                           key={`${ya.year}-${ya.company}-${idx}`}
-                          className={`flex items-center justify-between text-sm rounded-lg px-3 py-2 border ${
+                          className={`flex items-center gap-3 text-sm rounded-lg px-3 py-2 border ${
                             isInactive
                               ? "bg-gray-50 border-gray-200 text-gray-400 opacity-60"
                               : ya.year === currentHolidayYear
@@ -369,24 +369,21 @@ export default function ProfilePage() {
                                 : "bg-gray-50 border-gray-200 text-gray-600"
                           }`}
                         >
-                          <span className="font-medium">
+                          {ya.year === currentHolidayYear && !isInactive ? (
+                            <CheckCircle size={16} className="shrink-0 text-indigo-600" />
+                          ) : (
+                            <Circle size={16} className="shrink-0 text-gray-300" />
+                          )}
+                          <span className="font-medium flex-1">
                             {ya.year}
                             {ya.company ? (
                               <span className="ml-1 font-normal text-xs opacity-70">
                                 — {ya.company}
                               </span>
                             ) : null}
-                            {ya.year === currentHolidayYear && !isInactive && (
-                              <span className="ml-2 text-xs text-indigo-500">(current)</span>
-                            )}
                             {isInactive && (
                               <span className="ml-2 text-xs text-gray-400">(ended)</span>
                             )}
-                          </span>
-                          <span>
-                            {ya.core + ya.bought + ya.carried} days ({ya.core} core
-                            {ya.bought > 0 ? ` + ${ya.bought} bought` : ""}
-                            {ya.carried > 0 ? ` + ${ya.carried} carried` : ""})
                           </span>
                           {!isInactive && (
                             <button

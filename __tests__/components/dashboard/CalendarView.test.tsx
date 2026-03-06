@@ -1082,7 +1082,7 @@ describe("CalendarView — clicking empty date cells opens Add Leave", () => {
     // No assertion needed — test passes if no error is thrown
   });
 
-  it("calls onAdd with the bank holiday date when an empty bank holiday cell is clicked", async () => {
+  it("does not call onAdd when an empty bank holiday cell is clicked", async () => {
     const user = setup();
     const onAdd = jest.fn();
     // 2026-03-09 is Monday — mark it as a bank holiday
@@ -1095,7 +1095,7 @@ describe("CalendarView — clicking empty date cells opens Add Leave", () => {
       />
     );
     await user.click(screen.getByText("9"));
-    expect(onAdd).toHaveBeenCalledWith("2026-03-09");
+    expect(onAdd).not.toHaveBeenCalled();
   });
 });
 
