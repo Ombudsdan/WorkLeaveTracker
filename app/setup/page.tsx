@@ -188,9 +188,7 @@ function SetupPageInner() {
                 <select
                   id="setup-bankHolidayHandling"
                   value={bankHolidayHandling}
-                  onChange={(e) =>
-                    setBankHolidayHandling(e.target.value as BankHolidayHandling)
-                  }
+                  onChange={(e) => setBankHolidayHandling(e.target.value as BankHolidayHandling)}
                   className="w-full border rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-indigo-400 focus:outline-none"
                 >
                   <option value={BankHolidayHandling.None}>

@@ -285,7 +285,9 @@ describe("SummaryCard — breakdown layout", () => {
     // There are two "Approved" elements: one in the status key, one in the breakdown.
     // The breakdown one is inside the breakdown panel (after the <hr>).
     const allApproved = screen.getAllByText("Approved");
-    const breakdownApproved = allApproved.find((el) => el.closest("div")?.textContent === "Approved−1");
+    const breakdownApproved = allApproved.find(
+      (el) => el.closest("div")?.textContent === "Approved−1"
+    );
     expect(breakdownApproved).toBeDefined();
   });
 
@@ -528,10 +530,7 @@ describe("SummaryCard — bank holidays on working days in breakdown", () => {
     const user = setup();
     // alice has no bankHolidayHandling (defaults to None behaviour)
     render(
-      <SummaryCard
-        user={alice}
-        bankHolidays={[{ date: "2026-01-01", title: "New Year's Day" }]}
-      />
+      <SummaryCard user={alice} bankHolidays={[{ date: "2026-01-01", title: "New Year's Day" }]} />
     );
     await user.click(screen.getByRole("button", { name: /view breakdown/i }));
     expect(screen.queryByText("Bank holidays on working days")).toBeNull();
