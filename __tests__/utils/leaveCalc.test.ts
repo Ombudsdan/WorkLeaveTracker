@@ -526,3 +526,39 @@ describe("calcLeaveSummary — bankHolidayHandling", () => {
     expect(summary.remaining).toBe(17); // 26 - 4 bank holidays - 5 approved
   });
 });
+
+describe("calcLeaveSummary — forYearAllowance override", () => {
+  it("uses the provided allowance instead of auto-detecting the active one", () => {
+    // today = 2026-03-15 → active allowance would be 2026 (Jan–Dec 2026)
+    // We override to the 2025 allowance (Jan–Dec 2025) and expect 2025 entries to be counted
+    const ya2025 = {
+      year: 2025,
+      company: "Acme",
+      holidayStartMonth: 1,
+      core: 20,
+      bought: 0,
+      carried: 0,
+    };
+    const user: PublicUser = {
+      ...baseUser,
+      yearAllowances: [
+        ya2025,
+        { year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+      ],
+      entries: [
+        {
+          id: "e-2025",
+          startDate: "2025-03-10",
+          endDate: "2025-03-14",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    const summary = calcLeaveSummary(user, [], ya2025);
+    // The override ensures we use the 2025 window (total=20) and count the 2025 entry
+    expect(summary.total).toBe(20);
+    expect(summary.approved).toBe(5);
+    expect(summary.remaining).toBe(15);
+  });
+});

@@ -1045,3 +1045,149 @@ describe("CalendarView — split-cell click opens popover for top and bottom ent
     expect(screen.getByRole("tooltip")).toBeInTheDocument();
   });
 });
+
+describe("CalendarView — clicking empty date cells opens Add Leave", () => {
+  it("calls onAdd with the date string when a non-working-day-free empty cell is clicked on own profile", async () => {
+    const user = setup();
+    const onAdd = jest.fn();
+    // alice has nonWorkingDays [0, 6] (Sun+Sat); 2026-03-09 is a Monday → no NWD, no leave
+    render(<CalendarView user={alice} bankHolidays={[]} isOwnProfile={true} onAdd={onAdd} />);
+    // "9" renders the 9th of March 2026 (Monday — not a NWD)
+    await user.click(screen.getByText("9"));
+    expect(onAdd).toHaveBeenCalledWith("2026-03-09");
+  });
+
+  it("does not call onAdd when a non-working-day cell is clicked", async () => {
+    const user = setup();
+    const onAdd = jest.fn();
+    // 2026-03-07 is a Saturday → NWD for alice (nonWorkingDays includes 6)
+    render(<CalendarView user={alice} bankHolidays={[]} isOwnProfile={true} onAdd={onAdd} />);
+    await user.click(screen.getByText("7"));
+    expect(onAdd).not.toHaveBeenCalled();
+  });
+
+  it("does not call onAdd when isOwnProfile is false", async () => {
+    const user = setup();
+    const onAdd = jest.fn();
+    render(<CalendarView user={alice} bankHolidays={[]} isOwnProfile={false} onAdd={onAdd} />);
+    await user.click(screen.getByText("9"));
+    expect(onAdd).not.toHaveBeenCalled();
+  });
+
+  it("does not call onAdd on an empty cell when onAdd is not provided", async () => {
+    const user = setup();
+    // No onAdd prop — should not throw
+    render(<CalendarView user={alice} bankHolidays={[]} isOwnProfile={true} />);
+    await user.click(screen.getByText("9"));
+    // No assertion needed — test passes if no error is thrown
+  });
+
+  it("calls onAdd with the bank holiday date when an empty bank holiday cell is clicked", async () => {
+    const user = setup();
+    const onAdd = jest.fn();
+    // 2026-03-09 is Monday — mark it as a bank holiday
+    render(
+      <CalendarView
+        user={alice}
+        bankHolidays={[bh("2026-03-09", "Test BH")]}
+        isOwnProfile={true}
+        onAdd={onAdd}
+      />
+    );
+    await user.click(screen.getByText("9"));
+    expect(onAdd).toHaveBeenCalledWith("2026-03-09");
+  });
+});
+
+describe("CalendarView — mobile bottom-sheet popover (isMobileSheet=true)", () => {
+  const originalInnerWidth = window.innerWidth;
+
+  beforeEach(() => {
+    Object.defineProperty(window, "innerWidth", { writable: true, configurable: true, value: 375 });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: originalInnerWidth,
+    });
+  });
+
+  const mobileEntry = {
+    id: "e-mob",
+    startDate: "2026-03-09",
+    endDate: "2026-03-09",
+    status: LeaveStatus.Approved,
+    type: LeaveType.Holiday,
+    notes: "Mobile leave",
+  };
+
+  it("renders mobile bottom-sheet classes on the popover container when the viewport is narrow", async () => {
+    const user = setup();
+    const { container } = render(
+      <CalendarView user={{ ...alice, entries: [mobileEntry] }} bankHolidays={[]} />
+    );
+    await user.click(screen.getByText("9"));
+    // Mobile sheet uses rounded-t-2xl (desktop uses rounded-xl)
+    expect(container.querySelector(".rounded-t-2xl")).toBeInTheDocument();
+  });
+
+  it("renders mobile classes on the close button when the viewport is narrow", async () => {
+    const user = setup();
+    const { container } = render(
+      <CalendarView user={{ ...alice, entries: [mobileEntry] }} bankHolidays={[]} />
+    );
+    await user.click(screen.getByText("9"));
+    // Mobile close button has top-4 class (desktop uses top-2)
+    expect(container.querySelector(".top-4")).toBeInTheDocument();
+  });
+
+  it("renders the mobile backdrop when a leave entry cell is clicked on mobile", async () => {
+    const user = setup();
+    render(<CalendarView user={{ ...alice, entries: [mobileEntry] }} bankHolidays={[]} />);
+    await user.click(screen.getByText("9"));
+    expect(screen.getByTestId("mobile-backdrop")).toBeInTheDocument();
+  });
+
+  it("closes the popover when the mobile backdrop is clicked", async () => {
+    const user = setup();
+    render(<CalendarView user={{ ...alice, entries: [mobileEntry] }} bankHolidays={[]} />);
+    await user.click(screen.getByText("9"));
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    await user.click(screen.getByTestId("mobile-backdrop"));
+    expect(screen.queryByRole("tooltip")).toBeNull();
+  });
+
+  it("renders mobile classes on the edit button when the viewport is narrow", async () => {
+    const user = setup();
+    render(
+      <CalendarView
+        user={{ ...alice, entries: [mobileEntry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    await user.click(screen.getByText("9"));
+    // Mobile edit button has flex-1 (desktop does not)
+    expect(screen.getByRole("button", { name: /edit/i }).className).toContain("flex-1");
+  });
+
+  it("renders mobile classes on the delete button when the viewport is narrow", async () => {
+    const user = setup();
+    render(
+      <CalendarView
+        user={{ ...alice, entries: [mobileEntry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    await user.click(screen.getByText("9"));
+    // Mobile delete button has flex-1 (desktop does not)
+    expect(screen.getByRole("button", { name: /delete/i }).className).toContain("flex-1");
+  });
+});
