@@ -99,24 +99,15 @@ function SingleRingDonut({
       {/* Track (gray background ring) */}
       <circle cx={cx} cy={cy} r={R} fill="none" stroke="#f3f4f6" strokeWidth={strokeWidth} />
       {paths}
-      {/* Centre: remaining days */}
+      {/* Centre: remaining days (x=cx, y=cy — vertically centred now that the label is removed) */}
       <text
-        x="50"
-        y="46"
+        x={cx}
+        y={cy}
         textAnchor="middle"
         dominantBaseline="middle"
         style={{ fontSize: 16, fontWeight: "bold", fill: "#111827" }}
       >
         {centerValue}
-      </text>
-      <text
-        x="50"
-        y="58"
-        textAnchor="middle"
-        dominantBaseline="middle"
-        style={{ fontSize: 7, fill: "#9ca3af" }}
-      >
-        remaining
       </text>
     </svg>
   );
@@ -162,7 +153,7 @@ export default function SummaryCard({ user, bankHolidays }: SummaryCardProps) {
   const effectiveTotal = deductBankHolidays
     ? summary.total - summary.bankHolidaysOnWorkingDays
     : summary.total;
-  const remaining = Math.max(0, summary.remaining);
+  const remaining = summary.remaining;
 
   // Sick-leave day count (total, all statuses) — memoised so it doesn't recalculate on unrelated renders
   const sickDays = useMemo(() => {
@@ -264,6 +255,19 @@ export default function SummaryCard({ user, bankHolidays }: SummaryCardProps) {
                   <span className="text-gray-800 font-semibold">{count} days</span>
                 </div>
               ))}
+              <hr className="border-gray-200" />
+              <div className="flex justify-between text-sm">
+                <span
+                  className={`font-semibold ${summary.remaining < 0 ? "text-red-600" : "text-gray-800"}`}
+                >
+                  Remaining
+                </span>
+                <span
+                  className={`font-bold ${summary.remaining < 0 ? "text-red-600" : "text-gray-900"}`}
+                >
+                  {summary.remaining} days
+                </span>
+              </div>
             </div>
           </div>
 
@@ -324,14 +328,17 @@ export default function SummaryCard({ user, bankHolidays }: SummaryCardProps) {
                   <span>−{summary.planned}</span>
                 </div>
               </div>
-              {/* Remaining (bold) */}
-              <div
-                className={`flex justify-between text-sm font-bold mt-2 ${
-                  summary.remaining < 0 ? "text-red-600" : "text-gray-900"
-                }`}
-              >
-                <span>Remaining</span>
-                <span>{summary.remaining}</span>
+              {/* Total Deductions (bold) */}
+              <hr className="my-2 border-gray-200" />
+              <div className="flex justify-between text-sm font-bold text-gray-900">
+                <span>Total Deductions</span>
+                <span>
+                  −
+                  {(deductBankHolidays ? summary.bankHolidaysOnWorkingDays : 0) +
+                    summary.approved +
+                    summary.requested +
+                    summary.planned}
+                </span>
               </div>
             </div>
           )}

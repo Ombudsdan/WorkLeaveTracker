@@ -102,11 +102,10 @@ describe("SummaryCard — with approved entries", () => {
     expect(svg.textContent).toContain("20");
   });
 
-  it("shows remaining days in the breakdown", async () => {
-    const user = setup();
+  it("shows remaining days in the status key area (not inside breakdown)", () => {
     render(<SummaryCard user={userWithEntries} bankHolidays={[]} />);
-    await user.click(screen.getByRole("button", { name: /view breakdown/i }));
     // Remaining = 25 total - 0 bank holidays - 5 approved = 20
+    // Remaining is now shown outside the breakdown, always visible
     const remainingRow = screen.getByText("Remaining").closest("div");
     expect(remainingRow?.textContent).toContain("20");
   });
@@ -118,10 +117,11 @@ describe("SummaryCard — single-ring donut", () => {
     expect(container.querySelector("svg")).toBeInTheDocument();
   });
 
-  it("shows remaining days in the donut center", () => {
+  it("shows remaining days in the donut center without 'remaining' label text", () => {
     const { container } = render(<SummaryCard user={alice} bankHolidays={[]} />);
     const svgText = container.querySelector("svg")?.textContent;
     expect(svgText).toContain("25"); // 25 remaining when no entries
+    expect(svgText).not.toContain("remaining"); // label removed from donut
   });
 
   it("renders only one SVG ring (single circle track)", () => {
@@ -341,13 +341,44 @@ describe("SummaryCard — breakdown layout", () => {
     expect(row?.querySelector("span:last-child")?.textContent).toBe("−1");
   });
 
-  it("shows Remaining row as bold with correct value", async () => {
+  it("shows Remaining row as bold with correct value (outside breakdown)", () => {
+    render(<SummaryCard user={alice} bankHolidays={[]} />);
+    // Remaining is now always visible outside the breakdown, below the status key rows
+    const remainingLabel = screen.getByText("Remaining");
+    const remainingRow = remainingLabel.closest("div");
+    expect(remainingRow?.textContent).toContain("25");
+  });
+
+  it("shows 'Total Deductions' row at the bottom of the breakdown", async () => {
+    const user = setup();
+    const userWithEntries: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e1",
+          startDate: "2026-03-09",
+          endDate: "2026-03-11",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    render(<SummaryCard user={userWithEntries} bankHolidays={[]} />);
+    await user.click(screen.getByRole("button", { name: /view breakdown/i }));
+    const row = screen.getByText("Total Deductions").closest("div");
+    expect(row?.className).toContain("font-bold");
+    // 3 approved days, 0 BH, 0 requested, 0 planned → total deductions = 3
+    expect(row?.querySelector("span:last-child")?.textContent).toBe("−3");
+  });
+
+  it("'Remaining' is not rendered inside the breakdown panel", async () => {
     const user = setup();
     render(<SummaryCard user={alice} bankHolidays={[]} />);
+    // Before opening breakdown, Remaining is visible outside
+    expect(screen.getByText("Remaining")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /view breakdown/i }));
-    const remainingRow = screen.getByText("Remaining").closest("div");
-    expect(remainingRow?.className).toContain("font-bold");
-    expect(remainingRow?.querySelector("span:last-child")?.textContent).toBe("25");
+    // After opening, still just one Remaining element (not duplicated inside breakdown)
+    expect(screen.getAllByText("Remaining")).toHaveLength(1);
   });
 });
 
@@ -404,8 +435,7 @@ describe("SummaryCard — donut uses effective total as ring denominator", () =>
 });
 
 describe("SummaryCard — breakdown Remaining colour when over-allocated", () => {
-  it("shows text-red-600 on the Remaining value when leave exceeds budget", async () => {
-    const user = setup();
+  it("shows text-red-600 on the Remaining value when leave exceeds budget", () => {
     // core=1, bought=0, carried=0 → total=1; two 1-day approved entries → used=2
     // remaining = 1 - 0 BH - 2 approved = -1 → red
     const overAllocated: PublicUser = {
@@ -431,10 +461,38 @@ describe("SummaryCard — breakdown Remaining colour when over-allocated", () =>
       ],
     };
     render(<SummaryCard user={overAllocated} bankHolidays={[]} />);
-    await user.click(screen.getByRole("button", { name: /view breakdown/i }));
-    // The Remaining row should have text-red-600 class when negative
-    const remainingRow = screen.getByText("Remaining").closest("div");
-    expect(remainingRow?.className).toContain("text-red-600");
+    // Remaining is now always visible outside the breakdown — no button click needed
+    const remainingLabel = screen.getByText("Remaining");
+    expect(remainingLabel.className).toContain("text-red-600");
+  });
+
+  it("shows the negative number in the donut center when over-allocated", () => {
+    const overAllocated: PublicUser = {
+      ...alice,
+      yearAllowances: [
+        { year: 2026, company: "Acme", holidayStartMonth: 1, core: 1, bought: 0, carried: 0 },
+      ],
+      entries: [
+        {
+          id: "ea",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+        {
+          id: "eb",
+          startDate: "2026-03-10",
+          endDate: "2026-03-10",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    const { container } = render(<SummaryCard user={overAllocated} bankHolidays={[]} />);
+    const svg = container.querySelector("svg");
+    // remaining = 1 - 2 = -1; should display -1 not 0
+    expect(svg?.textContent).toContain("-1");
   });
 });
 
