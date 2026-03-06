@@ -209,10 +209,7 @@ export default function DashboardPage() {
           <div
             className={`lg:col-span-1 space-y-4 ${mobileView === "list" ? "block" : "hidden"} lg:block`}
           >
-            <SummaryCard
-              user={displayedUser}
-              bankHolidays={bankHolidays}
-            />
+            <SummaryCard user={displayedUser} bankHolidays={bankHolidays} />
             <LeaveList
               user={displayedUser}
               bankHolidays={bankHolidays}

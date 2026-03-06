@@ -104,7 +104,8 @@ export default function LeaveList({
                     : entry.status.charAt(0).toUpperCase() + entry.status.slice(1);
                   const cardClass = isSick ? SICK_LEAVE_CARD_COLORS : STATUS_COLORS[entry.status];
                   const baseNote = entry.notes ?? "–";
-                  const noteText = isHalf && entry.notes ? `${entry.notes} (${periodLabel})` : baseNote;
+                  const noteText =
+                    isHalf && entry.notes ? `${entry.notes} (${periodLabel})` : baseNote;
                   return (
                     <div
                       key={entry.id}

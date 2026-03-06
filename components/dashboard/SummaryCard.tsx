@@ -149,7 +149,9 @@ export default function SummaryCard({ user, bankHolidays }: SummaryCardProps) {
   /** The year allowance whose window is currently displayed */
   const effectiveYa = useMemo(() => {
     if (selectedYear === null) return activeYa;
-    return visibleAllowances.find((ya) => ya.year === selectedYear) ?? /* c8 ignore next */ activeYa;
+    return (
+      visibleAllowances.find((ya) => ya.year === selectedYear) ?? /* c8 ignore next */ activeYa
+    );
   }, [selectedYear, visibleAllowances, activeYa]);
 
   const summary = calcLeaveSummary(user, bankHolidayDates, effectiveYa ?? undefined);
