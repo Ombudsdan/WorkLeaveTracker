@@ -201,10 +201,12 @@ export default function CalendarView({
     const todayRing = isToday ? "ring-2 ring-indigo-500" : "";
 
     if (layout.kind === "empty") {
+      const isClickable = !isNWD && isOwnProfile && !!onAdd;
       return (
         <div
           key={day}
-          className={`relative aspect-square rounded-lg overflow-hidden text-xs font-medium transition cursor-default ${defaultClass} ${todayRing}`}
+          className={`relative aspect-square rounded-lg overflow-hidden text-xs font-medium transition ${isClickable ? "cursor-pointer hover:ring-2 hover:ring-indigo-300" : "cursor-default"} ${defaultClass} ${todayRing}`}
+          onClick={isClickable ? () => onAdd!(dateStr) : undefined}
         >
           <div className="h-full flex flex-col items-center justify-center">
             <span>{day}</span>
@@ -368,7 +370,7 @@ export default function CalendarView({
         <div className="flex items-center gap-2">
           {isOwnProfile && onAdd && (
             <button
-              onClick={onAdd}
+              onClick={() => onAdd()}
               className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-4 py-1.5 rounded-lg hover:bg-indigo-700 transition font-medium cursor-pointer"
             >
               <Plus size={14} />
@@ -568,7 +570,7 @@ interface CalendarViewProps {
   user: PublicUser;
   bankHolidays: BankHolidayEntry[];
   isOwnProfile?: boolean;
-  onAdd?: () => void;
+  onAdd?: (date?: string) => void;
   onEdit?: (entry: LeaveEntry) => void;
   onDelete?: (id: string) => void;
 }

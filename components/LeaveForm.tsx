@@ -212,9 +212,14 @@ export default function LeaveForm({
 
   function handleDurationChange(value: DurationType) {
     setDuration(value);
-    // Clear dates only — type, notes and status are intentionally preserved
-    setStartDate("");
-    setEndDate("");
+    // Preserve the start date when switching duration type.
+    // For half-day modes end date must equal start date, so set it automatically.
+    // For full-day mode clear end date so the user picks a new range end.
+    if (value !== "full" && startDate) {
+      setEndDate(startDate);
+    } else {
+      setEndDate("");
+    }
   }
 
   function handleTypeChange(v: LeaveType) {

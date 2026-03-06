@@ -31,6 +31,7 @@ export default function DashboardPage() {
   const [bankHolidays, setBankHolidays] = useState<BankHolidayEntry[]>([]);
   const [viewingUserId, setViewingUserId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [addModalInitialDate, setAddModalInitialDate] = useState<string | undefined>(undefined);
   const [editingEntry, setEditingEntry] = useState<LeaveEntry | null>(null);
   const [showAllowanceWarningModal, setShowAllowanceWarningModal] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -226,7 +227,10 @@ export default function DashboardPage() {
               user={displayedUser}
               bankHolidays={bankHolidays}
               isOwnProfile={isOwnProfile}
-              onAdd={() => setShowAddModal(true)}
+              onAdd={(date) => {
+                setAddModalInitialDate(date);
+                setShowAddModal(true);
+              }}
               onEdit={isOwnProfile ? setEditingEntry : undefined}
               onDelete={isOwnProfile ? handleDeleteEntry : undefined}
             />
@@ -236,10 +240,14 @@ export default function DashboardPage() {
 
       {showAddModal && (
         <AddLeaveModal
-          onClose={() => setShowAddModal(false)}
+          onClose={() => {
+            setShowAddModal(false);
+            setAddModalInitialDate(undefined);
+          }}
           onSave={handleAddEntry}
           user={currentUser}
           bankHolidays={bankHolidays}
+          initialDate={addModalInitialDate}
         />
       )}
 
