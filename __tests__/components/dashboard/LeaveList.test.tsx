@@ -462,3 +462,173 @@ describe("LeaveList — sick leave entries", () => {
     expect(container.querySelector(".bg-red-100")).toBeInTheDocument();
   });
 });
+
+// ---------------------------------------------------------------------------
+// LeaveList — window grouping
+// ---------------------------------------------------------------------------
+
+describe("LeaveList — window dividers", () => {
+  it("shows a window label for upcoming entries (single window)", () => {
+    const entry: LeaveEntry = {
+      id: "ew1",
+      startDate: "2026-03-20",
+      endDate: "2026-03-20",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+    };
+    render(
+      <LeaveList
+        user={{ ...alice, entries: [entry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    // Alice has year 2026 (Jan-Dec), so the label should contain "Jan 2026" and "Dec 2026"
+    expect(screen.getByText(/1 Jan 2026/)).toBeInTheDocument();
+    expect(screen.getByText(/31 Dec 2026/)).toBeInTheDocument();
+  });
+
+  it("shows two window sections with a divider when entries span two leave windows", () => {
+    const twoWindowUser: PublicUser = {
+      ...alice,
+      yearAllowances: [
+        { year: 2025, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+        { year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+      ],
+      entries: [
+        // In the 2025 window — but endDate >= today (2026-03-15) to appear in upcoming
+        {
+          id: "e-2025",
+          startDate: "2025-12-29",
+          endDate: "2026-03-15",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+        // In the 2026 window
+        {
+          id: "e-2026",
+          startDate: "2026-06-01",
+          endDate: "2026-06-05",
+          status: LeaveStatus.Planned,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    const { container } = render(
+      <LeaveList
+        user={twoWindowUser}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    // Both window labels should be present
+    expect(screen.getByText(/1 Jan 2025/)).toBeInTheDocument();
+    expect(screen.getByText(/1 Jan 2026/)).toBeInTheDocument();
+    // A dividing <hr> should be rendered between the two groups
+    expect(container.querySelector("hr")).toBeInTheDocument();
+  });
+
+  it("groups multiple entries in the same window under one label", () => {
+    const twoEntriesSameWindow: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "ea",
+          startDate: "2026-03-20",
+          endDate: "2026-03-20",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          notes: "Entry A",
+        },
+        {
+          id: "eb",
+          startDate: "2026-04-01",
+          endDate: "2026-04-01",
+          status: LeaveStatus.Planned,
+          type: LeaveType.Holiday,
+          notes: "Entry B",
+        },
+      ],
+    };
+    const { container } = render(
+      <LeaveList
+        user={twoEntriesSameWindow}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    // Both entries are in the Jan–Dec 2026 window → only one window label, no <hr>
+    const windowLabels = container.querySelectorAll("p.text-xs.text-gray-400.mb-2");
+    expect(windowLabels).toHaveLength(1);
+    expect(container.querySelector("hr")).toBeNull();
+    expect(screen.getByText("Entry A")).toBeInTheDocument();
+    expect(screen.getByText("Entry B")).toBeInTheDocument();
+  });
+
+  it("shows '–' window label for an entry outside any known leave window", () => {
+    // Entry in 2028 with no matching year allowance
+    const futureEntry: LeaveEntry = {
+      id: "e-future",
+      startDate: "2028-03-20",
+      endDate: "2028-03-20",
+      status: LeaveStatus.Planned,
+      type: LeaveType.Holiday,
+      notes: "Future plan", // provide notes so the "–" only comes from the window label
+    };
+    const { container } = render(
+      <LeaveList
+        user={{ ...alice, entries: [futureEntry] }}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    // No matching window → window label paragraph shows "–"
+    const windowLabel = container.querySelector("p.text-xs.text-gray-400.mb-2");
+    expect(windowLabel?.textContent).toBe("–");
+  });
+
+  it("matches entry to window using the January default when holidayStartMonth is missing", () => {
+    // Allowance with no holidayStartMonth — should default to January
+    const legacyAllowance = {
+      year: 2026,
+      company: "Acme",
+      core: 25,
+      bought: 0,
+      carried: 0,
+    } as import("@/types").YearAllowance;
+    const legacyUser: PublicUser = {
+      ...alice,
+      yearAllowances: [legacyAllowance],
+      entries: [
+        {
+          id: "e-legacy",
+          startDate: "2026-06-01",
+          endDate: "2026-06-01",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          notes: "Legacy window entry",
+        },
+      ],
+    };
+    const { container } = render(
+      <LeaveList
+        user={legacyUser}
+        bankHolidays={[]}
+        isOwnProfile={true}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    // Should find the entry inside the Jan–Dec 2026 window
+    const windowLabel = container.querySelector("p.text-xs.text-gray-400.mb-2");
+    expect(windowLabel?.textContent).toMatch(/Jan 2026/);
+  });
+});

@@ -40,7 +40,7 @@ describe("SummaryCard — basic display", () => {
 
   it("shows the holiday year range", () => {
     render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
-    // Holiday year Jan 2026 – Dec 2026
+    // Leave window: Jan 2026 – Dec 2026 (shown as text when there is only one allowance)
     expect(screen.getByText(/1 Jan 2026/)).toBeInTheDocument();
     expect(screen.getByText(/31 Dec 2026/)).toBeInTheDocument();
   });
@@ -343,5 +343,93 @@ describe("SummaryCard — sick-leave tab", () => {
     // NEXT_PUBLIC_ENABLE_FEATURE_SICK_LEAVE is not set in the test env → SICK_LEAVE_ENABLED = false
     render(<SummaryCard user={userWithSick} bankHolidays={[]} isOwnProfile={true} />);
     expect(screen.queryByRole("tab", { name: "Sick" })).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Leave window selector
+// ---------------------------------------------------------------------------
+
+describe("SummaryCard — leave window selector", () => {
+  const multiWindowUser: PublicUser = {
+    ...alice,
+    yearAllowances: [
+      { year: 2025, company: "Acme", holidayStartMonth: 1, core: 20, bought: 0, carried: 0 },
+      { year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+    ],
+    entries: [
+      {
+        id: "e2025",
+        startDate: "2025-03-10",
+        endDate: "2025-03-13",
+        status: LeaveStatus.Approved,
+        type: LeaveType.Holiday,
+      },
+    ],
+  };
+
+  it("shows a 'Leave window:' label", () => {
+    render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
+    expect(screen.getByText(/leave window:/i)).toBeInTheDocument();
+  });
+
+  it("does not show the select when there is only one allowance", () => {
+    render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
+    expect(screen.queryByRole("combobox", { name: /select leave window/i })).toBeNull();
+  });
+
+  it("shows the select when there are multiple allowances", () => {
+    render(<SummaryCard user={multiWindowUser} bankHolidays={[]} isOwnProfile={true} />);
+    expect(screen.getByRole("combobox", { name: /select leave window/i })).toBeInTheDocument();
+  });
+
+  it("the select defaults to the active year", () => {
+    render(<SummaryCard user={multiWindowUser} bankHolidays={[]} isOwnProfile={true} />);
+    const select = screen.getByRole("combobox", { name: /select leave window/i });
+    // Active year is 2026 (today = 2026-03-15)
+    expect((select as HTMLSelectElement).value).toBe("2026");
+  });
+
+  it("switching the window updates the summary totals", async () => {
+    const user = setup();
+    const { container } = render(
+      <SummaryCard user={multiWindowUser} bankHolidays={[]} isOwnProfile={true} />
+    );
+    const select = screen.getByRole("combobox", { name: /select leave window/i });
+    // Switch to 2025
+    await user.selectOptions(select, ["2025"]);
+    // 2025 allowance: core=20, no entries in 2026 window → remaining=20 before 2025 entry
+    // 2025 has 1 approved entry (Mon 10 – Thu 13 = 4 days), so remaining = 20 - 4 = 16
+    const svg = container.querySelector("svg");
+    expect(svg?.textContent).toContain("16");
+  });
+
+  it("switching the window updates the breakdown rows", async () => {
+    const user = setup();
+    render(<SummaryCard user={multiWindowUser} bankHolidays={[]} isOwnProfile={true} />);
+    const select = screen.getByRole("combobox", { name: /select leave window/i });
+    await user.selectOptions(select, ["2025"]);
+    await user.click(screen.getByRole("button", { name: /view breakdown/i }));
+    // 2025 core days = 20
+    const coreRow = screen.getByText("Core Days").closest("div");
+    expect(coreRow?.textContent).toContain("20");
+  });
+
+  it("resets to the active window when the user changes", () => {
+    const { rerender } = render(
+      <SummaryCard user={multiWindowUser} bankHolidays={[]} isOwnProfile={true} />
+    );
+    // Re-render with a different user (single allowance) — selectedYear resets
+    const differentUser: PublicUser = {
+      ...alice,
+      id: "u2",
+      yearAllowances: [
+        { year: 2026, company: "Other", holidayStartMonth: 1, core: 30, bought: 0, carried: 0 },
+      ],
+    };
+    rerender(<SummaryCard user={differentUser} bankHolidays={[]} isOwnProfile={true} />);
+    // The new user has only one allowance → no select, shows 30 remaining
+    const svg = document.querySelector("svg");
+    expect(svg?.textContent).toContain("30");
   });
 });

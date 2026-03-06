@@ -1,10 +1,10 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { LeaveStatus, LeaveType } from "@/types";
 import type { PublicUser, BankHolidayEntry } from "@/types";
 import { STATUS_DOT } from "@/variables/colours";
 import { calcLeaveSummary } from "@/utils/leaveCalc";
-import { countEntryDays, getActiveYearAllowance } from "@/utils/dateHelpers";
+import { countEntryDays, getActiveYearAllowance, formatYearWindow } from "@/utils/dateHelpers";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { SICK_LEAVE_ENABLED } from "@/utils/features";
 
@@ -130,15 +130,30 @@ function SingleRingDonut({
 export default function SummaryCard({ user, bankHolidays, isOwnProfile }: SummaryCardProps) {
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [activeTab, setActiveTab] = useState<"holiday" | "sick">("holiday");
+  /** null = show the automatically-selected active window */
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+
+  // Reset the selected window whenever the viewed user changes
+  useEffect(() => {
+    setSelectedYear(null);
+  }, [user.id]);
+
   const bankHolidayDates = bankHolidays.map((bh) => bh.date);
-  const summary = calcLeaveSummary(user, bankHolidayDates);
   const activeYa = getActiveYearAllowance(user.yearAllowances);
-  // Use the allowance's own year for the displayed date range so it always matches
-  // what calcLeaveSummary actually counted.
-  const sm = activeYa?.holidayStartMonth ?? 1;
-  const yr = activeYa?.year ?? new Date().getFullYear();
-  const hyStart = new Date(yr, sm - 1, 1);
-  const hyEnd = new Date(yr + 1, sm - 1, 0); // last day before the next period starts
+
+  /** Non-deactivated allowances sorted oldest → newest, used to populate the selector */
+  const visibleAllowances = useMemo(() => {
+    const pool = user.yearAllowances.filter((ya) => ya.active !== false);
+    return [...(pool.length > 0 ? pool : user.yearAllowances)].sort((a, b) => a.year - b.year);
+  }, [user.yearAllowances]);
+
+  /** The year allowance whose window is currently displayed */
+  const effectiveYa = useMemo(() => {
+    if (selectedYear === null) return activeYa;
+    return visibleAllowances.find((ya) => ya.year === selectedYear) ?? /* c8 ignore next */ activeYa;
+  }, [selectedYear, visibleAllowances, activeYa]);
+
+  const summary = calcLeaveSummary(user, bankHolidayDates, effectiveYa ?? undefined);
 
   const remaining = Math.max(0, summary.remaining);
 
@@ -171,9 +186,9 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
   ];
 
   const breakdownRows: { label: string; value: string }[] = [
-    { label: "Core Days", value: String(activeYa?.core ?? 0) },
-    { label: "Bought", value: `+${activeYa?.bought ?? 0}` },
-    { label: "Carried Over", value: `+${activeYa?.carried ?? 0}` },
+    { label: "Core Days", value: String(effectiveYa?.core ?? 0) },
+    { label: "Bought", value: `+${effectiveYa?.bought ?? 0}` },
+    { label: "Carried Over", value: `+${effectiveYa?.carried ?? 0}` },
     { label: "Total", value: String(summary.total) },
     { label: "Used so far", value: `${summary.used} days` },
     { label: "Remaining", value: `${summary.remaining} days` },
@@ -193,21 +208,27 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
         )}
       </div>
 
-      {/* Holiday year */}
-      <p className="text-xs text-gray-400 mb-4">
-        Holiday year:{" "}
-        {hyStart.toLocaleDateString("en-GB", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-        })}{" "}
-        –{" "}
-        {hyEnd.toLocaleDateString("en-GB", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-        })}
-      </p>
+      {/* Leave window */}
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-xs text-gray-400">
+          Leave window:{" "}
+          {effectiveYa ? formatYearWindow(effectiveYa) : "–"}
+        </p>
+        {visibleAllowances.length > 1 && effectiveYa && (
+          <select
+            value={effectiveYa.year}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            className="text-xs text-gray-600 border border-gray-200 rounded px-1.5 py-0.5 bg-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-indigo-300"
+            aria-label="Select leave window"
+          >
+            {visibleAllowances.map((ya) => (
+              <option key={ya.year} value={ya.year}>
+                {formatYearWindow(ya)}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
 
       {/* Tab toggle — only shown when the user has sick entries */}
       {showTabs && (
