@@ -115,7 +115,18 @@ export default function CalendarView({
   const [calendarYear, setCalendarYear] = useState(today.getFullYear());
   const [calendarMonth, setCalendarMonth] = useState(today.getMonth());
   const [popover, setPopover] = useState<PopoverState | null>(null);
+  const [isMobileSheet, setIsMobileSheet] = useState(false);
   const calendarRef = useRef<HTMLDivElement>(null);
+
+  // Detect mobile layout to switch between bottom sheet and floating popover
+  useEffect(() => {
+    function checkMobile() {
+      setIsMobileSheet(window.innerWidth < 640);
+    }
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   const todayStr = toIsoDate(today);
   const daysInMonth = getDaysInMonth(calendarYear, calendarMonth);
@@ -417,19 +428,37 @@ export default function CalendarView({
         </span>
       </div>
 
-      {/* Leave entry popover */}
+      {/* Mobile backdrop — tap outside the sheet to dismiss */}
+      {popover && isMobileSheet && (
+        <div
+          data-testid="mobile-backdrop"
+          className="fixed inset-0 z-40 bg-black/30"
+          onClick={() => setPopover(null)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Leave entry popover — bottom sheet on mobile, floating card on desktop */}
       {popover && (
         <div
-          className="absolute z-30 bg-white rounded-xl shadow-xl border border-gray-200 p-3 w-52 text-xs"
-          style={{ top: popover.top, left: popover.left }}
+          className={
+            isMobileSheet
+              ? "fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-2xl shadow-2xl border-t border-gray-200 p-5 text-sm"
+              : "absolute z-30 bg-white rounded-xl shadow-xl border border-gray-200 p-3 w-52 text-xs"
+          }
+          style={!isMobileSheet ? { top: popover.top, left: popover.left } : undefined}
           role="tooltip"
         >
           <button
             onClick={() => setPopover(null)}
-            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 cursor-pointer"
+            className={
+              isMobileSheet
+                ? "absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 cursor-pointer"
+                : "absolute top-2 right-2 text-gray-400 hover:text-gray-600 cursor-pointer"
+            }
             aria-label="Close"
           >
-            <X size={12} />
+            <X className={isMobileSheet ? "w-5 h-5" : "w-3 h-3"} />
           </button>
 
           {/* Status / type badge */}
@@ -443,14 +472,16 @@ export default function CalendarView({
               : popover.entry.status.charAt(0).toUpperCase() + popover.entry.status.slice(1);
             return (
               <div
-                className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold mb-2 border ${badgeClass}`}
+                className={`inline-flex items-center px-1.5 py-0.5 rounded font-semibold mb-2 border ${badgeClass} ${isMobileSheet ? "text-xs" : "text-[10px]"}`}
               >
                 {badgeLabel}
               </div>
             );
           })()}
 
-          <p className="font-medium text-gray-800 mb-1 pr-4">
+          <p
+            className={`font-medium text-gray-800 mb-1 ${isMobileSheet ? "pr-8 text-base" : "pr-4"}`}
+          >
             {getNoteLabel(popover.entry) || "No description"}
           </p>
 
@@ -458,7 +489,7 @@ export default function CalendarView({
             {formatDateRange(popover.entry.startDate, popover.entry.endDate)}
           </p>
 
-          <p className="text-gray-500 mb-2">
+          <p className={`text-gray-500 ${isMobileSheet ? "mb-4" : "mb-2"}`}>
             {(() => {
               const dur = getEntryDuration(popover.entry);
               if (dur === LeaveDuration.HalfMorning) return "Half day (AM)";
@@ -468,17 +499,23 @@ export default function CalendarView({
           </p>
 
           {isOwnProfile && (onEdit || onDelete) && (
-            <div className="flex gap-2 pt-2 border-t border-gray-100">
+            <div
+              className={`flex border-t border-gray-100 ${isMobileSheet ? "gap-3 pt-4" : "gap-2 pt-2"}`}
+            >
               {onEdit && (
                 <button
                   onClick={() => {
                     onEdit(popover.entry);
                     setPopover(null);
                   }}
-                  className="flex items-center gap-1 text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer"
+                  className={
+                    isMobileSheet
+                      ? "flex-1 flex items-center justify-center gap-2 py-3 text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer rounded-xl border border-indigo-100 hover:bg-indigo-50"
+                      : "flex items-center gap-1 text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer"
+                  }
                   aria-label="Edit"
                 >
-                  <Pencil size={11} /> Edit
+                  <Pencil className={isMobileSheet ? "w-4 h-4" : "w-3 h-3"} /> Edit
                 </button>
               )}
               {onDelete && (
@@ -487,10 +524,14 @@ export default function CalendarView({
                     onDelete(popover.entry.id);
                     setPopover(null);
                   }}
-                  className="flex items-center gap-1 text-red-500 hover:text-red-700 font-medium cursor-pointer"
+                  className={
+                    isMobileSheet
+                      ? "flex-1 flex items-center justify-center gap-2 py-3 text-red-500 hover:text-red-700 font-medium cursor-pointer rounded-xl border border-red-100 hover:bg-red-50"
+                      : "flex items-center gap-1 text-red-500 hover:text-red-700 font-medium cursor-pointer"
+                  }
                   aria-label="Delete"
                 >
-                  <Trash2 size={11} /> Delete
+                  <Trash2 className={isMobileSheet ? "w-4 h-4" : "w-3 h-3"} /> Delete
                 </button>
               )}
             </div>
