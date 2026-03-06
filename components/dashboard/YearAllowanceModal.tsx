@@ -149,9 +149,6 @@ function YearAllowanceModalInner({
               </option>
             </select>
           </div>
-          <p className="text-sm text-gray-500">
-            Total: <strong>{core + bought + carried}</strong> days
-          </p>
         </div>
         <div className="flex gap-2 mt-5">
           <Button variant="primary" fullWidth onClick={handleSave}>

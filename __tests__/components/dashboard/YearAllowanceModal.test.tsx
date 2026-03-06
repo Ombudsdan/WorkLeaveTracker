@@ -77,24 +77,6 @@ describe("YearAllowanceModal — rendering", () => {
     expect(screen.getByDisplayValue("2")).toBeInTheDocument();
   });
 
-  it("shows the computed total", () => {
-    renderModal(
-      <YearAllowanceModal
-        existing={{
-          year: 2026,
-          company: "Acme",
-          holidayStartMonth: 1,
-          core: 20,
-          bought: 3,
-          carried: 2,
-        }}
-        onClose={jest.fn()}
-        onSave={jest.fn()}
-      />
-    );
-    expect(screen.getByText(/25/)).toBeInTheDocument();
-  });
-
   it("uses initialYear when provided and no existing", () => {
     renderModal(<YearAllowanceModal initialYear={2027} onClose={jest.fn()} onSave={jest.fn()} />);
     expect(screen.getByDisplayValue("2027")).toBeInTheDocument();
@@ -150,7 +132,7 @@ describe("YearAllowanceModal — interactions", () => {
     });
   });
 
-  it("updates the total when core days are changed", async () => {
+  it("updates the core days field value when core days are changed", async () => {
     const user = setup();
     renderModal(
       <YearAllowanceModal
@@ -169,8 +151,8 @@ describe("YearAllowanceModal — interactions", () => {
     const coreInput = screen.getByLabelText("Core Days");
     await user.clear(coreInput);
     await user.type(coreInput, "30");
-    // Total should update to 30
-    expect(screen.getByText(/30/)).toBeInTheDocument();
+    // The input itself should reflect the new value
+    expect((coreInput as HTMLInputElement).value).toBe("30");
   });
 
   it("calls onSave with updated values after editing fields", async () => {
