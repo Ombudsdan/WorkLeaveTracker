@@ -106,7 +106,10 @@ export default function LeaveList({
                   const baseNote = entry.notes ?? "–";
                   const noteText = isHalf && entry.notes ? `${entry.notes} (${periodLabel})` : baseNote;
                   return (
-                    <div key={entry.id} className={`border rounded-lg p-2 text-xs ${cardClass}`}>
+                    <div
+                      key={entry.id}
+                      className={`border rounded-lg p-3 sm:p-2 text-sm sm:text-xs ${cardClass}`}
+                    >
                       {/* Line 1: Reason (left) | Status (right) */}
                       <div className="flex items-center justify-between">
                         <span className="font-medium truncate mr-2">{noteText}</span>
@@ -119,20 +122,20 @@ export default function LeaveList({
                           <span className="opacity-70">({daysLabel})</span>
                         </span>
                         {isOwnProfile && (
-                          <div className="flex gap-1.5 shrink-0">
+                          <div className="flex gap-1 shrink-0">
                             <button
                               onClick={() => onEdit(entry)}
                               aria-label="Edit"
-                              className="hover:opacity-70 cursor-pointer"
+                              className="p-2 sm:p-0.5 hover:opacity-70 cursor-pointer rounded"
                             >
-                              <Pencil size={12} />
+                              <Pencil className="w-4 h-4 sm:w-3 sm:h-3" />
                             </button>
                             <button
                               onClick={() => onDelete(entry.id)}
                               aria-label="Delete"
-                              className="hover:opacity-70 text-red-600 cursor-pointer"
+                              className="p-2 sm:p-0.5 hover:opacity-70 text-red-600 cursor-pointer rounded"
                             >
-                              <Trash2 size={12} />
+                              <Trash2 className="w-4 h-4 sm:w-3 sm:h-3" />
                             </button>
                           </div>
                         )}
