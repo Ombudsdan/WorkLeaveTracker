@@ -239,6 +239,33 @@ describe("SummaryCard — breakdown layout", () => {
     expect(container.querySelector("hr")).toBeInTheDocument();
   });
 
+  it("shows − prefix on Bank holidays on working days value when handling is Deduct", async () => {
+    const user = setup();
+    const userWithDeduct: PublicUser = {
+      ...alice,
+      yearAllowances: [
+        {
+          year: 2026,
+          company: "Acme",
+          holidayStartMonth: 1,
+          core: 25,
+          bought: 0,
+          carried: 0,
+          bankHolidayHandling: "deduct" as import("@/types").BankHolidayHandling,
+        },
+      ],
+    };
+    render(
+      <SummaryCard
+        user={userWithDeduct}
+        bankHolidays={[{ date: "2026-01-01", title: "New Year's Day" }]}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: /view breakdown/i }));
+    const row = screen.getByText("Bank holidays on working days").closest("div");
+    expect(row?.querySelector("span:last-child")?.textContent).toBe("−1");
+  });
+
   it("shows − prefix on Approved value", async () => {
     const user = setup();
     const userWithApproved: PublicUser = {
@@ -469,6 +496,79 @@ describe("SummaryCard — breakdown Remaining colour when over-allocated", () =>
   });
 });
 
+describe("SummaryCard — bank holidays on working days in breakdown", () => {
+  const aliceWithDeduct: PublicUser = {
+    ...alice,
+    yearAllowances: [
+      {
+        year: 2026,
+        company: "Acme",
+        holidayStartMonth: 1,
+        core: 25,
+        bought: 0,
+        carried: 0,
+        bankHolidayHandling: "deduct" as import("@/types").BankHolidayHandling,
+      },
+    ],
+  };
+
+  it("shows 'Bank holidays on working days' row in the breakdown when handling is Deduct", async () => {
+    const user = setup();
+    render(
+      <SummaryCard
+        user={aliceWithDeduct}
+        bankHolidays={[{ date: "2026-01-01", title: "New Year's Day" }]}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: /view breakdown/i }));
+    expect(screen.getByText("Bank holidays on working days")).toBeInTheDocument();
+  });
+
+  it("does NOT show 'Bank holidays on working days' row when handling is not Deduct", async () => {
+    const user = setup();
+    // alice has no bankHolidayHandling (defaults to None behaviour)
+    render(
+      <SummaryCard
+        user={alice}
+        bankHolidays={[{ date: "2026-01-01", title: "New Year's Day" }]}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: /view breakdown/i }));
+    expect(screen.queryByText("Bank holidays on working days")).toBeNull();
+  });
+
+  it("shows −0 when no bank holidays fall on working days (Deduct mode)", async () => {
+    const user = setup();
+    // Saturday bank holiday — alice has nonWorkingDays [0, 6]
+    render(
+      <SummaryCard
+        user={aliceWithDeduct}
+        bankHolidays={[{ date: "2026-01-03", title: "Saturday Holiday" }]}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: /view breakdown/i }));
+    const row = screen.getByText("Bank holidays on working days").closest("div");
+    expect(row?.querySelector("span:last-child")?.textContent).toBe("−0");
+  });
+
+  it("shows −N for bank holidays on working days (Deduct mode)", async () => {
+    const user = setup();
+    // Thursday 2026-01-01 is a working day for alice
+    render(
+      <SummaryCard
+        user={aliceWithDeduct}
+        bankHolidays={[
+          { date: "2026-01-01", title: "New Year's Day" },
+          { date: "2026-12-25", title: "Christmas Day" },
+        ]}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: /view breakdown/i }));
+    const row = screen.getByText("Bank holidays on working days").closest("div");
+    expect(row?.querySelector("span:last-child")?.textContent).toBe("−2");
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Sick-leave tab (feature flag behaviour)
 // ---------------------------------------------------------------------------
@@ -549,8 +649,8 @@ describe("SummaryCard — leave window selector", () => {
     const select = screen.getByRole("combobox", { name: /select leave window/i });
     // Switch to 2025
     await user.selectOptions(select, ["2025"]);
-    // 2025 allowance: core=20, no bank holidays → total=20
-    // 2025 has 1 approved entry (Mon 10 – Thu 13 = 4 days), so remaining = 20 - 4 = 16
+    // 2025 allowance: core=20, no bank holidays → effectiveTotal=20
+    // 2025 has 1 approved entry (Mon 10 – Thu 13 = 4 days), so remaining = 20 - 0 - 4 = 16
     const svg = container.querySelector("svg");
     expect(svg?.textContent).toContain("16");
   });
