@@ -1,5 +1,5 @@
 import { calcLeaveSummary } from "@/utils/leaveCalc";
-import { LeaveStatus, LeaveType, LeaveDuration } from "@/types";
+import { LeaveStatus, LeaveType, LeaveDuration, BankHolidayHandling } from "@/types";
 import type { PublicUser } from "@/types";
 
 // Fix the current date so getHolidayYearBounds is deterministic
@@ -275,6 +275,7 @@ describe("calcLeaveSummary — no allowance configured", () => {
       planned: 0,
       used: 0,
       remaining: 0,
+      bankHolidaysOnWorkingDays: 0,
     });
   });
 });
@@ -346,5 +347,152 @@ describe("calcLeaveSummary — half-day entries count as 0.5", () => {
     };
     const { planned } = calcLeaveSummary(user, []);
     expect(planned).toBe(0.5);
+  });
+});
+
+describe("calcLeaveSummary — bankHolidaysOnWorkingDays", () => {
+  it("counts bank holidays on working days within the holiday year", () => {
+    // Two bank holidays on working days (Mon/Tue = day 1/2) within Jan–Dec 2026
+    const { bankHolidaysOnWorkingDays } = calcLeaveSummary(baseUser, [
+      "2026-01-01", // Thursday (working day)
+      "2026-12-25", // Friday (working day)
+      "2026-12-26", // Saturday (non-working) — should NOT count
+      "2025-12-26", // Outside holiday year — should NOT count
+    ]);
+    expect(bankHolidaysOnWorkingDays).toBe(2);
+  });
+
+  it("returns 0 bankHolidaysOnWorkingDays when no bank holidays provided", () => {
+    const { bankHolidaysOnWorkingDays } = calcLeaveSummary(baseUser, []);
+    expect(bankHolidaysOnWorkingDays).toBe(0);
+  });
+
+  it("returns 0 bankHolidaysOnWorkingDays when all bank holidays fall on non-working days", () => {
+    // Saturday 2026-01-03 is a non-working day for alice (nonWorkingDays: [0, 6])
+    const { bankHolidaysOnWorkingDays } = calcLeaveSummary(baseUser, ["2026-01-03"]);
+    expect(bankHolidaysOnWorkingDays).toBe(0);
+  });
+});
+
+describe("calcLeaveSummary — bankHolidayHandling", () => {
+  it("does NOT reduce total when handling is None (default)", () => {
+    const user: PublicUser = {
+      ...baseUser,
+      yearAllowances: [
+        {
+          year: 2026,
+          company: "Acme",
+          holidayStartMonth: 1,
+          core: 26,
+          bought: 0,
+          carried: 0,
+          bankHolidayHandling: BankHolidayHandling.None,
+        },
+      ],
+    };
+    // 4 bank holidays on working days (Mon–Fri)
+    const summary = calcLeaveSummary(user, [
+      "2026-01-01",
+      "2026-04-03",
+      "2026-12-25",
+      "2026-12-28",
+    ]);
+    expect(summary.total).toBe(26);
+    expect(summary.bankHolidaysOnWorkingDays).toBe(4);
+  });
+
+  it("does NOT reduce total when bankHolidayHandling is absent (backwards compatibility)", () => {
+    const user: PublicUser = {
+      ...baseUser,
+      yearAllowances: [
+        { year: 2026, company: "Acme", holidayStartMonth: 1, core: 26, bought: 0, carried: 0 },
+      ],
+    };
+    const summary = calcLeaveSummary(user, ["2026-01-01", "2026-04-03"]);
+    expect(summary.total).toBe(26);
+  });
+
+  it("reduces total by bank holidays on working days when handling is Deduct", () => {
+    const user: PublicUser = {
+      ...baseUser,
+      yearAllowances: [
+        {
+          year: 2026,
+          company: "Acme",
+          holidayStartMonth: 1,
+          core: 26,
+          bought: 0,
+          carried: 0,
+          bankHolidayHandling: BankHolidayHandling.Deduct,
+        },
+      ],
+    };
+    // 4 bank holidays on working days → total becomes 26 - 4 = 22
+    const summary = calcLeaveSummary(user, [
+      "2026-01-01",
+      "2026-04-03",
+      "2026-12-25",
+      "2026-12-28",
+    ]);
+    expect(summary.total).toBe(22);
+    expect(summary.bankHolidaysOnWorkingDays).toBe(4);
+    expect(summary.remaining).toBe(22);
+  });
+
+  it("does not deduct bank holidays on non-working days even with Deduct handling", () => {
+    const user: PublicUser = {
+      ...baseUser,
+      yearAllowances: [
+        {
+          year: 2026,
+          company: "Acme",
+          holidayStartMonth: 1,
+          core: 26,
+          bought: 0,
+          carried: 0,
+          bankHolidayHandling: BankHolidayHandling.Deduct,
+        },
+      ],
+    };
+    // Saturday bank holiday (nonWorkingDay) — should not be deducted
+    const summary = calcLeaveSummary(user, ["2026-01-03"]); // Saturday
+    expect(summary.total).toBe(26);
+    expect(summary.bankHolidaysOnWorkingDays).toBe(0);
+  });
+
+  it("accounts for remaining correctly after deduction and leave usage", () => {
+    // core=26, deduct 4 BH → total=22; 5 approved days → remaining=17
+    const user: PublicUser = {
+      ...baseUser,
+      yearAllowances: [
+        {
+          year: 2026,
+          company: "Acme",
+          holidayStartMonth: 1,
+          core: 26,
+          bought: 0,
+          carried: 0,
+          bankHolidayHandling: BankHolidayHandling.Deduct,
+        },
+      ],
+      entries: [
+        {
+          id: "e1",
+          startDate: "2026-03-09",
+          endDate: "2026-03-13",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    const summary = calcLeaveSummary(user, [
+      "2026-01-01",
+      "2026-04-03",
+      "2026-12-25",
+      "2026-12-28",
+    ]);
+    expect(summary.total).toBe(22);
+    expect(summary.approved).toBe(5);
+    expect(summary.remaining).toBe(17);
   });
 });

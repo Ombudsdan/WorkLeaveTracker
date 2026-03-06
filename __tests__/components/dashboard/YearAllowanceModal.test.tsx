@@ -146,6 +146,7 @@ describe("YearAllowanceModal — interactions", () => {
       core: 25,
       bought: 0,
       carried: 0,
+      bankHolidayHandling: "none",
     });
   });
 
@@ -230,4 +231,51 @@ it("merges companies fetched from the API into the company dropdown", async () =
   await waitFor(() =>
     expect(screen.getByRole("option", { name: "FetchedCo" })).toBeInTheDocument()
   );
+});
+
+describe("YearAllowanceModal — bank holiday handling", () => {
+  it("renders the Bank Holidays select with default option 'Do not use annual leave'", () => {
+    renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={jest.fn()} />);
+    const select = screen.getByLabelText("Bank Holidays");
+    expect(select).toBeInTheDocument();
+    expect((select as HTMLSelectElement).value).toBe("none");
+  });
+
+  it("pre-fills Bank Holidays select from existing allowance", () => {
+    renderModal(
+      <YearAllowanceModal
+        existing={{
+          year: 2026,
+          company: "Acme",
+          holidayStartMonth: 1,
+          core: 25,
+          bought: 0,
+          carried: 0,
+          bankHolidayHandling: "deduct" as import("@/types").BankHolidayHandling,
+        }}
+        onClose={jest.fn()}
+        onSave={jest.fn()}
+      />
+    );
+    const select = screen.getByLabelText("Bank Holidays") as HTMLSelectElement;
+    expect(select.value).toBe("deduct");
+  });
+
+  it("calls onSave with bankHolidayHandling=deduct when Deduct option is selected", async () => {
+    const user = setup();
+    const onSave = jest.fn();
+    renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={onSave} />);
+    const select = screen.getByLabelText("Bank Holidays");
+    await user.selectOptions(select, "deduct");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ bankHolidayHandling: "deduct" }));
+  });
+
+  it("calls onSave with bankHolidayHandling=none (default) when option is not changed", async () => {
+    const user = setup();
+    const onSave = jest.fn();
+    renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={onSave} />);
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ bankHolidayHandling: "none" }));
+  });
 });

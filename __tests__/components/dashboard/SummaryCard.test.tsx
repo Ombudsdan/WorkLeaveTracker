@@ -315,6 +315,54 @@ describe("SummaryCard — breakdown Remaining row colour when over-allocated", (
   });
 });
 
+describe("SummaryCard — bank holidays on working days in breakdown", () => {
+  it("shows 'Bank holidays on working days' row in the breakdown", async () => {
+    const user = setup();
+    render(
+      <SummaryCard
+        user={alice}
+        bankHolidays={[{ date: "2026-01-01", title: "New Year's Day" }]}
+        isOwnProfile={true}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: /view breakdown/i }));
+    expect(screen.getByText("Bank holidays on working days")).toBeInTheDocument();
+  });
+
+  it("shows count of 0 when no bank holidays fall on working days", async () => {
+    const user = setup();
+    // Saturday bank holiday — alice has nonWorkingDays [0, 6]
+    render(
+      <SummaryCard
+        user={alice}
+        bankHolidays={[{ date: "2026-01-03", title: "Saturday Holiday" }]}
+        isOwnProfile={true}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: /view breakdown/i }));
+    const row = screen.getByText("Bank holidays on working days").closest("div");
+    expect(row?.querySelector("span:last-child")?.textContent).toBe("0");
+  });
+
+  it("shows correct count when bank holidays fall on working days", async () => {
+    const user = setup();
+    // Thursday 2026-01-01 is a working day for alice
+    render(
+      <SummaryCard
+        user={alice}
+        bankHolidays={[
+          { date: "2026-01-01", title: "New Year's Day" },
+          { date: "2026-12-25", title: "Christmas Day" },
+        ]}
+        isOwnProfile={true}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: /view breakdown/i }));
+    const row = screen.getByText("Bank holidays on working days").closest("div");
+    expect(row?.querySelector("span:last-child")?.textContent).toBe("2");
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Sick-leave tab (feature flag behaviour)
 // ---------------------------------------------------------------------------

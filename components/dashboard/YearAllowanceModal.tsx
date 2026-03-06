@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { BankHolidayHandling } from "@/types";
 import type { YearAllowance } from "@/types";
 import FormField from "@/components/FormField";
 import Button from "@/components/Button";
@@ -42,6 +43,9 @@ function YearAllowanceModalInner({
   const [core, setCore] = useState(existing?.core ?? 25);
   const [bought, setBought] = useState(existing?.bought ?? 0);
   const [carried, setCarried] = useState(existing?.carried ?? 0);
+  const [bankHolidayHandling, setBankHolidayHandling] = useState<BankHolidayHandling>(
+    existing?.bankHolidayHandling ?? BankHolidayHandling.None
+  );
 
   // Merge prop-provided companies with anything fetched from the API
   const [companies, setCompanies] = useState<string[]>(existingCompanies);
@@ -124,6 +128,27 @@ function YearAllowanceModalInner({
             min={0}
             max={365}
           />
+          <div>
+            <label
+              htmlFor="ya-bankHolidayHandling"
+              className="block text-sm font-medium text-gray-600 mb-1"
+            >
+              Bank Holidays
+            </label>
+            <select
+              id="ya-bankHolidayHandling"
+              value={bankHolidayHandling}
+              onChange={(e) => setBankHolidayHandling(e.target.value as BankHolidayHandling)}
+              className="w-full border rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+            >
+              <option value={BankHolidayHandling.None}>
+                Do not use annual leave for bank holidays
+              </option>
+              <option value={BankHolidayHandling.Deduct}>
+                Use annual leave for bank holidays on working days
+              </option>
+            </select>
+          </div>
           <p className="text-sm text-gray-500">
             Total: <strong>{core + bought + carried}</strong> days
           </p>
@@ -142,7 +167,7 @@ function YearAllowanceModalInner({
 
   function handleSave() {
     if (!triggerAllValidations()) return;
-    onSave({ year, company, holidayStartMonth, core, bought, carried });
+    onSave({ year, company, holidayStartMonth, core, bought, carried, bankHolidayHandling });
   }
 }
 

@@ -174,6 +174,10 @@ export default function SummaryCard({ user, bankHolidays, isOwnProfile }: Summar
     { label: "Core Days", value: String(activeYa?.core ?? 0) },
     { label: "Bought", value: `+${activeYa?.bought ?? 0}` },
     { label: "Carried Over", value: `+${activeYa?.carried ?? 0}` },
+    {
+      label: "Bank holidays on working days",
+      value: String(summary.bankHolidaysOnWorkingDays),
+    },
     { label: "Total", value: String(summary.total) },
     { label: "Used so far", value: `${summary.used} days` },
     { label: "Remaining", value: `${summary.remaining} days` },
