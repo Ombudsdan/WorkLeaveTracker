@@ -4,16 +4,6 @@ export enum ValidationRule {
   Max = "max",
 }
 
-/**
- * Controls how bank holidays are handled for a leave window.
- * - None (default): bank holidays do not consume annual leave.
- * - Deduct: bank holidays that fall on a working day reduce the total allowance.
- */
-export enum BankHolidayHandling {
-  None = "none",
-  Deduct = "deduct",
-}
-
 export enum LeaveStatus {
   Planned = "planned",
   Requested = "requested",
@@ -79,13 +69,6 @@ export interface YearAllowance extends UserAllowance {
    * Defaults to true. Set to false when the user changes company mid-period.
    */
   active?: boolean;
-  /**
-   * How bank holidays are handled for this leave window.
-   * Defaults to None (bank holidays do not reduce annual leave).
-   * When set to Deduct, bank holidays that fall on working days are subtracted
-   * from the total allowance.
-   */
-  bankHolidayHandling?: BankHolidayHandling;
 }
 
 export interface UserProfile {

@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = (await request.json()) as YearAllowance & { forceCompanyChange?: boolean };
-  const { year, core, bought, carried, company, holidayStartMonth, bankHolidayHandling, forceCompanyChange } = body;
+  const { year, core, bought, carried, company, holidayStartMonth, forceCompanyChange } = body;
 
   if (!year || core === undefined || bought === undefined || carried === undefined) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -66,7 +66,6 @@ export async function POST(request: Request) {
     carried,
     company: normalizedCompany,
     holidayStartMonth: holidayStartMonth ?? 1,
-    bankHolidayHandling: bankHolidayHandling,
     active: true,
   };
 

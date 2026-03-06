@@ -1,6 +1,6 @@
 "use client";
 import { useState, useMemo, useEffect } from "react";
-import { LeaveStatus, LeaveType, BankHolidayHandling } from "@/types";
+import { LeaveStatus, LeaveType } from "@/types";
 import type { PublicUser, BankHolidayEntry } from "@/types";
 import { STATUS_DOT } from "@/variables/colours";
 import { calcLeaveSummary } from "@/utils/leaveCalc";
@@ -147,14 +147,6 @@ export default function SummaryCard({ user, bankHolidays }: SummaryCardProps) {
 
   const summary = calcLeaveSummary(user, bankHolidayDates, effectiveYa ?? undefined);
 
-  // Whether bank holidays consume annual leave for the active window
-  const deductBankHolidays = effectiveYa?.bankHolidayHandling === BankHolidayHandling.Deduct;
-  // Effective budget = raw total minus bank holidays on working days (only when deducting)
-  const effectiveTotal = deductBankHolidays
-    ? summary.total - summary.bankHolidaysOnWorkingDays
-    : summary.total;
-  const remaining = summary.remaining;
-
   // Sick-leave day count (total, all statuses) — memoised so it doesn't recalculate on unrelated renders
   const sickDays = useMemo(() => {
     if (!SICK_LEAVE_ENABLED) return 0;
@@ -169,8 +161,8 @@ export default function SummaryCard({ user, bankHolidays }: SummaryCardProps) {
   // Show tabs only when sick leave feature is on AND the user has sick entries
   const showTabs = SICK_LEAVE_ENABLED && hasSickEntries;
 
-  // Single ring: approved → requested → planned; denominator is effective total
-  // so the gray track represents the remaining bookable budget
+  // Single ring: approved → requested → planned; denominator is total allowance
+  // so the gray track naturally shows the remaining unused portion
   const ringSegments: DonutSegment[] = [
     { value: summary.approved, color: DONUT_COLORS.approved },
     { value: summary.requested, color: DONUT_COLORS.requested },
@@ -242,8 +234,8 @@ export default function SummaryCard({ user, bankHolidays }: SummaryCardProps) {
           <div className="flex items-center gap-4 mb-4">
             <SingleRingDonut
               segments={ringSegments}
-              total={Math.max(effectiveTotal, 1)}
-              centerValue={remaining}
+              total={summary.total || 1}
+              centerValue={summary.remaining}
             />
             <div className="flex-1 space-y-1.5">
               {statusRows.map(({ label, status, count }) => (
@@ -309,12 +301,6 @@ export default function SummaryCard({ user, bankHolidays }: SummaryCardProps) {
               <hr className="my-2 border-gray-200" />
               {/* Deduction rows */}
               <div className="space-y-1">
-                {deductBankHolidays && (
-                  <div className="flex justify-between text-xs text-gray-600">
-                    <span>Bank holidays on working days</span>
-                    <span>−{summary.bankHolidaysOnWorkingDays}</span>
-                  </div>
-                )}
                 <div className="flex justify-between text-xs text-gray-600">
                   <span>Approved</span>
                   <span>−{summary.approved}</span>
@@ -332,13 +318,7 @@ export default function SummaryCard({ user, bankHolidays }: SummaryCardProps) {
               <hr className="my-2 border-gray-200" />
               <div className="flex justify-between text-sm font-bold text-gray-900">
                 <span>Total Deductions</span>
-                <span>
-                  −
-                  {(deductBankHolidays ? summary.bankHolidaysOnWorkingDays : 0) +
-                    summary.approved +
-                    summary.requested +
-                    summary.planned}
-                </span>
+                <span>−{summary.used}</span>
               </div>
             </div>
           )}

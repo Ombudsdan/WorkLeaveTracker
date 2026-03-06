@@ -77,6 +77,24 @@ describe("YearAllowanceModal — rendering", () => {
     expect(screen.getByDisplayValue("2")).toBeInTheDocument();
   });
 
+  it("shows the computed total", () => {
+    renderModal(
+      <YearAllowanceModal
+        existing={{
+          year: 2026,
+          company: "Acme",
+          holidayStartMonth: 1,
+          core: 20,
+          bought: 3,
+          carried: 2,
+        }}
+        onClose={jest.fn()}
+        onSave={jest.fn()}
+      />
+    );
+    expect(screen.getByText(/25/)).toBeInTheDocument();
+  });
+
   it("uses initialYear when provided and no existing", () => {
     renderModal(<YearAllowanceModal initialYear={2027} onClose={jest.fn()} onSave={jest.fn()} />);
     expect(screen.getByDisplayValue("2027")).toBeInTheDocument();
@@ -128,11 +146,10 @@ describe("YearAllowanceModal — interactions", () => {
       core: 25,
       bought: 0,
       carried: 0,
-      bankHolidayHandling: "none",
     });
   });
 
-  it("updates the core days field value when core days are changed", async () => {
+  it("updates the total when core days are changed", async () => {
     const user = setup();
     renderModal(
       <YearAllowanceModal
@@ -151,8 +168,8 @@ describe("YearAllowanceModal — interactions", () => {
     const coreInput = screen.getByLabelText("Core Days");
     await user.clear(coreInput);
     await user.type(coreInput, "30");
-    // The input itself should reflect the new value
-    expect((coreInput as HTMLInputElement).value).toBe("30");
+    // Total should update to 30
+    expect(screen.getByText(/30/)).toBeInTheDocument();
   });
 
   it("calls onSave with updated values after editing fields", async () => {
@@ -213,51 +230,4 @@ it("merges companies fetched from the API into the company dropdown", async () =
   await waitFor(() =>
     expect(screen.getByRole("option", { name: "FetchedCo" })).toBeInTheDocument()
   );
-});
-
-describe("YearAllowanceModal — bank holiday handling", () => {
-  it("renders the Bank Holidays select with default option 'Do not use annual leave'", () => {
-    renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={jest.fn()} />);
-    const select = screen.getByLabelText("Bank Holidays");
-    expect(select).toBeInTheDocument();
-    expect((select as HTMLSelectElement).value).toBe("none");
-  });
-
-  it("pre-fills Bank Holidays select from existing allowance", () => {
-    renderModal(
-      <YearAllowanceModal
-        existing={{
-          year: 2026,
-          company: "Acme",
-          holidayStartMonth: 1,
-          core: 25,
-          bought: 0,
-          carried: 0,
-          bankHolidayHandling: "deduct" as import("@/types").BankHolidayHandling,
-        }}
-        onClose={jest.fn()}
-        onSave={jest.fn()}
-      />
-    );
-    const select = screen.getByLabelText("Bank Holidays") as HTMLSelectElement;
-    expect(select.value).toBe("deduct");
-  });
-
-  it("calls onSave with bankHolidayHandling=deduct when Deduct option is selected", async () => {
-    const user = setup();
-    const onSave = jest.fn();
-    renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={onSave} />);
-    const select = screen.getByLabelText("Bank Holidays");
-    await user.selectOptions(select, "deduct");
-    await user.click(screen.getByRole("button", { name: "Save" }));
-    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ bankHolidayHandling: "deduct" }));
-  });
-
-  it("calls onSave with bankHolidayHandling=none (default) when option is not changed", async () => {
-    const user = setup();
-    const onSave = jest.fn();
-    renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={onSave} />);
-    await user.click(screen.getByRole("button", { name: "Save" }));
-    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ bankHolidayHandling: "none" }));
-  });
 });
