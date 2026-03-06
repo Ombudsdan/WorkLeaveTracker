@@ -641,18 +641,14 @@ describe("AddLeaveModal — limit validation branch coverage", () => {
 
 describe("AddLeaveModal — initialDate pre-selection", () => {
   it("pre-fills the date picker when initialDate is provided", () => {
-    renderModal(
-      <AddLeaveModal onClose={jest.fn()} onSave={jest.fn()} initialDate="2026-03-09" />
-    );
+    renderModal(<AddLeaveModal onClose={jest.fn()} onSave={jest.fn()} initialDate="2026-03-09" />);
     // DateRangePicker shows the selected date in the summary
     expect(screen.getAllByText("2026-03-09").length).toBeGreaterThan(0);
   });
 
   it("navigates the date picker calendar to the initialDate's month", () => {
     // Navigate to a month other than the default (March 2026)
-    renderModal(
-      <AddLeaveModal onClose={jest.fn()} onSave={jest.fn()} initialDate="2026-05-15" />
-    );
+    renderModal(<AddLeaveModal onClose={jest.fn()} onSave={jest.fn()} initialDate="2026-05-15" />);
     // Calendar should show May 2026
     expect(screen.getByText(/May 2026/i)).toBeInTheDocument();
   });

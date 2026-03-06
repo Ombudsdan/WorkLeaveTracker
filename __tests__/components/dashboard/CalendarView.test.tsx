@@ -1051,9 +1051,7 @@ describe("CalendarView — clicking empty date cells opens Add Leave", () => {
     const user = setup();
     const onAdd = jest.fn();
     // alice has nonWorkingDays [0, 6] (Sun+Sat); 2026-03-09 is a Monday → no NWD, no leave
-    render(
-      <CalendarView user={alice} bankHolidays={[]} isOwnProfile={true} onAdd={onAdd} />
-    );
+    render(<CalendarView user={alice} bankHolidays={[]} isOwnProfile={true} onAdd={onAdd} />);
     // "9" renders the 9th of March 2026 (Monday — not a NWD)
     await user.click(screen.getByText("9"));
     expect(onAdd).toHaveBeenCalledWith("2026-03-09");
@@ -1063,9 +1061,7 @@ describe("CalendarView — clicking empty date cells opens Add Leave", () => {
     const user = setup();
     const onAdd = jest.fn();
     // 2026-03-07 is a Saturday → NWD for alice (nonWorkingDays includes 6)
-    render(
-      <CalendarView user={alice} bankHolidays={[]} isOwnProfile={true} onAdd={onAdd} />
-    );
+    render(<CalendarView user={alice} bankHolidays={[]} isOwnProfile={true} onAdd={onAdd} />);
     await user.click(screen.getByText("7"));
     expect(onAdd).not.toHaveBeenCalled();
   });
@@ -1073,9 +1069,7 @@ describe("CalendarView — clicking empty date cells opens Add Leave", () => {
   it("does not call onAdd when isOwnProfile is false", async () => {
     const user = setup();
     const onAdd = jest.fn();
-    render(
-      <CalendarView user={alice} bankHolidays={[]} isOwnProfile={false} onAdd={onAdd} />
-    );
+    render(<CalendarView user={alice} bankHolidays={[]} isOwnProfile={false} onAdd={onAdd} />);
     await user.click(screen.getByText("9"));
     expect(onAdd).not.toHaveBeenCalled();
   });
