@@ -1,4 +1,5 @@
 import type { LeaveEntry, YearAllowance } from "@/types";
+import { LeaveDuration } from "@/types";
 
 /**
  * Format a YearAllowance window as a human-readable date range string.
@@ -11,7 +12,6 @@ export function formatYearWindow(ya: YearAllowance): string {
   const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" };
   return `${start.toLocaleDateString("en-GB", opts)} – ${end.toLocaleDateString("en-GB", opts)}`;
 }
-import { LeaveDuration } from "@/types";
 
 /**
  * Count working days between two ISO date strings (inclusive).
