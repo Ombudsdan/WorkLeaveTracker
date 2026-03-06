@@ -11,7 +11,6 @@ import { SICK_LEAVE_ENABLED } from "@/utils/features";
 interface SummaryCardProps {
   user: PublicUser;
   bankHolidays: BankHolidayEntry[];
-  isOwnProfile: boolean;
 }
 
 // Chart segment colours — match the Tailwind status colours used elsewhere

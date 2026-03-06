@@ -34,12 +34,12 @@ const alice: PublicUser = {
 
 describe("SummaryCard — basic display", () => {
   it("renders the user's full name", () => {
-    render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
+    render(<SummaryCard user={alice} bankHolidays={[]} />);
     expect(screen.getByText("Alice Smith")).toBeInTheDocument();
   });
 
   it("shows the holiday year range", () => {
-    render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
+    render(<SummaryCard user={alice} bankHolidays={[]} />);
     // Single allowance → plain text showing the window dates
     expect(screen.getByText(/1 Jan 2026/)).toBeInTheDocument();
     expect(screen.getByText(/31 Dec 2026/)).toBeInTheDocument();
@@ -47,32 +47,32 @@ describe("SummaryCard — basic display", () => {
 
   it("shows the total allowance in the breakdown", async () => {
     const user = setup();
-    render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
+    render(<SummaryCard user={alice} bankHolidays={[]} />);
     await user.click(screen.getByRole("button", { name: /view breakdown/i }));
     expect(screen.getByText("Core Days")).toBeInTheDocument();
   });
 
   it("shows the donut SVG always (not just in breakdown)", () => {
     const { container } = render(
-      <SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />
+      <SummaryCard user={alice} bankHolidays={[]} />
     );
     expect(container.querySelector("svg")).toBeInTheDocument();
   });
 
   it("shows the status key rows (Approved, Requested, Planned) by default", () => {
-    render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
+    render(<SummaryCard user={alice} bankHolidays={[]} />);
     expect(screen.getByText("Approved")).toBeInTheDocument();
     expect(screen.getByText("Requested")).toBeInTheDocument();
     expect(screen.getByText("Planned")).toBeInTheDocument();
   });
 
   it("does not show the Read-only badge for any profile", () => {
-    render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
+    render(<SummaryCard user={alice} bankHolidays={[]} />);
     expect(screen.queryByText("Read-only")).toBeNull();
   });
 
   it("does not show the Read-only badge for other user profiles either", () => {
-    render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={false} />);
+    render(<SummaryCard user={alice} bankHolidays={[]} />);
     expect(screen.queryByText("Read-only")).toBeNull();
   });
 });
@@ -92,13 +92,13 @@ describe("SummaryCard — with approved entries", () => {
   };
 
   it("counts 5 approved days for a Mon–Fri entry", () => {
-    render(<SummaryCard user={userWithEntries} bankHolidays={[]} isOwnProfile={true} />);
+    render(<SummaryCard user={userWithEntries} bankHolidays={[]} />);
     expect(screen.getAllByText("5 days").length).toBeGreaterThan(0);
   });
 
   it("shows the correct remaining days in the center of the donut (via SVG)", async () => {
     const { container } = render(
-      <SummaryCard user={userWithEntries} bankHolidays={[]} isOwnProfile={true} />
+      <SummaryCard user={userWithEntries} bankHolidays={[]} />
     );
     const svg = container.querySelector("svg") as SVGElement;
     expect(svg).toBeInTheDocument();
@@ -108,7 +108,7 @@ describe("SummaryCard — with approved entries", () => {
 
   it("shows used / total days in the breakdown", async () => {
     const user = setup();
-    render(<SummaryCard user={userWithEntries} bankHolidays={[]} isOwnProfile={true} />);
+    render(<SummaryCard user={userWithEntries} bankHolidays={[]} />);
     await user.click(screen.getByRole("button", { name: /view breakdown/i }));
     // The summary row shows "Used" label and "5 / 25 days"
     expect(screen.getByText("Used")).toBeInTheDocument();
@@ -119,14 +119,14 @@ describe("SummaryCard — with approved entries", () => {
 describe("SummaryCard — single-ring donut", () => {
   it("renders the SVG donut chart by default (no click required)", () => {
     const { container } = render(
-      <SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />
+      <SummaryCard user={alice} bankHolidays={[]} />
     );
     expect(container.querySelector("svg")).toBeInTheDocument();
   });
 
   it("shows remaining days in the donut center", () => {
     const { container } = render(
-      <SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />
+      <SummaryCard user={alice} bankHolidays={[]} />
     );
     const svgText = container.querySelector("svg")?.textContent;
     expect(svgText).toContain("25"); // 25 remaining when no entries
@@ -134,7 +134,7 @@ describe("SummaryCard — single-ring donut", () => {
 
   it("renders only one SVG ring (single circle track)", () => {
     const { container } = render(
-      <SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />
+      <SummaryCard user={alice} bankHolidays={[]} />
     );
     // Single ring: one track circle (gray) — only 1 circle element in the SVG
     const svg = container.querySelector("svg");
@@ -160,7 +160,7 @@ describe("SummaryCard — single-ring donut", () => {
       ],
     };
     const { container } = render(
-      <SummaryCard user={userWith14Days} bankHolidays={[]} isOwnProfile={true} />
+      <SummaryCard user={userWith14Days} bankHolidays={[]} />
     );
     const svg = container.querySelector("svg");
     expect(svg).toBeInTheDocument();
@@ -174,7 +174,7 @@ describe("SummaryCard — single-ring donut", () => {
 describe("SummaryCard — no year allowances (legacy/missing data)", () => {
   it("renders without error when user has no year allowances", () => {
     render(
-      <SummaryCard user={{ ...alice, yearAllowances: [] }} bankHolidays={[]} isOwnProfile={true} />
+      <SummaryCard user={{ ...alice, yearAllowances: [] }} bankHolidays={[]} />
     );
     // Just ensure it renders without throwing
     expect(screen.getByText("Alice Smith")).toBeInTheDocument();
@@ -183,20 +183,20 @@ describe("SummaryCard — no year allowances (legacy/missing data)", () => {
 
 describe("SummaryCard — allowance breakdown toggle", () => {
   it("does not show Core Days initially", () => {
-    render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
+    render(<SummaryCard user={alice} bankHolidays={[]} />);
     expect(screen.queryByText("Core Days")).toBeNull();
   });
 
   it("shows Core Days after clicking 'View breakdown'", async () => {
     const user = setup();
-    render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
+    render(<SummaryCard user={alice} bankHolidays={[]} />);
     await user.click(screen.getByRole("button", { name: /view breakdown/i }));
     expect(screen.getByText("Core Days")).toBeInTheDocument();
   });
 
   it("shows Bought and Carried Over in the breakdown", async () => {
     const user = setup();
-    render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
+    render(<SummaryCard user={alice} bankHolidays={[]} />);
     await user.click(screen.getByRole("button", { name: /view breakdown/i }));
     expect(screen.getByText("Bought")).toBeInTheDocument();
     expect(screen.getByText("Carried Over")).toBeInTheDocument();
@@ -204,7 +204,7 @@ describe("SummaryCard — allowance breakdown toggle", () => {
 
   it("hides breakdown after clicking 'Hide breakdown'", async () => {
     const user = setup();
-    render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
+    render(<SummaryCard user={alice} bankHolidays={[]} />);
     await user.click(screen.getByRole("button", { name: /view breakdown/i }));
     expect(screen.getByText("Core Days")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /hide breakdown/i }));
@@ -215,7 +215,7 @@ describe("SummaryCard — allowance breakdown toggle", () => {
 describe("SummaryCard — breakdown used/total summary", () => {
   it("shows 'Used' label and 'X / Y days' value in the breakdown", async () => {
     const user = setup();
-    render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
+    render(<SummaryCard user={alice} bankHolidays={[]} />);
     await user.click(screen.getByRole("button", { name: /view breakdown/i }));
     expect(screen.getByText("Used")).toBeInTheDocument();
     // 0 used, 25 total
@@ -240,7 +240,7 @@ describe("SummaryCard — donut uses total allowance as ring denominator", () =>
       ],
     };
     const { container } = render(
-      <SummaryCard user={userWith5Days} bankHolidays={[]} isOwnProfile={true} />
+      <SummaryCard user={userWith5Days} bankHolidays={[]} />
     );
     const svg = container.querySelector("svg");
     expect(svg).toBeInTheDocument();
@@ -269,7 +269,7 @@ describe("SummaryCard — donut uses total allowance as ring denominator", () =>
       ],
     };
     const { container } = render(
-      <SummaryCard user={userAllUsed} bankHolidays={[]} isOwnProfile={true} />
+      <SummaryCard user={userAllUsed} bankHolidays={[]} />
     );
     const svg = container.querySelector("svg");
     expect(svg).toBeInTheDocument();
@@ -305,7 +305,7 @@ describe("SummaryCard — breakdown used colour when over-allocated", () => {
         },
       ],
     };
-    render(<SummaryCard user={overAllocated} bankHolidays={[]} isOwnProfile={true} />);
+    render(<SummaryCard user={overAllocated} bankHolidays={[]} />);
     await user.click(screen.getByRole("button", { name: /view breakdown/i }));
     // The used count span should have the red colour class
     const usedLabel = screen.getByText("Used");
@@ -335,13 +335,13 @@ describe("SummaryCard — sick-leave tab", () => {
   };
 
   it("does NOT show the Holiday/Sick tab strip when the user has no sick entries (feature flag default off)", () => {
-    render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
+    render(<SummaryCard user={alice} bankHolidays={[]} />);
     expect(screen.queryByRole("tab", { name: "Sick" })).toBeNull();
   });
 
   it("does NOT show the Holiday/Sick tab strip even with sick entries when feature flag is off (default env)", () => {
     // NEXT_PUBLIC_ENABLE_FEATURE_SICK_LEAVE is not set in the test env → SICK_LEAVE_ENABLED = false
-    render(<SummaryCard user={userWithSick} bankHolidays={[]} isOwnProfile={true} />);
+    render(<SummaryCard user={userWithSick} bankHolidays={[]} />);
     expect(screen.queryByRole("tab", { name: "Sick" })).toBeNull();
   });
 });
@@ -369,21 +369,23 @@ describe("SummaryCard — leave window selector", () => {
   };
 
   it("shows plain text window range when there is only one allowance", () => {
-    render(<SummaryCard user={alice} bankHolidays={[]} isOwnProfile={true} />);
+    render(<SummaryCard user={alice} bankHolidays={[]} />);
     // Single allowance → text visible, no select
     expect(screen.getByText(/1 Jan 2026/)).toBeInTheDocument();
     expect(screen.queryByRole("combobox", { name: /select leave window/i })).toBeNull();
   });
 
-  it("shows the select (not the text label) when there are multiple allowances", () => {
-    render(<SummaryCard user={multiWindowUser} bankHolidays={[]} isOwnProfile={true} />);
+  it("shows the select (not the text paragraph) when there are multiple allowances", () => {
+    const { container } = render(
+      <SummaryCard user={multiWindowUser} bankHolidays={[]} />
+    );
     expect(screen.getByRole("combobox", { name: /select leave window/i })).toBeInTheDocument();
-    // The plain text paragraph should not be rendered when the select is shown
-    expect(screen.queryByText(/Leave window:/i)).toBeNull();
+    // The plain-text date paragraph should not be rendered — only the select is shown
+    expect(container.querySelector("p.text-xs.text-gray-400")).toBeNull();
   });
 
   it("the select defaults to the active year", () => {
-    render(<SummaryCard user={multiWindowUser} bankHolidays={[]} isOwnProfile={true} />);
+    render(<SummaryCard user={multiWindowUser} bankHolidays={[]} />);
     const select = screen.getByRole("combobox", { name: /select leave window/i });
     // Active year is 2026 (today = 2026-03-15)
     expect((select as HTMLSelectElement).value).toBe("2026");
@@ -392,7 +394,7 @@ describe("SummaryCard — leave window selector", () => {
   it("switching the window updates the summary totals", async () => {
     const user = setup();
     const { container } = render(
-      <SummaryCard user={multiWindowUser} bankHolidays={[]} isOwnProfile={true} />
+      <SummaryCard user={multiWindowUser} bankHolidays={[]} />
     );
     const select = screen.getByRole("combobox", { name: /select leave window/i });
     // Switch to 2025
@@ -405,7 +407,7 @@ describe("SummaryCard — leave window selector", () => {
 
   it("switching the window updates the breakdown rows", async () => {
     const user = setup();
-    render(<SummaryCard user={multiWindowUser} bankHolidays={[]} isOwnProfile={true} />);
+    render(<SummaryCard user={multiWindowUser} bankHolidays={[]} />);
     const select = screen.getByRole("combobox", { name: /select leave window/i });
     await user.selectOptions(select, ["2025"]);
     await user.click(screen.getByRole("button", { name: /view breakdown/i }));
@@ -416,7 +418,7 @@ describe("SummaryCard — leave window selector", () => {
 
   it("resets to the active window when the user changes", () => {
     const { rerender } = render(
-      <SummaryCard user={multiWindowUser} bankHolidays={[]} isOwnProfile={true} />
+      <SummaryCard user={multiWindowUser} bankHolidays={[]} />
     );
     // Re-render with a different user (single allowance) — selectedYear resets
     const differentUser: PublicUser = {
@@ -426,7 +428,7 @@ describe("SummaryCard — leave window selector", () => {
         { year: 2026, company: "Other", holidayStartMonth: 1, core: 30, bought: 0, carried: 0 },
       ],
     };
-    rerender(<SummaryCard user={differentUser} bankHolidays={[]} isOwnProfile={true} />);
+    rerender(<SummaryCard user={differentUser} bankHolidays={[]} />);
     // The new user has only one allowance → no select, shows 30 remaining
     const svg = document.querySelector("svg");
     expect(svg?.textContent).toContain("30");
