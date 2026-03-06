@@ -359,7 +359,7 @@ export default function CalendarView({
         <div className="flex items-center gap-2">
           {isOwnProfile && onAdd && (
             <button
-              onClick={onAdd}
+              onClick={() => onAdd()}
               className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-4 py-1.5 rounded-lg hover:bg-indigo-700 transition font-medium cursor-pointer"
             >
               <Plus size={14} />
