@@ -51,6 +51,16 @@ export default function NavBar({ activePage, pendingRequestCount = 0 }: NavBarPr
           )}
         </a>
         <a
+          href="/connections"
+          className={
+            activePage === "connections"
+              ? "text-indigo-700 font-semibold"
+              : "text-gray-600 hover:text-indigo-700"
+          }
+        >
+          Connections
+        </a>
+        <a
           href="/annual-planner"
           className={
             activePage === "annual-planner"
@@ -114,6 +124,17 @@ export default function NavBar({ activePage, pendingRequestCount = 0 }: NavBarPr
                   {pendingRequestCount}
                 </span>
               )}
+            </a>
+            <a
+              href="/connections"
+              onClick={closeMenu}
+              className={
+                activePage === "connections"
+                  ? "text-indigo-700 font-semibold"
+                  : "text-gray-600 hover:text-indigo-700"
+              }
+            >
+              Connections
             </a>
             <a
               href="/annual-planner"
