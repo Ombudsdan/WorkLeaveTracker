@@ -129,6 +129,8 @@ describe("YearAllowanceModal — interactions", () => {
       bought: 0,
       carried: 0,
       bankHolidayHandling: "none",
+      useHoursDisplay: false,
+      coreHoursPerDay: undefined,
     });
   });
 
@@ -427,3 +429,157 @@ describe("YearAllowanceModal — overlap validation", () => {
     expect(screen.getByText(/overlaps with an existing allowance/i)).toBeInTheDocument();
   });
 });
+
+// ---------------------------------------------------------------------------
+// YearAllowanceModal — Hours / Days toggle
+// ---------------------------------------------------------------------------
+describe("YearAllowanceModal — Hours/Days toggle", () => {
+  it("renders the Allowance Unit toggle with Days and Hours buttons", () => {
+    renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={jest.fn()} />);
+    expect(screen.getByRole("button", { name: "Days" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Hours" })).toBeInTheDocument();
+  });
+
+  it("defaults to Days mode — Days button is pressed", () => {
+    renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={jest.fn()} />);
+    expect(screen.getByRole("button", { name: "Days" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Hours" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("does not show Core Daily Hours field in Days mode", () => {
+    renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={jest.fn()} />);
+    expect(screen.queryByLabelText("Core Daily Hours")).toBeNull();
+  });
+
+  it("shows Core Daily Hours field when Hours mode is activated", async () => {
+    const user = setup();
+    renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={jest.fn()} />);
+    await user.click(screen.getByRole("button", { name: "Hours" }));
+    expect(screen.getByLabelText("Core Daily Hours")).toBeInTheDocument();
+  });
+
+  it("shows 'Core Hours' label for the core allowance field in Hours mode", async () => {
+    const user = setup();
+    renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={jest.fn()} />);
+    await user.click(screen.getByRole("button", { name: "Hours" }));
+    expect(screen.getByLabelText("Core Hours")).toBeInTheDocument();
+  });
+
+  it("shows 'Hours Bought' and 'Hours Carried Over' labels in Hours mode", async () => {
+    const user = setup();
+    renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={jest.fn()} />);
+    await user.click(screen.getByRole("button", { name: "Hours" }));
+    expect(screen.getByLabelText("Hours Bought")).toBeInTheDocument();
+    expect(screen.getByLabelText("Hours Carried Over")).toBeInTheDocument();
+  });
+
+  it("converts core days to hours when switching to Hours mode (25 days × 7.5 = 187.5)", async () => {
+    const user = setup();
+    renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={jest.fn()} />);
+    // Default core is 25 days; after switching to Hours mode it should be 187.5
+    await user.click(screen.getByRole("button", { name: "Hours" }));
+    const coreInput = screen.getByLabelText("Core Hours") as HTMLInputElement;
+    expect(parseFloat(coreInput.value)).toBe(187.5);
+  });
+
+  it("converts hours back to days when switching back to Days mode", async () => {
+    const user = setup();
+    renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={jest.fn()} />);
+    await user.click(screen.getByRole("button", { name: "Hours" }));
+    await user.click(screen.getByRole("button", { name: "Days" }));
+    const coreInput = screen.getByLabelText("Core Days") as HTMLInputElement;
+    expect(parseFloat(coreInput.value)).toBe(25);
+  });
+
+  it("saves core value converted to days when Hours mode is active", async () => {
+    const user = setup();
+    const onSave = jest.fn();
+    renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={onSave} />);
+    await user.click(screen.getByRole("button", { name: "Hours" }));
+    // Default conversion: 25 days × 7.5 = 187.5 hours; saving should store 25 days
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        core: 25,
+        useHoursDisplay: true,
+        coreHoursPerDay: 7.5,
+      })
+    );
+  });
+
+  it("stores useHoursDisplay=false and coreHoursPerDay=undefined in Days mode", async () => {
+    const user = setup();
+    const onSave = jest.fn();
+    renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={onSave} />);
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        useHoursDisplay: false,
+        coreHoursPerDay: undefined,
+      })
+    );
+  });
+
+  it("restores Hours mode when existing allowance has useHoursDisplay=true", () => {
+    renderModal(
+      <YearAllowanceModal
+        existing={{
+          year: 2026,
+          company: "Acme",
+          holidayStartMonth: 1,
+          core: 25,
+          bought: 0,
+          carried: 0,
+          useHoursDisplay: true,
+          coreHoursPerDay: 7.5,
+        }}
+        onClose={jest.fn()}
+        onSave={jest.fn()}
+      />
+    );
+    expect(screen.getByRole("button", { name: "Hours" })).toHaveAttribute("aria-pressed", "true");
+    // Values should be pre-converted to hours
+    const coreInput = screen.getByLabelText("Core Hours") as HTMLInputElement;
+    expect(parseFloat(coreInput.value)).toBe(187.5);
+  });
+
+  it("does not re-convert when toggling to the same unit (no-op)", async () => {
+    const user = setup();
+    renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={jest.fn()} />);
+    // Clicking Days when already in Days mode should be a no-op
+    await user.click(screen.getByRole("button", { name: "Days" }));
+    const coreInput = screen.getByLabelText("Core Days") as HTMLInputElement;
+    expect(parseFloat(coreInput.value)).toBe(25);
+  });
+
+  it("saves fractional days when a non-integer hours value is entered", async () => {
+    const user = setup();
+    const onSave = jest.fn();
+    renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={onSave} />);
+    await user.click(screen.getByRole("button", { name: "Hours" }));
+    const coreInput = screen.getByLabelText("Core Hours");
+    await user.clear(coreInput);
+    await user.type(coreInput, "190");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    // 190 / 7.5 ≈ 25.333...
+    const savedCore = (onSave.mock.calls[0][0] as { core: number }).core;
+    expect(savedCore).toBeCloseTo(190 / 7.5, 5);
+  });
+
+  it("re-scales field values when Core Daily Hours is changed", async () => {
+    const user = setup();
+    const onSave = jest.fn();
+    renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={onSave} />);
+    await user.click(screen.getByRole("button", { name: "Hours" }));
+    // Default: 25 days × 7.5 h/day = 187.5 h
+    const cdhInput = screen.getByLabelText("Core Daily Hours");
+    await user.clear(cdhInput);
+    await user.type(cdhInput, "8");
+    // coreHoursPerDay is now 8; the displayed hours haven't auto-scaled (187.5 → stays)
+    // On save: 187.5 h / 8 h/day = 23.4375 days
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    const savedCore = (onSave.mock.calls[0][0] as { core: number }).core;
+    expect(savedCore).toBeCloseTo(187.5 / 8, 5);
+  });
+});
+

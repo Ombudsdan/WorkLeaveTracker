@@ -100,6 +100,18 @@ export interface YearAllowance extends UserAllowance {
    * from the total allowance.
    */
   bankHolidayHandling?: BankHolidayHandling;
+  /**
+   * When true, the Edit Allowance modal shows allowance values in hours rather
+   * than days.  The stored `core`, `bought`, and `carried` values are always
+   * kept as decimal days; this flag is purely a display preference.
+   */
+  useHoursDisplay?: boolean;
+  /**
+   * Number of working hours per day — used to convert between hours and days
+   * in the Edit Allowance modal when `useHoursDisplay` is true.
+   * Defaults to 7.5 when not set.
+   */
+  coreHoursPerDay?: number;
 }
 
 export interface UserProfile {

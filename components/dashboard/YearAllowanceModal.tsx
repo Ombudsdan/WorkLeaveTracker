@@ -44,13 +44,52 @@ function YearAllowanceModalInner({
   const [year, setYear] = useState(existing?.year ?? initialYear ?? new Date().getFullYear());
   const [company, setCompany] = useState(existing?.company ?? "");
   const [holidayStartMonth, setHolidayStartMonth] = useState(existing?.holidayStartMonth ?? 1);
-  const [core, setCore] = useState(existing?.core ?? 25);
-  const [bought, setBought] = useState(existing?.bought ?? 0);
-  const [carried, setCarried] = useState(existing?.carried ?? 0);
+
+  // Hours vs Days toggle — restored from the saved allowance preference
+  const initialUseHours = existing?.useHoursDisplay ?? false;
+  const initialCoreHoursPerDay = existing?.coreHoursPerDay ?? 7.5;
+  const [useHoursDisplay, setUseHoursDisplay] = useState(initialUseHours);
+  const [coreHoursPerDay, setCoreHoursPerDay] = useState(initialCoreHoursPerDay);
+
+  // Compute initial display values: if loading an existing allowance in Hours mode,
+  // convert the stored decimal days to hours using the stored conversion rate.
+  const toInitialHours = (days: number) =>
+    parseFloat((days * initialCoreHoursPerDay).toFixed(4));
+
+  const [core, setCore] = useState(() => {
+    if (!existing) return initialUseHours ? 25 * initialCoreHoursPerDay : 25;
+    return initialUseHours ? toInitialHours(existing.core) : existing.core;
+  });
+  const [bought, setBought] = useState(() => {
+    if (!existing) return 0;
+    return initialUseHours ? toInitialHours(existing.bought) : existing.bought;
+  });
+  const [carried, setCarried] = useState(() => {
+    if (!existing) return 0;
+    return initialUseHours ? toInitialHours(existing.carried) : existing.carried;
+  });
   const [bankHolidayHandling, setBankHolidayHandling] = useState<BankHolidayHandling>(
     existing?.bankHolidayHandling ?? BankHolidayHandling.None
   );
   const [overlapError, setOverlapError] = useState("");
+
+  // Re-convert field values whenever the user flips the toggle so the displayed
+  // number stays consistent with the selected unit.
+  function handleToggleUnit(toHours: boolean) {
+    if (toHours === useHoursDisplay) return;
+    if (toHours) {
+      // days → hours
+      setCore((v) => parseFloat((v * coreHoursPerDay).toFixed(4)));
+      setBought((v) => parseFloat((v * coreHoursPerDay).toFixed(4)));
+      setCarried((v) => parseFloat((v * coreHoursPerDay).toFixed(4)));
+    } else {
+      // hours → days
+      setCore((v) => parseFloat((v / coreHoursPerDay).toFixed(4)));
+      setBought((v) => parseFloat((v / coreHoursPerDay).toFixed(4)));
+      setCarried((v) => parseFloat((v / coreHoursPerDay).toFixed(4)));
+    }
+    setUseHoursDisplay(toHours);
+  }
 
   // Merge prop-provided companies with anything fetched from the API
   const [companies, setCompanies] = useState<string[]>(existingCompanies);
@@ -105,33 +144,84 @@ function YearAllowanceModalInner({
               ))}
             </select>
           </div>
+
+          {/* Hours / Days toggle */}
+          <div>
+            <span className="block text-sm font-medium text-gray-600 mb-1">
+              Allowance Unit
+            </span>
+            <div className="flex rounded-lg overflow-hidden border border-gray-300 text-sm">
+              <button
+                type="button"
+                aria-pressed={!useHoursDisplay}
+                onClick={() => handleToggleUnit(false)}
+                className={`flex-1 py-1.5 font-medium transition-colors cursor-pointer ${
+                  !useHoursDisplay
+                    ? "bg-indigo-600 text-white"
+                    : "bg-white text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                Days
+              </button>
+              <button
+                type="button"
+                aria-pressed={useHoursDisplay}
+                onClick={() => handleToggleUnit(true)}
+                className={`flex-1 py-1.5 font-medium transition-colors cursor-pointer ${
+                  useHoursDisplay
+                    ? "bg-indigo-600 text-white"
+                    : "bg-white text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                Hours
+              </button>
+            </div>
+          </div>
+
+          {/* Core Daily Hours — only shown when Hours mode is active */}
+          {useHoursDisplay && (
+            <FormField
+              id="ya-coreHoursPerDay"
+              label="Core Daily Hours"
+              type="number"
+              value={coreHoursPerDay}
+              onChange={(v) => setCoreHoursPerDay(Number(v))}
+              min={0.1}
+              max={24}
+              step={0.5}
+            />
+          )}
+
           <FormField
             id="ya-core"
-            label="Core Days"
+            label={useHoursDisplay ? "Core Hours" : "Core Days"}
             type="number"
             value={core}
             onChange={(v) => setCore(Number(v))}
-            min={1}
-            max={365}
+            min={useHoursDisplay ? 0.1 : 1}
+            max={useHoursDisplay ? 9999 : 365}
+            step={useHoursDisplay ? 0.5 : 1}
             required
           />
           <FormField
             id="ya-bought"
-            label="Days Bought"
+            label={useHoursDisplay ? "Hours Bought" : "Days Bought"}
             type="number"
             value={bought}
             onChange={(v) => setBought(Number(v))}
             min={0}
-            max={365}
+            max={useHoursDisplay ? 9999 : 365}
+            step={useHoursDisplay ? 0.5 : 1}
           />
           <FormField
             id="ya-carried"
-            label="Days Carried Over"
+            label={useHoursDisplay ? "Hours Carried Over" : "Days Carried Over"}
             type="number"
             value={carried}
             onChange={(v) => setCarried(Number(v))}
             min={0}
-            max={365}
+            max={useHoursDisplay ? 9999 : 365}
+            step={useHoursDisplay ? 0.5 : 1}
           />
           <div>
             <label
@@ -206,7 +296,25 @@ function YearAllowanceModalInner({
     }
 
     setOverlapError("");
-    onSave({ year, company, holidayStartMonth, core, bought, carried, bankHolidayHandling });
+
+    // When the user is working in Hours mode, convert the displayed values back
+    // to decimal days before persisting.  The `useHoursDisplay` preference and
+    // the `coreHoursPerDay` rate are stored alongside the allowance so the
+    // modal can restore the same unit next time it opens.
+    const toDays = (v: number) =>
+      useHoursDisplay ? parseFloat((v / coreHoursPerDay).toFixed(10)) : v;
+
+    onSave({
+      year,
+      company,
+      holidayStartMonth,
+      core: toDays(core),
+      bought: toDays(bought),
+      carried: toDays(carried),
+      bankHolidayHandling,
+      useHoursDisplay,
+      coreHoursPerDay: useHoursDisplay ? coreHoursPerDay : undefined,
+    });
   }
 }
 
