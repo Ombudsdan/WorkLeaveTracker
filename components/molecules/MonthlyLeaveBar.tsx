@@ -12,9 +12,10 @@ export interface MonthlyLeaveBarProps {
   /** Bank holidays that fall on a working day in this month */
   bankHolidays: number;
   /**
-   * The scale denominator used to convert day counts to bar widths.
-   * Typically the maximum `totalCombined` across all months, or the
-   * average monthly allowance — ensures all months share the same scale.
+   * The maximum `totalCombined` across all months.  The bar chart rounds this
+   * up to the nearest 5 (minimum 5) to produce the `chartScale`, which is the
+   * denominator used for all segment widths.  All months share the same scale
+   * so their bar lengths are directly comparable.
    */
   maxDays: number;
 }
@@ -25,8 +26,9 @@ export interface MonthlyLeaveBarProps {
  * Renders a single horizontal row representing one calendar month:
  *   [Month name]  [Total days]  [█ Approved ][█ Requested ][█ Planned ][█ Bank Hols ]░░░
  *
- * Segment widths are proportional to `maxDays` so all months are on the
- * same visual scale and are directly comparable.
+ * The bar is drawn against a chart scale rounded up to the nearest 5 from
+ * `maxDays`, so a month with fewer days shows a proportionally shorter fill.
+ * Faint vertical lines mark every integer day position for easy reading.
  */
 export default function MonthlyLeaveBar({
   monthName,
@@ -37,10 +39,12 @@ export default function MonthlyLeaveBar({
   maxDays,
 }: MonthlyLeaveBarProps) {
   const totalCombined = approved + requested + planned + bankHolidays;
-  const scale = maxDays > 0 ? maxDays : 1;
+
+  // Round up to the nearest 5 (minimum 5) — the full-width scale denominator
+  const chartScale = Math.max(Math.ceil(maxDays / 5) * 5, 5);
 
   function pct(value: number): string {
-    return `${Math.min((value / scale) * 100, 100)}%`;
+    return `${Math.min((value / chartScale) * 100, 100)}%`;
   }
 
   return (
@@ -53,40 +57,57 @@ export default function MonthlyLeaveBar({
         {totalCombined > 0 ? `${totalCombined}d` : "–"}
       </span>
 
-      {/* Segmented bar */}
+      {/* Segmented bar with per-day grid overlay */}
       <div
-        className="flex-1 flex h-5 rounded-sm overflow-hidden bg-gray-100"
+        className="flex-1 relative h-5 rounded-sm overflow-hidden bg-gray-100"
         role="img"
         aria-label={`${monthName}: ${approved} approved, ${requested} requested, ${planned} planned, ${bankHolidays} bank holidays`}
       >
-        {approved > 0 && (
+        {/* Coloured fill segments */}
+        <div className="absolute inset-0 flex">
+          {approved > 0 && (
+            <div
+              className="bg-green-300 h-full"
+              style={{ width: pct(approved) }}
+              title={`Approved: ${approved}d`}
+            />
+          )}
+          {requested > 0 && (
+            <div
+              className="bg-blue-300 h-full"
+              style={{ width: pct(requested) }}
+              title={`Requested: ${requested}d`}
+            />
+          )}
+          {planned > 0 && (
+            <div
+              className="bg-yellow-300 h-full"
+              style={{ width: pct(planned) }}
+              title={`Planned: ${planned}d`}
+            />
+          )}
+          {bankHolidays > 0 && (
+            <div
+              className="bg-gray-400 h-full"
+              style={{ width: pct(bankHolidays) }}
+              title={`Bank Holidays: ${bankHolidays}`}
+            />
+          )}
+        </div>
+
+        {/* Per-day grid lines: one faint white vertical line per integer day */}
+        {Array.from({ length: chartScale - 1 }, (_, i) => (
           <div
-            className="bg-green-300 h-full"
-            style={{ width: pct(approved) }}
-            title={`Approved: ${approved}d`}
+            key={i + 1}
+            data-testid="chart-grid-line"
+            className="absolute top-0 bottom-0"
+            style={{
+              left: `${((i + 1) / chartScale) * 100}%`,
+              width: 1,
+              backgroundColor: "rgba(255, 255, 255, 0.5)",
+            }}
           />
-        )}
-        {requested > 0 && (
-          <div
-            className="bg-blue-300 h-full"
-            style={{ width: pct(requested) }}
-            title={`Requested: ${requested}d`}
-          />
-        )}
-        {planned > 0 && (
-          <div
-            className="bg-yellow-300 h-full"
-            style={{ width: pct(planned) }}
-            title={`Planned: ${planned}d`}
-          />
-        )}
-        {bankHolidays > 0 && (
-          <div
-            className="bg-purple-300 h-full"
-            style={{ width: pct(bankHolidays) }}
-            title={`Bank Holidays: ${bankHolidays}`}
-          />
-        )}
+        ))}
       </div>
     </div>
   );

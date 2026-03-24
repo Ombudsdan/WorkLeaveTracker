@@ -1,6 +1,6 @@
 "use client";
-import { useState, useMemo } from "react";
-import type { PublicUser, BankHolidayEntry } from "@/types";
+import { useState, useMemo, useEffect } from "react";
+import type { PublicUser, BankHolidayEntry, YearAllowance } from "@/types";
 import { LeaveType, LeaveDuration } from "@/types";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { STATUS_COLORS, SICK_LEAVE_CARD_COLORS } from "@/variables/colours";
@@ -30,15 +30,35 @@ function formatDateRange(startDate: string, endDate: string): string {
  *     Requested, Planned and Bank Holiday segments.
  *  2. A colour legend for the bar segments.
  *  3. An accordion list view of all leave entries grouped by month.
+ *
+ * When the user has multiple non-deactivated allowances a `<select>` lets them
+ * switch between leave periods; otherwise the current period is shown as text.
  */
 export default function AnnualPlannerView({ user, bankHolidays }: AnnualPlannerViewProps) {
   const bankHolidayDates = useMemo(() => bankHolidays.map((bh) => bh.date), [bankHolidays]);
 
   const activeYa = getActiveYearAllowance(user.yearAllowances);
 
+  /** null = show the automatically-selected active window */
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+
+  /** Non-deactivated allowances sorted oldest → newest, used to populate the selector */
+  const visibleAllowances = useMemo(() => {
+    const pool = user.yearAllowances.filter((ya) => ya.active !== false);
+    return [...(pool.length > 0 ? pool : user.yearAllowances)].sort((a, b) => a.year - b.year);
+  }, [user.yearAllowances]);
+
+  /** The year allowance whose window is currently displayed */
+  const effectiveYa = useMemo((): YearAllowance | null | undefined => {
+    if (selectedYear === null) return activeYa;
+    return (
+      visibleAllowances.find((ya) => ya.year === selectedYear) ?? /* c8 ignore next */ activeYa
+    );
+  }, [selectedYear, visibleAllowances, activeYa]);
+
   const monthlyData = useMemo(
-    () => calcMonthlyLeaveBreakdown(user, bankHolidayDates, activeYa ?? undefined),
-    [user, bankHolidayDates, activeYa]
+    () => calcMonthlyLeaveBreakdown(user, bankHolidayDates, effectiveYa ?? undefined),
+    [user, bankHolidayDates, effectiveYa]
   );
 
   // The scale denominator is the maximum totalCombined across all months (minimum 1)
@@ -49,6 +69,17 @@ export default function AnnualPlannerView({ user, bankHolidays }: AnnualPlannerV
 
   // Accordion open state: set of "year-month" keys (e.g. "2026-0")
   const [openMonths, setOpenMonths] = useState<Set<string>>(new Set());
+
+  // Close all open accordion rows when the displayed year changes
+  useEffect(() => {
+    setOpenMonths(new Set());
+  }, [effectiveYa?.year]);
+
+  // Reset the selected window whenever the viewed user changes
+  /* c8 ignore next 3 */
+  useEffect(() => {
+    setSelectedYear(null);
+  }, [user.id]);
 
   function toggleMonth(key: string) {
     setOpenMonths((prev) => {
@@ -76,7 +107,26 @@ export default function AnnualPlannerView({ user, bankHolidays }: AnnualPlannerV
       <div className="bg-white rounded-2xl shadow p-5">
         <div className="flex items-center justify-between mb-1">
           <h2 className="font-semibold text-gray-800 text-sm">Monthly Leave Roundup</h2>
-          <span className="text-xs text-gray-400">{formatYearWindow(activeYa)}</span>
+
+          {/* Leave-period selector: dropdown when multiple windows, plain text otherwise */}
+          {visibleAllowances.length > 1 && effectiveYa ? (
+            <select
+              value={effectiveYa.year}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="text-xs text-gray-600 border border-gray-200 rounded px-1.5 py-0.5 bg-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-indigo-300"
+              aria-label="Select leave window"
+            >
+              {visibleAllowances.map((ya) => (
+                <option key={ya.year} value={ya.year}>
+                  {formatYearWindow(ya)}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="text-xs text-gray-400">
+              {effectiveYa ? formatYearWindow(effectiveYa) : "–"}
+            </span>
+          )}
         </div>
 
         {/* Legend */}
@@ -85,7 +135,7 @@ export default function AnnualPlannerView({ user, bankHolidays }: AnnualPlannerV
             { label: "Approved", color: "bg-green-300" },
             { label: "Requested", color: "bg-blue-300" },
             { label: "Planned", color: "bg-yellow-300" },
-            { label: "Bank Holidays", color: "bg-purple-300" },
+            { label: "Bank Holidays", color: "bg-gray-400" },
           ].map(({ label, color }) => (
             <span key={label} className="flex items-center gap-1 text-xs text-gray-600">
               <span className={`inline-block w-3 h-3 rounded-sm ${color}`} />

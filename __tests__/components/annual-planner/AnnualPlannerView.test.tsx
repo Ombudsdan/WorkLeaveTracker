@@ -63,10 +63,12 @@ describe("AnnualPlannerView — bar chart", () => {
     expect(screen.getByText("Monthly Leave Roundup")).toBeInTheDocument();
   });
 
-  it("renders the year window label", () => {
+  it("renders the year window label as text when there is only one allowance", () => {
     render(<AnnualPlannerView user={baseUser} bankHolidays={[]} />);
     // formatYearWindow for year=2026, startMonth=1 → "1 Jan 2026 – 31 Dec 2026"
     expect(screen.getByText(/1 Jan 2026/)).toBeInTheDocument();
+    // No select element when there is only one allowance
+    expect(screen.queryByRole("combobox", { name: /select leave window/i })).toBeNull();
   });
 
   it("renders the colour legend with all four categories", () => {
@@ -75,6 +77,110 @@ describe("AnnualPlannerView — bar chart", () => {
     expect(screen.getByText("Requested")).toBeInTheDocument();
     expect(screen.getByText("Planned")).toBeInTheDocument();
     expect(screen.getByText("Bank Holidays")).toBeInTheDocument();
+  });
+
+  it("uses mid-grey (bg-gray-400) for the Bank Holidays legend swatch", () => {
+    const { container } = render(<AnnualPlannerView user={baseUser} bankHolidays={[]} />);
+    // The legend swatch for Bank Holidays should use bg-gray-400, NOT bg-purple-300
+    expect(container.querySelector(".bg-gray-400")).toBeInTheDocument();
+    expect(container.querySelector(".bg-purple-300")).not.toBeInTheDocument();
+  });
+});
+
+describe("AnnualPlannerView — year period selector (single allowance)", () => {
+  it("does not render a select when only one allowance exists", () => {
+    render(<AnnualPlannerView user={baseUser} bankHolidays={[]} />);
+    expect(screen.queryByRole("combobox", { name: /select leave window/i })).toBeNull();
+  });
+});
+
+describe("AnnualPlannerView — year period selector (multiple allowances)", () => {
+  const multiUser: PublicUser = {
+    ...baseUser,
+    yearAllowances: [
+      { year: 2025, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+      { year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+    ],
+  };
+
+  it("renders a year-selector <select> when multiple allowances exist", () => {
+    render(<AnnualPlannerView user={multiUser} bankHolidays={[]} />);
+    expect(screen.getByRole("combobox", { name: /select leave window/i })).toBeInTheDocument();
+  });
+
+  it("defaults to the active (2026) year when multiple allowances exist", () => {
+    render(<AnnualPlannerView user={multiUser} bankHolidays={[]} />);
+    const select = screen.getByRole("combobox", {
+      name: /select leave window/i,
+    }) as HTMLSelectElement;
+    expect(select.value).toBe("2026");
+  });
+
+  it("changes the displayed period when a different year is selected", async () => {
+    const ue = setup();
+    render(<AnnualPlannerView user={multiUser} bankHolidays={[]} />);
+    const select = screen.getByRole("combobox", { name: /select leave window/i });
+    await ue.selectOptions(select, "2025");
+    // Year window text in the select option should now reflect 2025
+    expect(screen.getByText(/1 Jan 2025/)).toBeInTheDocument();
+  });
+
+  it("shows both year options in the selector", () => {
+    render(<AnnualPlannerView user={multiUser} bankHolidays={[]} />);
+    expect(screen.getByText(/1 Jan 2025/)).toBeInTheDocument();
+    expect(screen.getByText(/1 Jan 2026/)).toBeInTheDocument();
+  });
+
+  it("resets open accordions when the year is changed", async () => {
+    const ue = setup();
+    const user: PublicUser = {
+      ...multiUser,
+      entries: [
+        {
+          id: "e1",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          notes: "Spring break",
+        },
+      ],
+    };
+    render(<AnnualPlannerView user={user} bankHolidays={[]} />);
+    // Open March 2026
+    await ue.click(screen.getByRole("button", { name: /march 2026/i }));
+    expect(screen.getByText("Spring break")).toBeInTheDocument();
+    // Switch to 2025
+    const select = screen.getByRole("combobox", { name: /select leave window/i });
+    await ue.selectOptions(select, "2025");
+    // Accordion should be closed now
+    expect(screen.queryByText("Spring break")).not.toBeInTheDocument();
+  });
+
+  it("shows entries for the newly selected year", async () => {
+    const ue = setup();
+    const user: PublicUser = {
+      ...multiUser,
+      entries: [
+        {
+          id: "e-2025",
+          startDate: "2025-06-02",
+          endDate: "2025-06-06",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          notes: "Summer 2025",
+        },
+      ],
+    };
+    render(<AnnualPlannerView user={user} bankHolidays={[]} />);
+    // Default is 2026 — 2025 entry should not be visible
+    expect(screen.queryByText("Summer 2025")).not.toBeInTheDocument();
+    // Switch to 2025
+    const select = screen.getByRole("combobox", { name: /select leave window/i });
+    await ue.selectOptions(select, "2025");
+    // Open June 2025 accordion
+    await ue.click(screen.getByRole("button", { name: /june 2025/i }));
+    expect(screen.getByText("Summer 2025")).toBeInTheDocument();
   });
 });
 
