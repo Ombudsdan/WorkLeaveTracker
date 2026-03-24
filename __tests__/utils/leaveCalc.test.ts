@@ -1,4 +1,4 @@
-import { calcLeaveSummary } from "@/utils/leaveCalc";
+import { calcLeaveSummary, calcMonthlyLeaveBreakdown } from "@/utils/leaveCalc";
 import { LeaveStatus, LeaveType, LeaveDuration, BankHolidayHandling } from "@/types";
 import type { PublicUser } from "@/types";
 
@@ -562,5 +562,321 @@ describe("calcLeaveSummary — forYearAllowance override", () => {
     expect(summary.total).toBe(20);
     expect(summary.approved).toBe(5);
     expect(summary.remaining).toBe(15);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
+// calcMonthlyLeaveBreakdown
+// ──────────────────────────────────────────────────────────────────────────────
+
+describe("calcMonthlyLeaveBreakdown — no allowance", () => {
+  it("returns an empty array when the user has no yearAllowances", () => {
+    const user: PublicUser = { ...baseUser, yearAllowances: [] };
+    expect(calcMonthlyLeaveBreakdown(user, [])).toEqual([]);
+  });
+});
+
+describe("calcMonthlyLeaveBreakdown — basic structure", () => {
+  it("returns 12 months for a January-start year", () => {
+    const result = calcMonthlyLeaveBreakdown(baseUser, []);
+    expect(result).toHaveLength(12);
+  });
+
+  it("first month is January of the allowance year", () => {
+    const result = calcMonthlyLeaveBreakdown(baseUser, []);
+    expect(result[0].month).toBe(0); // January
+    expect(result[0].year).toBe(2026);
+  });
+
+  it("last month is December of the allowance year", () => {
+    const result = calcMonthlyLeaveBreakdown(baseUser, []);
+    expect(result[11].month).toBe(11); // December
+    expect(result[11].year).toBe(2026);
+  });
+
+  it("returns 12 months for an April-start year spanning two calendar years", () => {
+    const user: PublicUser = {
+      ...baseUser,
+      yearAllowances: [
+        { year: 2025, company: "Acme", holidayStartMonth: 4, core: 25, bought: 0, carried: 0 },
+      ],
+    };
+    const result = calcMonthlyLeaveBreakdown(user, []);
+    expect(result).toHaveLength(12);
+    expect(result[0].month).toBe(3); // April (0-indexed)
+    expect(result[0].year).toBe(2025);
+    expect(result[11].month).toBe(2); // March (0-indexed)
+    expect(result[11].year).toBe(2026);
+  });
+});
+
+describe("calcMonthlyLeaveBreakdown — all zeros with no entries", () => {
+  it("all months have 0 approved, requested, planned, bankHolidays when there are no entries", () => {
+    const result = calcMonthlyLeaveBreakdown(baseUser, []);
+    for (const m of result) {
+      expect(m.approved).toBe(0);
+      expect(m.requested).toBe(0);
+      expect(m.planned).toBe(0);
+      expect(m.bankHolidays).toBe(0);
+      expect(m.totalCombined).toBe(0);
+      expect(m.entries).toHaveLength(0);
+    }
+  });
+});
+
+describe("calcMonthlyLeaveBreakdown — entry bucketing", () => {
+  it("places a Mon–Fri week of approved leave in the correct month", () => {
+    const user: PublicUser = {
+      ...baseUser,
+      entries: [
+        {
+          id: "e1",
+          startDate: "2026-03-09", // Monday
+          endDate: "2026-03-13",   // Friday
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    const result = calcMonthlyLeaveBreakdown(user, []);
+    const march = result.find((m) => m.month === 2)!; // March = index 2
+    expect(march.approved).toBe(5);
+    expect(march.requested).toBe(0);
+    expect(march.planned).toBe(0);
+    expect(march.entries).toHaveLength(1);
+  });
+
+  it("puts a requested entry in the correct month", () => {
+    const user: PublicUser = {
+      ...baseUser,
+      entries: [
+        {
+          id: "e2",
+          startDate: "2026-06-01",
+          endDate: "2026-06-02",
+          status: LeaveStatus.Requested,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    const result = calcMonthlyLeaveBreakdown(user, []);
+    const june = result.find((m) => m.month === 5)!;
+    expect(june.requested).toBe(2);
+  });
+
+  it("puts a planned entry in the correct month", () => {
+    const user: PublicUser = {
+      ...baseUser,
+      entries: [
+        {
+          id: "e3",
+          startDate: "2026-08-10",
+          endDate: "2026-08-10",
+          status: LeaveStatus.Planned,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    const result = calcMonthlyLeaveBreakdown(user, []);
+    const aug = result.find((m) => m.month === 7)!;
+    expect(aug.planned).toBe(1);
+  });
+});
+
+describe("calcMonthlyLeaveBreakdown — multi-month entry clipping", () => {
+  it("splits a multi-month entry across the correct months", () => {
+    // Entry spans 2 weeks covering the March/April boundary (Mon 23 Mar → Fri 3 Apr)
+    const user: PublicUser = {
+      ...baseUser,
+      entries: [
+        {
+          id: "e-cross",
+          startDate: "2026-03-23", // Monday
+          endDate: "2026-04-03",   // Friday
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    const result = calcMonthlyLeaveBreakdown(user, []);
+    const march = result.find((m) => m.month === 2)!;
+    const april = result.find((m) => m.month === 3)!;
+    // 23–27 Mar = 5 days; 30–31 Mar = 2 days → 7 in March
+    expect(march.approved).toBe(7);
+    // 1–3 Apr = 3 days (Wed, Thu, Fri) → 3 in April
+    expect(april.approved).toBe(3);
+    // Both months include the entry
+    expect(march.entries).toHaveLength(1);
+    expect(april.entries).toHaveLength(1);
+  });
+});
+
+describe("calcMonthlyLeaveBreakdown — half-day entries", () => {
+  it("counts a half-day entry as 0.5 in its month", () => {
+    const user: PublicUser = {
+      ...baseUser,
+      entries: [
+        {
+          id: "hd1",
+          startDate: "2026-05-04",
+          endDate: "2026-05-04",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfMorning,
+        },
+      ],
+    };
+    const result = calcMonthlyLeaveBreakdown(user, []);
+    const may = result.find((m) => m.month === 4)!;
+    expect(may.approved).toBe(0.5);
+  });
+});
+
+describe("calcMonthlyLeaveBreakdown — bank holidays", () => {
+  it("counts bank holidays on working days in the correct month", () => {
+    // 2026-05-04 is a Monday (working day)
+    const result = calcMonthlyLeaveBreakdown(baseUser, ["2026-05-04"]);
+    const may = result.find((m) => m.month === 4)!;
+    expect(may.bankHolidays).toBe(1);
+    expect(may.totalCombined).toBe(1);
+  });
+
+  it("does not count bank holidays on non-working days", () => {
+    // Saturday 2026-05-02
+    const result = calcMonthlyLeaveBreakdown(baseUser, ["2026-05-02"]);
+    const may = result.find((m) => m.month === 4)!;
+    expect(may.bankHolidays).toBe(0);
+  });
+
+  it("does not count bank holidays outside the holiday year", () => {
+    const result = calcMonthlyLeaveBreakdown(baseUser, ["2027-01-01"]);
+    for (const m of result) {
+      expect(m.bankHolidays).toBe(0);
+    }
+  });
+});
+
+describe("calcMonthlyLeaveBreakdown — totalCombined", () => {
+  it("totalCombined = approved + requested + planned + bankHolidays", () => {
+    const user: PublicUser = {
+      ...baseUser,
+      entries: [
+        {
+          id: "e-combo",
+          startDate: "2026-03-09",
+          endDate: "2026-03-10",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    // Bank holiday on working day in March
+    const result = calcMonthlyLeaveBreakdown(user, ["2026-03-16"]);
+    const march = result.find((m) => m.month === 2)!;
+    expect(march.totalCombined).toBe(march.approved + march.requested + march.planned + march.bankHolidays);
+  });
+});
+
+describe("calcMonthlyLeaveBreakdown — sick leave in entries list", () => {
+  it("includes sick leave in m.entries but does not count it in bar stats", () => {
+    const user: PublicUser = {
+      ...baseUser,
+      entries: [
+        {
+          id: "s1",
+          startDate: "2026-03-09",
+          endDate: "2026-03-13",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Sick,
+        },
+      ],
+    };
+    const result = calcMonthlyLeaveBreakdown(user, []);
+    const march = result.find((m) => m.month === 2)!;
+    // Sick entry IS included in the entries list (for the accordion)
+    expect(march.entries).toHaveLength(1);
+    // But NOT counted in the bar stats
+    expect(march.approved).toBe(0);
+    expect(march.totalCombined).toBe(0);
+  });
+});
+
+describe("calcMonthlyLeaveBreakdown — forYearAllowance override", () => {
+  it("uses the provided allowance when forYearAllowance is specified", () => {
+    const ya2025 = {
+      year: 2025,
+      company: "Acme",
+      holidayStartMonth: 1,
+      core: 20,
+      bought: 0,
+      carried: 0,
+    };
+    const user: PublicUser = {
+      ...baseUser,
+      yearAllowances: [
+        ya2025,
+        { year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+      ],
+      entries: [
+        {
+          id: "e-2025",
+          startDate: "2025-06-02",
+          endDate: "2025-06-06",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    const result = calcMonthlyLeaveBreakdown(user, [], ya2025);
+    expect(result).toHaveLength(12);
+    expect(result[0].year).toBe(2025);
+    const june = result.find((m) => m.month === 5)!;
+    expect(june.approved).toBe(5);
+  });
+});
+
+describe("calcMonthlyLeaveBreakdown — missing holidayStartMonth fallback", () => {
+  it("defaults to January when holidayStartMonth is missing", () => {
+    const user: PublicUser = {
+      ...baseUser,
+      yearAllowances: [
+        {
+          year: 2026,
+          company: "Acme",
+          holidayStartMonth: undefined as unknown as number,
+          core: 25,
+          bought: 0,
+          carried: 0,
+        },
+      ],
+    };
+    const result = calcMonthlyLeaveBreakdown(user, []);
+    // Falls back to month=1 (January) so first element should be January 2026
+    expect(result[0].month).toBe(0);
+    expect(result[0].year).toBe(2026);
+  });
+});
+
+describe("calcMonthlyLeaveBreakdown — sick leave entries included in list", () => {
+  it("includes sick leave entries in m.entries but not in bar counts", () => {
+    const user: PublicUser = {
+      ...baseUser,
+      entries: [
+        {
+          id: "s1",
+          startDate: "2026-03-09",
+          endDate: "2026-03-13",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Sick,
+        },
+      ],
+    };
+    const result = calcMonthlyLeaveBreakdown(user, []);
+    const march = result.find((m) => m.month === 2)!;
+    // Sick entry is included in the entries list
+    expect(march.entries).toHaveLength(1);
+    // But not counted in the bar stats
+    expect(march.approved).toBe(0);
+    expect(march.totalCombined).toBe(0);
   });
 });
