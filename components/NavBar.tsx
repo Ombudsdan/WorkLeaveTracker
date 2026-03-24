@@ -4,7 +4,7 @@ import { useSession, signOut } from "next-auth/react";
 import { Menu, X } from "lucide-react";
 
 interface NavBarProps {
-  activePage: "dashboard" | "profile" | "connections";
+  activePage: "dashboard" | "profile" | "connections" | "annual-planner";
   pendingRequestCount?: number;
 }
 
@@ -49,6 +49,16 @@ export default function NavBar({ activePage, pendingRequestCount = 0 }: NavBarPr
               {pendingRequestCount}
             </span>
           )}
+        </a>
+        <a
+          href="/annual-planner"
+          className={
+            activePage === "annual-planner"
+              ? "text-indigo-700 font-semibold"
+              : "text-gray-600 hover:text-indigo-700"
+          }
+        >
+          Annual Planner
         </a>
         {session && (
           <>
@@ -104,6 +114,17 @@ export default function NavBar({ activePage, pendingRequestCount = 0 }: NavBarPr
                   {pendingRequestCount}
                 </span>
               )}
+            </a>
+            <a
+              href="/annual-planner"
+              onClick={closeMenu}
+              className={
+                activePage === "annual-planner"
+                  ? "text-indigo-700 font-semibold"
+                  : "text-gray-600 hover:text-indigo-700"
+              }
+            >
+              Annual Planner
             </a>
             {session && (
               <>
