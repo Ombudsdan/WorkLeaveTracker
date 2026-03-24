@@ -530,6 +530,7 @@ export default function ProfilePage() {
           initialYear={editingAllowance?.year ?? currentHolidayYear + 1}
           existing={editingAllowance}
           existingCompanies={existingCompanies}
+          existingAllowances={yearAllowances}
           onClose={() => setShowAllowanceModal(false)}
           onSave={handleSaveAllowance}
         />
