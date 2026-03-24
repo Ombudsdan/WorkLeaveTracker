@@ -6,7 +6,12 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { STATUS_COLORS, SICK_LEAVE_CARD_COLORS } from "@/variables/colours";
 import { MONTH_NAMES_LONG } from "@/variables/calendar";
 import { calcMonthlyLeaveBreakdown } from "@/utils/leaveCalc";
-import { getActiveYearAllowance, formatYearWindow, countEntryDays, getEntryDuration } from "@/utils/dateHelpers";
+import {
+  getActiveYearAllowance,
+  formatYearWindow,
+  countEntryDays,
+  getEntryDuration,
+} from "@/utils/dateHelpers";
 import MonthlyLeaveBar from "@/components/molecules/MonthlyLeaveBar";
 
 interface AnnualPlannerViewProps {

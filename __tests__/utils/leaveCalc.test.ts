@@ -632,7 +632,7 @@ describe("calcMonthlyLeaveBreakdown — entry bucketing", () => {
         {
           id: "e1",
           startDate: "2026-03-09", // Monday
-          endDate: "2026-03-13",   // Friday
+          endDate: "2026-03-13", // Friday
           status: LeaveStatus.Approved,
           type: LeaveType.Holiday,
         },
@@ -692,7 +692,7 @@ describe("calcMonthlyLeaveBreakdown — multi-month entry clipping", () => {
         {
           id: "e-cross",
           startDate: "2026-03-23", // Monday
-          endDate: "2026-04-03",   // Friday
+          endDate: "2026-04-03", // Friday
           status: LeaveStatus.Approved,
           type: LeaveType.Holiday,
         },
@@ -773,7 +773,9 @@ describe("calcMonthlyLeaveBreakdown — totalCombined", () => {
     // Bank holiday on working day in March
     const result = calcMonthlyLeaveBreakdown(user, ["2026-03-16"]);
     const march = result.find((m) => m.month === 2)!;
-    expect(march.totalCombined).toBe(march.approved + march.requested + march.planned + march.bankHolidays);
+    expect(march.totalCombined).toBe(
+      march.approved + march.requested + march.planned + march.bankHolidays
+    );
   });
 });
 

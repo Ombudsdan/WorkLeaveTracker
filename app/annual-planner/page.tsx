@@ -45,8 +45,7 @@ export default function AnnualPlannerPage() {
       setLoading(true);
       try {
         for (let attempt = 0; attempt <= 4; attempt++) {
-          if (attempt > 0)
-            await new Promise<void>((r) => setTimeout(r, RETRY_DELAY_MS * attempt));
+          if (attempt > 0) await new Promise<void>((r) => setTimeout(r, RETRY_DELAY_MS * attempt));
           const rawUsers = await usersController.fetchAll();
           if (cancelled) return;
           const users = Array.isArray(rawUsers) ? rawUsers : [];
