@@ -185,12 +185,10 @@ it("calls onSave with the updated company when a new company name is entered", a
   const user = setup();
   const onSave = jest.fn();
   renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={onSave} />);
-  // Select "Other / not listed" from the company dropdown
-  const companySelect = screen.getByRole("combobox", { name: /company/i });
-  await user.selectOptions(companySelect, "__other__");
-  // Type into the revealed custom input
-  const customInput = screen.getByLabelText("Custom company name");
-  await user.type(customInput, "NewCo");
+  // Type directly into the company text input (CompanyCombobox)
+  const companyInput = screen.getByRole("combobox", { name: /^Company/i });
+  await user.clear(companyInput);
+  await user.type(companyInput, "NewCo");
   await user.click(screen.getByRole("button", { name: "Save" }));
   expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ company: "NewCo" }));
 });
@@ -205,14 +203,18 @@ it("calls onSave with the updated holidayStartMonth when month is changed", asyn
   expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ holidayStartMonth: 4 }));
 });
 
-it("merges companies fetched from the API into the company dropdown", async () => {
-  // Return a non-empty list so the setCompanies branch (lines 51-53) is exercised
+it("merges companies fetched from the API into the company combobox suggestions", async () => {
+  // Return a non-empty list so the setCompanies branch is exercised
   mockFetchCompanies.mockResolvedValue(["FetchedCo"]);
-  renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={jest.fn()} />);
-  // Wait for the useEffect to run and update the companies list
-  await waitFor(() =>
-    expect(screen.getByRole("option", { name: "FetchedCo" })).toBeInTheDocument()
+  const { container } = renderModal(
+    <YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={jest.fn()} />
   );
+  // Wait for the useEffect to run and update the datalist
+  await waitFor(() => {
+    const options = container.querySelectorAll("datalist option");
+    const values = Array.from(options).map((o) => (o as HTMLOptionElement).value);
+    expect(values).toContain("FetchedCo");
+  });
 });
 
 describe("YearAllowanceModal — bank holiday handling", () => {
@@ -259,5 +261,169 @@ describe("YearAllowanceModal — bank holiday handling", () => {
     renderModal(<YearAllowanceModal initialYear={2026} onClose={jest.fn()} onSave={onSave} />);
     await user.click(screen.getByRole("button", { name: "Save" }));
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ bankHolidayHandling: "none" }));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// YearAllowanceModal — overlap validation
+// ---------------------------------------------------------------------------
+describe("YearAllowanceModal — overlap validation", () => {
+  const existingAllowance = {
+    id: "ya-2025-1-acme",
+    year: 2025,
+    company: "Acme",
+    holidayStartMonth: 1,
+    startDate: "2025-01-01",
+    endDate: "2025-12-31",
+    core: 25,
+    bought: 0,
+    carried: 0,
+    active: true as boolean | undefined,
+  };
+
+  it("prevents saving when the new allowance overlaps an existing one for the same company", async () => {
+    const user = setup();
+    const onSave = jest.fn();
+    renderModal(
+      <YearAllowanceModal
+        initialYear={2025}
+        existingAllowances={[existingAllowance]}
+        onClose={jest.fn()}
+        onSave={onSave}
+      />
+    );
+    // Set company to "Acme" which already has a 2025 allowance
+    const companyInput = screen.getByRole("combobox", { name: /^Company/i });
+    await user.clear(companyInput);
+    await user.type(companyInput, "Acme");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(onSave).not.toHaveBeenCalled();
+    expect(screen.getByText(/overlaps with an existing allowance/i)).toBeInTheDocument();
+  });
+
+  it("allows saving when the new allowance is for a different company", async () => {
+    const user = setup();
+    const onSave = jest.fn();
+    renderModal(
+      <YearAllowanceModal
+        initialYear={2025}
+        existingAllowances={[existingAllowance]}
+        onClose={jest.fn()}
+        onSave={onSave}
+      />
+    );
+    // Different company — no overlap
+    const companyInput = screen.getByRole("combobox", { name: /^Company/i });
+    await user.clear(companyInput);
+    await user.type(companyInput, "Globex");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(onSave).toHaveBeenCalled();
+  });
+
+  it("allows saving when there are no existing allowances", async () => {
+    const user = setup();
+    const onSave = jest.fn();
+    renderModal(
+      <YearAllowanceModal
+        initialYear={2025}
+        existingAllowances={[]}
+        onClose={jest.fn()}
+        onSave={onSave}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(onSave).toHaveBeenCalled();
+  });
+
+  it("skips inactive allowances when checking for overlaps", async () => {
+    const user = setup();
+    const onSave = jest.fn();
+    const inactiveAllowance = { ...existingAllowance, active: false as boolean | undefined };
+    renderModal(
+      <YearAllowanceModal
+        initialYear={2025}
+        existingAllowances={[inactiveAllowance]}
+        onClose={jest.fn()}
+        onSave={onSave}
+      />
+    );
+    const companyInput = screen.getByRole("combobox", { name: /^Company/i });
+    await user.clear(companyInput);
+    await user.type(companyInput, "Acme");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    // Inactive allowance should not block save
+    expect(onSave).toHaveBeenCalled();
+  });
+
+  it("skips the allowance being edited when checking for overlaps", async () => {
+    const user = setup();
+    const onSave = jest.fn();
+    renderModal(
+      <YearAllowanceModal
+        existing={existingAllowance}
+        existingAllowances={[existingAllowance]}
+        onClose={jest.fn()}
+        onSave={onSave}
+      />
+    );
+    // Editing the same allowance should not trigger an overlap error
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(onSave).toHaveBeenCalled();
+  });
+
+  it("falls back to computing dates from year/month when startDate/endDate are absent on an existing allowance", async () => {
+    const user = setup();
+    const onSave = jest.fn();
+    const noDateAllowance = {
+      year: 2025,
+      company: "Acme",
+      holidayStartMonth: 1,
+      core: 25,
+      bought: 0,
+      carried: 0,
+    };
+    renderModal(
+      <YearAllowanceModal
+        initialYear={2025}
+        existingAllowances={[noDateAllowance]}
+        onClose={jest.fn()}
+        onSave={onSave}
+      />
+    );
+    const companyInput = screen.getByRole("combobox", { name: /^Company/i });
+    await user.clear(companyInput);
+    await user.type(companyInput, "Acme");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    // Should detect overlap even without stored startDate/endDate
+    expect(onSave).not.toHaveBeenCalled();
+    expect(screen.getByText(/overlaps with an existing allowance/i)).toBeInTheDocument();
+  });
+
+  it("falls back to holidayStartMonth=1 when both dates and month are absent on an existing allowance", async () => {
+    const user = setup();
+    const onSave = jest.fn();
+    // Legacy allowance with no startDate/endDate and no holidayStartMonth
+    const legacyAllowance = {
+      year: 2025,
+      company: "Acme",
+      core: 25,
+      bought: 0,
+      carried: 0,
+    } as import("@/types").YearAllowance;
+    renderModal(
+      <YearAllowanceModal
+        initialYear={2025}
+        existingAllowances={[legacyAllowance]}
+        onClose={jest.fn()}
+        onSave={onSave}
+      />
+    );
+    const companyInput = screen.getByRole("combobox", { name: /^Company/i });
+    await user.clear(companyInput);
+    await user.type(companyInput, "Acme");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    // Should detect overlap even without holidayStartMonth (defaults to 1)
+    expect(onSave).not.toHaveBeenCalled();
+    expect(screen.getByText(/overlaps with an existing allowance/i)).toBeInTheDocument();
   });
 });

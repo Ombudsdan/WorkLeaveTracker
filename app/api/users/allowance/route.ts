@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { findUserById, findUserByEmail, updateUser } from "@/lib/db";
+import { findUserById, findUserByEmail, updateUser, upsertCompany } from "@/lib/db";
 import type { YearAllowance } from "@/types";
+import { v4 as uuidv4 } from "uuid";
+import { yearAllowanceDates } from "@/utils/dateHelpers";
 
 /** POST /api/users/allowance - add or update a year's allowance for the current user */
 export async function POST(request: Request) {
@@ -35,6 +37,7 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const normalizedCompany = (company ?? "").trim();
+  const sm = holidayStartMonth ?? 1;
 
   // Find any existing active allowance for this year
   const existing = user.yearAllowances.find((a) => a.year === year && a.active !== false);
@@ -68,13 +71,26 @@ export async function POST(request: Request) {
     );
   }
 
+  // Resolve or create the company entity to obtain a stable companyId
+  let companyId: string | undefined;
+  if (normalizedCompany) {
+    const companyRecord = await upsertCompany(normalizedCompany, uuidv4());
+    companyId = companyRecord.id;
+  }
+
+  const { startDate, endDate } = yearAllowanceDates(year, sm);
+
   const newAllowance: YearAllowance = {
+    id: uuidv4(),
     year,
+    startDate,
+    endDate,
     core,
     bought,
     carried,
     company: normalizedCompany,
-    holidayStartMonth: holidayStartMonth ?? 1,
+    ...(companyId !== undefined && { companyId }),
+    holidayStartMonth: sm,
     bankHolidayHandling: bankHolidayHandling,
     active: true,
   };

@@ -8,6 +8,8 @@ import {
   isNonWorkingDay,
   toIsoDate,
   formatYearWindow,
+  yearAllowanceDates,
+  yearAllowancesOverlap,
 } from "@/utils/dateHelpers";
 import { LeaveStatus, LeaveType } from "@/types";
 import type { LeaveEntry, YearAllowance } from "@/types";
@@ -502,5 +504,103 @@ describe("formatYearWindow", () => {
     const result = formatYearWindow(ya);
     expect(result).toMatch(/1 Jan 2026/);
     expect(result).toMatch(/31 Dec 2026/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// yearAllowanceDates
+// ---------------------------------------------------------------------------
+describe("yearAllowanceDates", () => {
+  it("returns 2026-01-01 to 2026-12-31 for year=2026, holidayStartMonth=1", () => {
+    const { startDate, endDate } = yearAllowanceDates(2026, 1);
+    expect(startDate).toBe("2026-01-01");
+    expect(endDate).toBe("2026-12-31");
+  });
+
+  it("returns 2025-04-01 to 2026-03-31 for year=2025, holidayStartMonth=4", () => {
+    const { startDate, endDate } = yearAllowanceDates(2025, 4);
+    expect(startDate).toBe("2025-04-01");
+    expect(endDate).toBe("2026-03-31");
+  });
+
+  it("returns 2025-12-01 to 2026-11-30 for year=2025, holidayStartMonth=12", () => {
+    const { startDate, endDate } = yearAllowanceDates(2025, 12);
+    expect(startDate).toBe("2025-12-01");
+    expect(endDate).toBe("2026-11-30");
+  });
+
+  it("handles leap-year boundary correctly for February start", () => {
+    // year=2024, holidayStartMonth=2 → 2024-02-01 to 2025-01-31
+    const { startDate, endDate } = yearAllowanceDates(2024, 2);
+    expect(startDate).toBe("2024-02-01");
+    expect(endDate).toBe("2025-01-31");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// yearAllowancesOverlap
+// ---------------------------------------------------------------------------
+describe("yearAllowancesOverlap", () => {
+  it("returns true when ranges are identical", () => {
+    expect(
+      yearAllowancesOverlap(
+        { startDate: "2026-01-01", endDate: "2026-12-31" },
+        { startDate: "2026-01-01", endDate: "2026-12-31" }
+      )
+    ).toBe(true);
+  });
+
+  it("returns true when one range is completely inside the other", () => {
+    expect(
+      yearAllowancesOverlap(
+        { startDate: "2026-01-01", endDate: "2026-12-31" },
+        { startDate: "2026-06-01", endDate: "2026-09-30" }
+      )
+    ).toBe(true);
+  });
+
+  it("returns true when ranges partially overlap (b starts before a ends)", () => {
+    expect(
+      yearAllowancesOverlap(
+        { startDate: "2026-01-01", endDate: "2026-06-30" },
+        { startDate: "2026-06-01", endDate: "2026-12-31" }
+      )
+    ).toBe(true);
+  });
+
+  it("returns true when ranges share exactly one day", () => {
+    expect(
+      yearAllowancesOverlap(
+        { startDate: "2026-01-01", endDate: "2026-06-30" },
+        { startDate: "2026-06-30", endDate: "2026-12-31" }
+      )
+    ).toBe(true);
+  });
+
+  it("returns false when a ends the day before b starts", () => {
+    expect(
+      yearAllowancesOverlap(
+        { startDate: "2026-01-01", endDate: "2026-06-29" },
+        { startDate: "2026-06-30", endDate: "2026-12-31" }
+      )
+    ).toBe(false);
+  });
+
+  it("returns false when ranges are entirely non-overlapping (a before b)", () => {
+    expect(
+      yearAllowancesOverlap(
+        { startDate: "2025-01-01", endDate: "2025-12-31" },
+        { startDate: "2026-01-01", endDate: "2026-12-31" }
+      )
+    ).toBe(false);
+  });
+
+  it("returns false when ranges are entirely non-overlapping (b before a)", () => {
+    expect(
+      yearAllowancesOverlap(
+        { startDate: "2026-01-01", endDate: "2026-12-31" },
+        { startDate: "2025-01-01", endDate: "2025-12-31" }
+      )
+    ).toBe(false);
   });
 });

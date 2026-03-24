@@ -67,11 +67,25 @@ export interface UserAllowance {
   carried: number;
 }
 
+/** A company entity stored in the global registry. */
+export interface Company {
+  id: string;
+  name: string;
+}
+
 export interface YearAllowance extends UserAllowance {
+  /** Unique identifier for this allowance record */
+  id?: string;
+  /** ISO date string (YYYY-MM-DD) — 1st day of the holiday year */
+  startDate?: string;
+  /** ISO date string (YYYY-MM-DD) — last day of the holiday year */
+  endDate?: string;
   /** The calendar year in which this holiday period begins */
   year: number;
   /** Name of the company this allowance applies to */
   company: string;
+  /** Reference to the Company entity's id in the global company registry */
+  companyId?: string;
   /** 1-12, e.g. 1 for Jan, 4 for Apr — defines when this holiday year starts */
   holidayStartMonth: number;
   /**
@@ -119,4 +133,6 @@ export type PublicUser = Omit<AppUser, "password">;
 
 export interface Database {
   users: AppUser[];
+  /** Global company registry — normalised company names with stable IDs */
+  companies?: Company[];
 }

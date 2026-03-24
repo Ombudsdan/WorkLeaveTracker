@@ -4,15 +4,17 @@ import { BankHolidayHandling } from "@/types";
 import type { YearAllowance } from "@/types";
 import FormField from "@/components/FormField";
 import Button from "@/components/Button";
-import CompanySelect from "@/components/CompanySelect";
+import CompanyCombobox from "@/components/CompanyCombobox";
 import { FormValidationProvider, useFormValidation } from "@/contexts/FormValidationContext";
 import { MONTH_NAMES_LONG } from "@/variables/calendar";
 import { usersController } from "@/controllers/usersController";
+import { yearAllowanceDates, yearAllowancesOverlap } from "@/utils/dateHelpers";
 
 export default function YearAllowanceModal({
   initialYear,
   existing,
   existingCompanies,
+  existingAllowances,
   onClose,
   onSave,
 }: YearAllowanceModalProps) {
@@ -22,6 +24,7 @@ export default function YearAllowanceModal({
         initialYear={initialYear}
         existing={existing}
         existingCompanies={existingCompanies}
+        existingAllowances={existingAllowances}
         onClose={onClose}
         onSave={onSave}
       />
@@ -33,6 +36,7 @@ function YearAllowanceModalInner({
   initialYear,
   existing,
   existingCompanies = [],
+  existingAllowances = [],
   onClose,
   onSave,
 }: YearAllowanceModalProps) {
@@ -46,6 +50,7 @@ function YearAllowanceModalInner({
   const [bankHolidayHandling, setBankHolidayHandling] = useState<BankHolidayHandling>(
     existing?.bankHolidayHandling ?? BankHolidayHandling.None
   );
+  const [overlapError, setOverlapError] = useState("");
 
   // Merge prop-provided companies with anything fetched from the API
   const [companies, setCompanies] = useState<string[]>(existingCompanies);
@@ -73,12 +78,12 @@ function YearAllowanceModalInner({
             max={2100}
             required
           />
-          <CompanySelect
+          <CompanyCombobox
             id="ya-company"
             label="Company"
             value={company}
             onChange={setCompany}
-            companies={companies}
+            suggestions={companies}
           />
           <div>
             <label
@@ -149,6 +154,7 @@ function YearAllowanceModalInner({
               </option>
             </select>
           </div>
+          {overlapError && <p className="text-red-500 text-sm">{overlapError}</p>}
         </div>
         <div className="flex gap-2 mt-5">
           <Button variant="primary" fullWidth onClick={handleSave}>
@@ -164,6 +170,38 @@ function YearAllowanceModalInner({
 
   function handleSave() {
     if (!triggerAllValidations()) return;
+
+    // Check for overlapping date ranges within the same company
+    const normalizedCompany = company.trim().toLowerCase();
+    const { startDate, endDate } = yearAllowanceDates(year, holidayStartMonth);
+    const conflict = existingAllowances.find((a) => {
+      // Skip the allowance being edited and inactive allowances
+      if (a.active === false) return false;
+      if (
+        existing &&
+        a.year === existing.year &&
+        a.company.trim().toLowerCase() === existing.company.trim().toLowerCase()
+      ) {
+        return false;
+      }
+      // Only check allowances for the same company (empty company only matches empty company)
+      if (a.company.trim().toLowerCase() !== normalizedCompany) return false;
+      const aComputed = yearAllowanceDates(a.year, a.holidayStartMonth ?? 1);
+      const aStart = a.startDate ?? aComputed.startDate;
+      const aEnd = a.endDate ?? aComputed.endDate;
+      return yearAllowancesOverlap({ startDate, endDate }, { startDate: aStart, endDate: aEnd });
+    });
+
+    if (conflict) {
+      const conflictStart = conflict.startDate ?? yearAllowanceDates(conflict.year, conflict.holidayStartMonth ?? 1).startDate;
+      const conflictEnd = conflict.endDate ?? yearAllowanceDates(conflict.year, conflict.holidayStartMonth ?? 1).endDate;
+      setOverlapError(
+        `This date range overlaps with an existing allowance (${conflictStart} – ${conflictEnd}).`
+      );
+      return;
+    }
+
+    setOverlapError("");
     onSave({ year, company, holidayStartMonth, core, bought, carried, bankHolidayHandling });
   }
 }
@@ -171,8 +209,10 @@ function YearAllowanceModalInner({
 interface YearAllowanceModalProps {
   initialYear?: number;
   existing?: YearAllowance;
-  /** Existing company names to pre-populate the selector (will be merged with API results) */
+  /** Existing company names to pre-populate the suggestions list (will be merged with API results) */
   existingCompanies?: string[];
+  /** All current allowances — used to detect overlapping date ranges before saving */
+  existingAllowances?: YearAllowance[];
   onClose: () => void;
   onSave: (allowance: YearAllowance) => void;
 }
