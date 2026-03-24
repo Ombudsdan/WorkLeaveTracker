@@ -190,7 +190,7 @@ describe("AnnualPlannerView — accordion list", () => {
     expect(januaryButton).toBeDisabled();
   });
 
-  it("shows the entry count badge on months with entries", () => {
+  it("shows the entry count badge (singular) on months with one entry", () => {
     const user: PublicUser = {
       ...baseUser,
       entries: [
@@ -206,6 +206,30 @@ describe("AnnualPlannerView — accordion list", () => {
     };
     render(<AnnualPlannerView user={user} bankHolidays={[]} />);
     expect(screen.getByText("1 entry")).toBeInTheDocument();
+  });
+
+  it("shows the entry count badge (plural) on months with multiple entries", () => {
+    const user: PublicUser = {
+      ...baseUser,
+      entries: [
+        {
+          id: "e1",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+        {
+          id: "e2",
+          startDate: "2026-03-16",
+          endDate: "2026-03-16",
+          status: LeaveStatus.Planned,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    render(<AnnualPlannerView user={user} bankHolidays={[]} />);
+    expect(screen.getByText("2 entries")).toBeInTheDocument();
   });
 });
 

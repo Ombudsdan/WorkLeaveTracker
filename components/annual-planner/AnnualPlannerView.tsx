@@ -142,7 +142,9 @@ export default function AnnualPlannerView({ user, bankHolidays }: AnnualPlannerV
                     </span>
                     <span className="flex items-center gap-2 shrink-0">
                       {hasEntries && (
-                        <span className="text-xs text-gray-400">{m.entries.length} entry</span>
+                        <span className="text-xs text-gray-400">
+                          {m.entries.length} {m.entries.length === 1 ? "entry" : "entries"}
+                        </span>
                       )}
                       {hasEntries &&
                         (isOpen ? (
