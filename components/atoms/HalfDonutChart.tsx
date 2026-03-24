@@ -34,12 +34,7 @@ export interface HalfDonutChartProps {
  * @param r    Radius
  * @param fraction  Value in [0, 1] representing what portion to fill
  */
-function buildUsedArcPath(
-  cx: number,
-  cy: number,
-  r: number,
-  fraction: number
-): string {
+function buildUsedArcPath(cx: number, cy: number, r: number, fraction: number): string {
   const toRad = (deg: number) => (deg * Math.PI) / 180;
 
   // The arc always starts at the left end of the diameter

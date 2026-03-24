@@ -53,8 +53,7 @@ function YearAllowanceModalInner({
 
   // Compute initial display values: if loading an existing allowance in Hours mode,
   // convert the stored decimal days to hours using the stored conversion rate.
-  const toInitialHours = (days: number) =>
-    parseFloat((days * initialCoreHoursPerDay).toFixed(4));
+  const toInitialHours = (days: number) => parseFloat((days * initialCoreHoursPerDay).toFixed(4));
 
   const [core, setCore] = useState(() => {
     if (!existing) return initialUseHours ? 25 * initialCoreHoursPerDay : 25;
@@ -147,9 +146,7 @@ function YearAllowanceModalInner({
 
           {/* Hours / Days toggle */}
           <div>
-            <span className="block text-sm font-medium text-gray-600 mb-1">
-              Allowance Unit
-            </span>
+            <span className="block text-sm font-medium text-gray-600 mb-1">Allowance Unit</span>
             <div className="flex rounded-lg overflow-hidden border border-gray-300 text-sm">
               <button
                 type="button"

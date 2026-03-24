@@ -582,4 +582,3 @@ describe("YearAllowanceModal — Hours/Days toggle", () => {
     expect(savedCore).toBeCloseTo(187.5 / 8, 5);
   });
 });
-
