@@ -10,7 +10,7 @@ export default function AddLeaveModal({
   bankHolidays,
   initialDate,
 }: AddLeaveModalProps) {
-  const initial = initialDate ? { startDate: initialDate, endDate: initialDate } : undefined;
+  const initial = initialDate ? { startDate: initialDate } : undefined;
   return (
     <FormValidationProvider>
       <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
