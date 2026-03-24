@@ -35,9 +35,9 @@ export function migrateYearAllowance(ya: YearAllowance): YearAllowance {
  * Returns a new array of user objects with updated allowances.
  * Users whose allowances already have all fields set are returned unchanged.
  */
-export function migrateUsersAllowances<
-  T extends { yearAllowances: YearAllowance[] },
->(users: T[]): T[] {
+export function migrateUsersAllowances<T extends { yearAllowances: YearAllowance[] }>(
+  users: T[]
+): T[] {
   return users.map((user) => {
     const migrated = user.yearAllowances.map(migrateYearAllowance);
     const changed = migrated.some(

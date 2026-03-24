@@ -193,8 +193,12 @@ function YearAllowanceModalInner({
     });
 
     if (conflict) {
-      const conflictStart = conflict.startDate ?? yearAllowanceDates(conflict.year, conflict.holidayStartMonth ?? 1).startDate;
-      const conflictEnd = conflict.endDate ?? yearAllowanceDates(conflict.year, conflict.holidayStartMonth ?? 1).endDate;
+      const conflictStart =
+        conflict.startDate ??
+        yearAllowanceDates(conflict.year, conflict.holidayStartMonth ?? 1).startDate;
+      const conflictEnd =
+        conflict.endDate ??
+        yearAllowanceDates(conflict.year, conflict.holidayStartMonth ?? 1).endDate;
       setOverlapError(
         `This date range overlaps with an existing allowance (${conflictStart} – ${conflictEnd}).`
       );
