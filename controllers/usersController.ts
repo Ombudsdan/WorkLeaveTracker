@@ -109,6 +109,18 @@ export const usersController = {
     return { ok: false, error: json.error ?? "Failed to revoke connection" };
   },
 
+  /** Remove a mutual connection between the current user and a target — both sides are disconnected. */
+  async disconnect(targetId: string): Promise<{ ok: boolean; error?: string }> {
+    const res = await fetch("/api/users/disconnect", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ targetId }),
+    });
+    if (res.ok) return { ok: true };
+    const json = await res.json();
+    return { ok: false, error: json.error ?? "Failed to disconnect" };
+  },
+
   /** Fetch all unique company names known in the system. */
   async fetchCompanies(): Promise<string[]> {
     const res = await fetch("/api/companies", { cache: "no-store" });

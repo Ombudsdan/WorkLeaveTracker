@@ -221,3 +221,77 @@ describe("migrateUsersAllowances", () => {
     expect(result[0].yearAllowances).toHaveLength(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// migrateConnectionsBidirectional
+// ---------------------------------------------------------------------------
+import { migrateConnectionsBidirectional } from "@/utils/migration";
+import type { UserProfile } from "@/types";
+
+function makeConnUser(id: string, pinnedUserIds: string[] = []) {
+  return {
+    id,
+    profile: {
+      firstName: id,
+      lastName: "Test",
+      email: `${id}@example.com`,
+      nonWorkingDays: [],
+      pinnedUserIds,
+    } as UserProfile,
+    yearAllowances: [],
+    entries: [],
+  };
+}
+
+describe("migrateConnectionsBidirectional", () => {
+  it("returns same references when all connections are already bidirectional", () => {
+    const a = makeConnUser("a", ["b"]);
+    const b = makeConnUser("b", ["a"]);
+    const result = migrateConnectionsBidirectional([a, b]);
+    expect(result[0]).toBe(a);
+    expect(result[1]).toBe(b);
+  });
+
+  it("adds missing reverse connection when A pins B but B does not pin A", () => {
+    const a = makeConnUser("a", ["b"]);
+    const b = makeConnUser("b", []);
+    const result = migrateConnectionsBidirectional([a, b]);
+    expect(result[0]).toBe(a); // A unchanged
+    expect(result[1]).not.toBe(b); // B was updated
+    expect(result[1].profile.pinnedUserIds).toContain("a");
+  });
+
+  it("fixes multiple asymmetric connections in one pass", () => {
+    const a = makeConnUser("a", ["b", "c"]);
+    const b = makeConnUser("b", []);
+    const c = makeConnUser("c", []);
+    const result = migrateConnectionsBidirectional([a, b, c]);
+    expect(result[1].profile.pinnedUserIds).toContain("a");
+    expect(result[2].profile.pinnedUserIds).toContain("a");
+  });
+
+  it("does not add a reverse connection when the target is not in the users list", () => {
+    const a = makeConnUser("a", ["unknown"]);
+    const result = migrateConnectionsBidirectional([a]);
+    expect(result[0]).toBe(a); // unchanged
+  });
+
+  it("does not exceed the 3-connection cap when adding reverse connections", () => {
+    const a = makeConnUser("a", ["b"]);
+    const b = makeConnUser("b", ["x", "y", "z"]); // already at cap
+    const result = migrateConnectionsBidirectional([a, b]);
+    // B is at cap — A should not be added to B
+    expect(result[1]).toBe(b);
+    expect(result[1].profile.pinnedUserIds).not.toContain("a");
+  });
+
+  it("handles empty users array", () => {
+    expect(migrateConnectionsBidirectional([])).toEqual([]);
+  });
+
+  it("handles users with no pinnedUserIds", () => {
+    const a = makeConnUser("a");
+    const result = migrateConnectionsBidirectional([a]);
+    expect(result[0]).toBe(a);
+  });
+});

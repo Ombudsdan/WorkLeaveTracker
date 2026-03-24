@@ -44,10 +44,11 @@ describe("NavBar — unauthenticated", () => {
     expect(profileLinks.length).toBeGreaterThan(0);
   });
 
-  it("does NOT render a Connections navigation link in the navbar", () => {
+  it("renders a Connections navigation link in the navbar", () => {
     render(<NavBar activePage="dashboard" />);
-    // Connections has been moved to the profile page tabs; it should NOT be in the navbar
-    expect(screen.queryByRole("link", { name: /connections/i })).toBeNull();
+    // Connections page is accessible via the navbar
+    const connectionsLinks = screen.getAllByRole("link", { name: /connections/i });
+    expect(connectionsLinks.length).toBeGreaterThan(0);
   });
 
   it("does not render Sign Out when there is no session", () => {
@@ -98,6 +99,12 @@ describe("NavBar — activePage styling", () => {
     expect(links[0].className).toContain("indigo");
   });
 
+  it("applies active (indigo) class to the Connections link when activePage='connections'", () => {
+    render(<NavBar activePage="connections" />);
+    const links = screen.getAllByRole("link", { name: "Connections" });
+    expect(links[0].className).toContain("indigo");
+  });
+
   it("applies inactive class to Dashboard link when activePage='profile'", () => {
     render(<NavBar activePage="profile" />);
     const links = screen.getAllByRole("link", { name: "Dashboard" });
@@ -128,6 +135,15 @@ describe("NavBar — mobile hamburger", () => {
     const toggle = screen.getByRole("button", { name: "Toggle menu" });
     await userEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("applies active class to Connections link in mobile menu when activePage='connections'", async () => {
+    render(<NavBar activePage="connections" />);
+    await userEvent.click(screen.getByRole("button", { name: "Toggle menu" }));
+    const links = screen.getAllByRole("link", { name: "Connections" });
+    // The mobile link (last rendered) should have the active class
+    const mobileLink = links[links.length - 1];
+    expect(mobileLink.className).toContain("indigo");
   });
 });
 
@@ -208,5 +224,60 @@ describe("NavBar — profile notification badge", () => {
   it("does not show the badge when pendingRequestCount is not provided", () => {
     render(<NavBar activePage="dashboard" />);
     expect(screen.queryByText(/^\d+$/)).toBeNull();
+  });
+});
+
+describe("NavBar — annual-planner link", () => {
+  beforeEach(() => {
+    mockUseSession.mockReturnValue({ data: null });
+  });
+
+  it("renders an 'Annual Planner' navigation link in the desktop nav", () => {
+    render(<NavBar activePage="dashboard" />);
+    expect(screen.getAllByRole("link", { name: "Annual Planner" }).length).toBeGreaterThan(0);
+  });
+
+  it("applies active (indigo) class to the Annual Planner link when activePage='annual-planner'", () => {
+    render(<NavBar activePage="annual-planner" />);
+    const links = screen.getAllByRole("link", { name: "Annual Planner" });
+    expect(links[0].className).toContain("indigo");
+  });
+
+  it("applies inactive class to the Annual Planner link when activePage='dashboard'", () => {
+    render(<NavBar activePage="dashboard" />);
+    const links = screen.getAllByRole("link", { name: "Annual Planner" });
+    expect(links[0].className).not.toContain("font-semibold");
+  });
+
+  it("annual-planner link points to /annual-planner", () => {
+    render(<NavBar activePage="dashboard" />);
+    const links = screen.getAllByRole("link", { name: "Annual Planner" });
+    expect(links[0]).toHaveAttribute("href", "/annual-planner");
+  });
+
+  it("applies inactive class to the Dashboard link when activePage='annual-planner'", () => {
+    render(<NavBar activePage="annual-planner" />);
+    const links = screen.getAllByRole("link", { name: "Dashboard" });
+    expect(links[0].className).not.toContain("font-semibold");
+  });
+});
+
+describe("NavBar — annual-planner in mobile menu", () => {
+  beforeEach(() => {
+    mockUseSession.mockReturnValue({ data: null });
+  });
+
+  it("shows Annual Planner link in mobile menu", async () => {
+    render(<NavBar activePage="dashboard" />);
+    await userEvent.click(screen.getByRole("button", { name: "Toggle menu" }));
+    const links = screen.getAllByRole("link", { name: "Annual Planner" });
+    expect(links.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("applies active class to Annual Planner in mobile menu when activePage='annual-planner'", async () => {
+    render(<NavBar activePage="annual-planner" />);
+    await userEvent.click(screen.getByRole("button", { name: "Toggle menu" }));
+    const links = screen.getAllByRole("link", { name: "Annual Planner" });
+    expect(links[links.length - 1].className).toContain("indigo");
   });
 });

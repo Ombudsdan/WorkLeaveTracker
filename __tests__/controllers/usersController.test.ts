@@ -285,3 +285,31 @@ describe("usersController.revokeConnection", () => {
     expect(result).toEqual({ ok: false, error: "Failed to revoke connection" });
   });
 });
+
+describe("usersController.disconnect", () => {
+  it("calls POST /api/users/disconnect and returns ok:true on success", async () => {
+    mockFetch({}, true);
+    const result = await usersController.disconnect("u2");
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/users/disconnect",
+      expect.objectContaining({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetId: "u2" }),
+      })
+    );
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("returns ok:false with error message when the API rejects", async () => {
+    mockFetch({ error: "Target user not found" }, false, 404);
+    const result = await usersController.disconnect("u2");
+    expect(result).toEqual({ ok: false, error: "Target user not found" });
+  });
+
+  it("returns fallback error when API returns no error field", async () => {
+    mockFetch({}, false, 500);
+    const result = await usersController.disconnect("u2");
+    expect(result).toEqual({ ok: false, error: "Failed to disconnect" });
+  });
+});
