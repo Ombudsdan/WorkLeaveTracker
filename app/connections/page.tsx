@@ -2,14 +2,17 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import type { PublicUser, BankHolidayEntry } from "@/types";
+import type { PublicUser, BankHolidayEntry, LeaveEntry } from "@/types";
 import NavBar from "@/components/NavBar";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import ConnectionsPanel from "@/components/ConnectionsPanel";
 import SharedCalendarView from "@/components/connections/SharedCalendarView";
+import AddLeaveModal from "@/components/dashboard/AddLeaveModal";
+import EditLeaveModal from "@/components/dashboard/EditLeaveModal";
 import NotificationBlob from "@/components/atoms/NotificationBlob/NotificationBlob";
 import { usersController } from "@/controllers/usersController";
 import { holidaysController } from "@/controllers/holidaysController";
+import { entriesController } from "@/controllers/entriesController";
 
 type Tab = "shared-view" | "manage";
 
@@ -113,7 +116,12 @@ export default function ConnectionsPage() {
         </div>
 
         {activeTab === "shared-view" && (
-          <SharedView currentUser={currentUser} allUsers={allUsers} bankHolidays={bankHolidays} />
+          <SharedView
+            currentUser={currentUser}
+            allUsers={allUsers}
+            bankHolidays={bankHolidays}
+            onCurrentUserChange={setCurrentUser}
+          />
         )}
 
         {activeTab === "manage" && (
@@ -139,9 +147,14 @@ interface SharedViewProps {
   currentUser: PublicUser;
   allUsers: PublicUser[];
   bankHolidays: BankHolidayEntry[];
+  onCurrentUserChange: (user: PublicUser) => void;
 }
 
-function SharedView({ currentUser, allUsers, bankHolidays }: SharedViewProps) {
+function SharedView({ currentUser, allUsers, bankHolidays, onCurrentUserChange }: SharedViewProps) {
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addLeaveDate, setAddLeaveDate] = useState<string | undefined>(undefined);
+  const [editingEntry, setEditingEntry] = useState<LeaveEntry | null>(null);
+
   const pinnedUsers = useMemo<PublicUser[]>(() => {
     const ids = currentUser.profile.pinnedUserIds ?? [];
     return ids
@@ -149,11 +162,70 @@ function SharedView({ currentUser, allUsers, bankHolidays }: SharedViewProps) {
       .filter((u): u is PublicUser => u !== undefined);
   }, [currentUser, allUsers]);
 
+  function applyEntryUpdate(updater: (entries: LeaveEntry[]) => LeaveEntry[]) {
+    onCurrentUserChange({ ...currentUser, entries: updater(currentUser.entries) });
+  }
+
+  async function handleSaveEntry(entry: Omit<LeaveEntry, "id">) {
+    const created = await entriesController.create(entry);
+    if (created) {
+      setShowAddModal(false);
+      setAddLeaveDate(undefined);
+      applyEntryUpdate((entries) => [...entries, created]);
+    }
+  }
+
+  async function handleUpdateEntry(entry: LeaveEntry) {
+    const updated = await entriesController.update(entry);
+    if (updated) {
+      setEditingEntry(null);
+      applyEntryUpdate((entries) => entries.map((e) => (e.id === updated.id ? updated : e)));
+    }
+  }
+
+  async function handleDeleteEntry(id: string) {
+    const ok = await entriesController.remove(id);
+    if (ok) {
+      applyEntryUpdate((entries) => entries.filter((e) => e.id !== id));
+    }
+  }
+
   return (
-    <SharedCalendarView
-      currentUser={currentUser}
-      pinnedUsers={pinnedUsers}
-      bankHolidays={bankHolidays}
-    />
+    <>
+      <SharedCalendarView
+        currentUser={currentUser}
+        pinnedUsers={pinnedUsers}
+        bankHolidays={bankHolidays}
+        onAddLeave={(dateStr) => {
+          setAddLeaveDate(dateStr);
+          setShowAddModal(true);
+        }}
+        onEdit={setEditingEntry}
+        onDelete={handleDeleteEntry}
+      />
+
+      {showAddModal && (
+        <AddLeaveModal
+          onClose={() => {
+            setShowAddModal(false);
+            setAddLeaveDate(undefined);
+          }}
+          onSave={handleSaveEntry}
+          user={currentUser}
+          bankHolidays={bankHolidays}
+          initialDate={addLeaveDate}
+        />
+      )}
+
+      {editingEntry && (
+        <EditLeaveModal
+          entry={editingEntry}
+          onClose={() => setEditingEntry(null)}
+          onSave={handleUpdateEntry}
+          user={currentUser}
+          bankHolidays={bankHolidays}
+        />
+      )}
+    </>
   );
 }
