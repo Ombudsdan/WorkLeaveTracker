@@ -55,10 +55,7 @@ export default function ConnectionsPanel({
   );
   // Combined "My Connections" list: users I'm following appear first,
   // followed by any followers who are not already in my pinned list.
-  const myConnections = [
-    ...connectedUsers,
-    ...followers.filter((f) => !pinnedIds.includes(f.id)),
-  ];
+  const myConnections = [...connectedUsers, ...followers.filter((f) => !pinnedIds.includes(f.id))];
   const otherUsers = allUsers.filter((u) => u.id !== currentUser.id);
 
   async function handleAccept(requesterId: string) {

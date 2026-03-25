@@ -524,9 +524,7 @@ describe("ConnectionsPanel — revoked connections archive", () => {
       />
     );
     // Reconnect button must not appear because Bob is already connected
-    expect(
-      screen.queryByRole("button", { name: /request to reconnect with bob/i })
-    ).toBeNull();
+    expect(screen.queryByRole("button", { name: /request to reconnect with bob/i })).toBeNull();
     // Archive section is still shown
     expect(screen.getByText("Archive")).toBeInTheDocument();
   });
