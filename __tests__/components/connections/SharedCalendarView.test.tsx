@@ -548,9 +548,7 @@ describe("SharedCalendarView — leave entry popover", () => {
 describe("SharedCalendarView — View Calendar button", () => {
   it("renders a 'View calendar' button for each pinned user", () => {
     render(<SharedCalendarView currentUser={alice} pinnedUsers={[bob]} bankHolidays={[]} />);
-    expect(
-      screen.getByRole("button", { name: "View calendar for Bob" })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "View calendar for Bob" })).toBeInTheDocument();
   });
 
   it("does not render a 'View calendar' button for the current user row", () => {

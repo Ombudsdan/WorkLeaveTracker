@@ -370,11 +370,7 @@ export default function SharedCalendarView({
                   <X size={16} />
                 </button>
               </div>
-              <CalendarView
-                user={expandedUser}
-                bankHolidays={bankHolidays}
-                isOwnProfile={false}
-              />
+              <CalendarView user={expandedUser} bankHolidays={bankHolidays} isOwnProfile={false} />
             </div>
           );
         })()}
