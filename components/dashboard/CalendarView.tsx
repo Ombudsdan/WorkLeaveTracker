@@ -10,7 +10,7 @@ import {
   SICK_LEAVE_CARD_COLORS,
   getCalendarEntryClass,
 } from "@/variables/colours";
-import { MONTH_NAMES_LONG, DAY_NAMES_SHORT } from "@/variables/calendar";
+import { DAY_NAMES_SHORT } from "@/variables/calendar";
 import {
   getDaysInMonth,
   getFirstDayOfMonth,
@@ -19,9 +19,11 @@ import {
   toIsoDate,
   countEntryDays,
   getEntryDuration,
+  getLeaveDataBounds,
 } from "@/utils/dateHelpers";
 import { SICK_LEAVE_ENABLED } from "@/utils/features";
-import { ChevronLeft, ChevronRight, Pencil, Trash2, X } from "lucide-react";
+import { Pencil, Trash2, X } from "lucide-react";
+import MonthYearPicker from "@/components/molecules/MonthYearPicker";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -117,6 +119,9 @@ export default function CalendarView({
   const [popover, setPopover] = useState<PopoverState | null>(null);
   const [isMobileSheet, setIsMobileSheet] = useState(false);
   const calendarRef = useRef<HTMLDivElement>(null);
+
+  // Compute min/max picker bounds from the user's leave data
+  const { min: pickerMin, max: pickerMax } = getLeaveDataBounds([user]);
 
   // Detect mobile layout to switch between bottom sheet and floating popover
   useEffect(() => {
@@ -356,24 +361,19 @@ export default function CalendarView({
   return (
     <div ref={calendarRef} className="bg-white rounded-2xl shadow p-5 relative">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <button
-          onClick={prevMonth}
-          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer"
-          aria-label="Previous month"
-        >
-          <ChevronLeft size={18} />
-        </button>
-        <h3 className="font-bold text-gray-800">
-          {MONTH_NAMES_LONG[calendarMonth]} {calendarYear}
-        </h3>
-        <button
-          onClick={nextMonth}
-          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer"
-          aria-label="Next month"
-        >
-          <ChevronRight size={18} />
-        </button>
+      <div className="flex items-center justify-center mb-4">
+        <MonthYearPicker
+          year={calendarYear}
+          month={calendarMonth}
+          onChange={(y, m) => {
+            setCalendarYear(y);
+            setCalendarMonth(m);
+          }}
+          minYear={pickerMin.year}
+          minMonth={pickerMin.month}
+          maxYear={pickerMax.year}
+          maxMonth={pickerMax.month}
+        />
       </div>
 
       {/* Day labels */}
@@ -529,24 +529,6 @@ export default function CalendarView({
       )}
     </div>
   );
-
-  function prevMonth() {
-    if (calendarMonth === 0) {
-      setCalendarMonth(11);
-      setCalendarYear((year) => year - 1);
-    } else {
-      setCalendarMonth((month) => month - 1);
-    }
-  }
-
-  function nextMonth() {
-    if (calendarMonth === 11) {
-      setCalendarMonth(0);
-      setCalendarYear((year) => year + 1);
-    } else {
-      setCalendarMonth((month) => month + 1);
-    }
-  }
 }
 
 interface PopoverState {
