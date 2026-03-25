@@ -13,7 +13,7 @@ import {
 import { findClashes } from "@/utils/clashFinder";
 import { STATUS_COLORS, SICK_LEAVE_CARD_COLORS } from "@/variables/colours";
 import CalendarView from "@/components/dashboard/CalendarView";
-import { Calendar, X, Pencil, Trash2 } from "lucide-react";
+import { Calendar, X, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import MonthYearPicker from "@/components/molecules/MonthYearPicker";
 
 interface SharedCalendarViewProps {
@@ -125,6 +125,29 @@ export default function SharedCalendarView({
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [popover]);
 
+  const atMin =
+    calYear < pickerMin.year || (calYear === pickerMin.year && calMonth <= pickerMin.month);
+  const atMax =
+    calYear > pickerMax.year || (calYear === pickerMax.year && calMonth >= pickerMax.month);
+
+  function prevMonth() {
+    if (calMonth === 0) {
+      setCalMonth(11);
+      setCalYear((y) => y - 1);
+    } else {
+      setCalMonth((m) => m - 1);
+    }
+  }
+
+  function nextMonth() {
+    if (calMonth === 11) {
+      setCalMonth(0);
+      setCalYear((y) => y + 1);
+    } else {
+      setCalMonth((m) => m + 1);
+    }
+  }
+
   function handleLeaveClick(
     entry: LeaveEntry,
     isOwnEntry: boolean,
@@ -222,7 +245,15 @@ export default function SharedCalendarView({
   return (
     <div ref={containerRef} className="bg-white rounded-2xl shadow p-5 relative">
       {/* Month navigation */}
-      <div className="flex items-center justify-center mb-4">
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={prevMonth}
+          disabled={atMin}
+          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+          aria-label="Previous month"
+        >
+          <ChevronLeft size={18} />
+        </button>
         <MonthYearPicker
           year={calYear}
           month={calMonth}
@@ -235,6 +266,14 @@ export default function SharedCalendarView({
           maxYear={pickerMax.year}
           maxMonth={pickerMax.month}
         />
+        <button
+          onClick={nextMonth}
+          disabled={atMax}
+          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+          aria-label="Next month"
+        >
+          <ChevronRight size={18} />
+        </button>
       </div>
 
       {/* Scrollable calendar table */}
