@@ -6,8 +6,8 @@ import { findUserById, findUserByEmail, updateUser } from "@/lib/db";
 /**
  * POST /api/users/revoke-connection
  * Revoke a connection from someone who is following the current user.
- * This removes the current user from the follower's pinned list and records
- * the revocation in the follower's revokedConnections so they can see it.
+ * This removes both parties from each other's pinned lists (bidirectional)
+ * and records the revocation in the follower's revokedConnections.
  * Body: { followerId: string }
  */
 export async function POST(request: Request) {
@@ -44,11 +44,21 @@ export async function POST(request: Request) {
   // Remove duplicate if the same connection was previously revoked and reconnected
   const filteredRevoked = existingRevoked.filter((r) => r.userId !== meId);
 
+  // Remove follower from their own pinned list and record the revocation
   await updateUser(follower.id, {
     profile: {
       ...followerProfile,
       pinnedUserIds: followerPinned.filter((id) => id !== meId),
       revokedConnections: [...filteredRevoked, { userId: meId, date: revokedDate }],
+    },
+  });
+
+  // Also remove the follower from the current user's pinned list (bidirectional)
+  const myProfile = me.profile;
+  await updateUser(meId, {
+    profile: {
+      ...myProfile,
+      pinnedUserIds: (myProfile.pinnedUserIds ?? []).filter((id) => id !== followerId),
     },
   });
 

@@ -44,10 +44,11 @@ describe("NavBar — unauthenticated", () => {
     expect(profileLinks.length).toBeGreaterThan(0);
   });
 
-  it("does NOT render a Connections navigation link in the navbar", () => {
+  it("renders a Connections navigation link in the navbar", () => {
     render(<NavBar activePage="dashboard" />);
-    // Connections has been moved to the profile page tabs; it should NOT be in the navbar
-    expect(screen.queryByRole("link", { name: /connections/i })).toBeNull();
+    // Connections page is accessible via the navbar
+    const connectionsLinks = screen.getAllByRole("link", { name: /connections/i });
+    expect(connectionsLinks.length).toBeGreaterThan(0);
   });
 
   it("does not render Sign Out when there is no session", () => {
@@ -98,6 +99,12 @@ describe("NavBar — activePage styling", () => {
     expect(links[0].className).toContain("indigo");
   });
 
+  it("applies active (indigo) class to the Connections link when activePage='connections'", () => {
+    render(<NavBar activePage="connections" />);
+    const links = screen.getAllByRole("link", { name: "Connections" });
+    expect(links[0].className).toContain("indigo");
+  });
+
   it("applies inactive class to Dashboard link when activePage='profile'", () => {
     render(<NavBar activePage="profile" />);
     const links = screen.getAllByRole("link", { name: "Dashboard" });
@@ -128,6 +135,15 @@ describe("NavBar — mobile hamburger", () => {
     const toggle = screen.getByRole("button", { name: "Toggle menu" });
     await userEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("applies active class to Connections link in mobile menu when activePage='connections'", async () => {
+    render(<NavBar activePage="connections" />);
+    await userEvent.click(screen.getByRole("button", { name: "Toggle menu" }));
+    const links = screen.getAllByRole("link", { name: "Connections" });
+    // The mobile link (last rendered) should have the active class
+    const mobileLink = links[links.length - 1];
+    expect(mobileLink.className).toContain("indigo");
   });
 });
 

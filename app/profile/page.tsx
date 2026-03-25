@@ -11,7 +11,6 @@ import SessionExpiredScreen from "@/components/SessionExpiredScreen";
 import FormField from "@/components/FormField";
 import FormErrorOutlet from "@/components/FormErrorOutlet";
 import Button from "@/components/Button";
-import ConnectionsPanel from "@/components/ConnectionsPanel";
 import { useFormValidation } from "@/contexts/FormValidationContext";
 import { DAY_NAMES_SHORT } from "@/variables/calendar";
 import { countEntryDays, getActiveYearAllowance } from "@/utils/dateHelpers";
@@ -28,7 +27,7 @@ const UK_COUNTRIES: { value: UkCountry; label: string }[] = [
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
 const PROFILE_RETRY_DELAY_MS = 400;
 
-type ProfileTab = "profile" | "past-leave" | "connections";
+type ProfileTab = "profile" | "past-leave";
 
 function formatDateRange(startDate: string, endDate: string): string {
   const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" };
@@ -52,7 +51,6 @@ export default function ProfilePage() {
   const [yearAllowances, setYearAllowances] = useState<YearAllowance[]>([]);
   const [pinnedUserIds, setPinnedUserIds] = useState<string[]>([]);
   const [entries, setEntries] = useState<LeaveEntry[]>([]);
-  const [allUsers, setAllUsers] = useState<PublicUser[]>([]);
   const [currentUser, setCurrentUser] = useState<PublicUser | null>(null);
   const [saved, setSaved] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -105,7 +103,6 @@ export default function ProfilePage() {
           (sessionId ? result.find((u) => u.id === sessionId) : undefined) ??
           result.find((u) => u.profile.email === session?.user?.email);
         if (me) {
-          setAllUsers(result);
           applyUserProfile(me);
           setLoading(false);
           return;
@@ -221,14 +218,9 @@ export default function ProfilePage() {
         {/* Tab strip */}
         <div className="flex mb-6 bg-white rounded-2xl shadow overflow-hidden border border-gray-200">
           {[
-            { id: "profile" as ProfileTab, label: "Profile", badge: undefined },
-            { id: "past-leave" as ProfileTab, label: "Past Leave", badge: undefined },
-            {
-              id: "connections" as ProfileTab,
-              label: "Connections",
-              badge: pendingConnectionRequests,
-            },
-          ].map(({ id, label, badge }) => (
+            { id: "profile" as ProfileTab, label: "Profile" },
+            { id: "past-leave" as ProfileTab, label: "Past Leave" },
+          ].map(({ id, label }) => (
             <button
               key={id}
               type="button"
@@ -242,11 +234,6 @@ export default function ProfilePage() {
               }`}
             >
               {label}
-              {badge != null && badge > 0 && (
-                <span className="inline-flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full h-4 min-w-4 px-1 leading-none">
-                  {badge}
-                </span>
-              )}
             </button>
           ))}
         </div>
@@ -503,26 +490,6 @@ export default function ProfilePage() {
             )}
           </div>
         )}
-
-        {/* Connections tab */}
-        {activeTab === "connections" && currentUser && (
-          <ConnectionsPanel
-            currentUser={currentUser}
-            allUsers={allUsers}
-            onUserChange={(updated) => {
-              setCurrentUser(updated);
-              applyUserProfile(updated);
-            }}
-            onAllUsersChange={(users) => {
-              setAllUsers(users);
-              const me = users.find((u) => u.id === currentUser.id);
-              if (me) {
-                setCurrentUser(me);
-                applyUserProfile(me);
-              }
-            }}
-          />
-        )}
       </main>
 
       {showAllowanceModal && (
@@ -627,7 +594,6 @@ export default function ProfilePage() {
     if (!result || "conflict" in result) return;
     const users = await usersController.fetchAll();
     if (!Array.isArray(users)) return;
-    setAllUsers(users);
     const sessionId = (session?.user as { id?: string })?.id;
     const me =
       (sessionId ? users.find((u) => u.id === sessionId) : undefined) ??
