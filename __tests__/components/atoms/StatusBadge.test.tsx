@@ -47,9 +47,7 @@ describe("StatusBadge — colour classes", () => {
   });
 
   it("accepts and applies an extra className", () => {
-    const { container } = render(
-      <StatusBadge status={LeaveStatus.Approved} className="mt-2" />
-    );
+    const { container } = render(<StatusBadge status={LeaveStatus.Approved} className="mt-2" />);
     expect(container.firstChild).toHaveClass("mt-2");
   });
 });

@@ -23,9 +23,7 @@ export interface StatusBadgeProps {
  */
 export default function StatusBadge({ status, isSick = false, className = "" }: StatusBadgeProps) {
   const colorClasses = isSick ? SICK_BADGE_CLASSES : BADGE_CLASSES[status];
-  const label = isSick
-    ? "Sick"
-    : status.charAt(0).toUpperCase() + status.slice(1);
+  const label = isSick ? "Sick" : status.charAt(0).toUpperCase() + status.slice(1);
 
   return (
     <span

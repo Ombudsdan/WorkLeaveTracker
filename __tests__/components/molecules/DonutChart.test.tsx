@@ -5,9 +5,7 @@ import DonutChart from "@/components/molecules/DonutChart";
 
 describe("DonutChart — rendering", () => {
   it("renders an SVG element", () => {
-    const { container } = render(
-      <DonutChart segments={[]} total={25} centerValue={25} />
-    );
+    const { container } = render(<DonutChart segments={[]} total={25} centerValue={25} />);
     expect(container.querySelector("svg")).toBeInTheDocument();
   });
 
@@ -34,11 +32,7 @@ describe("DonutChart — rendering", () => {
 
   it("uses paths for arc segments and circles only for the two round end-caps", () => {
     const { container } = render(
-      <DonutChart
-        segments={[{ value: 25, color: "#86efac" }]}
-        total={25}
-        centerValue={0}
-      />
+      <DonutChart segments={[{ value: 25, color: "#86efac" }]} total={25} centerValue={0} />
     );
     // Two circle end-caps (one per outer endpoint) — not for segments themselves
     expect(container.querySelectorAll("circle").length).toBe(2);
@@ -65,11 +59,7 @@ describe("DonutChart — half-donut geometry", () => {
 
   it("renders track + segment path when a segment has value > 0", () => {
     const { container } = render(
-      <DonutChart
-        segments={[{ value: 10, color: "#86efac" }]}
-        total={25}
-        centerValue={15}
-      />
+      <DonutChart segments={[{ value: 10, color: "#86efac" }]} total={25} centerValue={15} />
     );
     const paths = container.querySelectorAll("path");
     // Track + one segment
@@ -78,11 +68,7 @@ describe("DonutChart — half-donut geometry", () => {
 
   it("never uses largeArc=1 since segments span at most 180°", () => {
     const { container } = render(
-      <DonutChart
-        segments={[{ value: 20, color: "#86efac" }]}
-        total={25}
-        centerValue={5}
-      />
+      <DonutChart segments={[{ value: 20, color: "#86efac" }]} total={25} centerValue={5} />
     );
     const paths = container.querySelectorAll("path");
     const hasLargeArc = Array.from(paths).some((p) => p.getAttribute("d")?.includes(" 1 1 "));
