@@ -66,27 +66,38 @@ function buildSegmentPath(
 // Component
 // ---------------------------------------------------------------------------
 
+const TRACK_COLOR = "#f3f4f6";
+
 /**
  * A multi-segment half-donut (semicircle) chart used to visualise leave
  * allocation split by status (Approved / Requested / Planned).
  *
  * The remaining count is displayed inside the curve, vertically centred
  * within the visible half of the SVG.
+ *
+ * Segment junctions are flat (strokeLinecap="butt"); rounded caps are
+ * rendered only at the two outer endpoints of the overall arc via explicit
+ * <circle> elements.
  */
 export default function DonutChart({ segments, total, centerValue }: DonutChartProps) {
   const cx = 50;
   const cy = 52; // push centre down so there is room for text above the baseline
   const r = 38;
   const strokeWidth = 14;
+  const capR = strokeWidth / 2;
 
   // Background track — full upper semicircle
   const trackPath = `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`;
 
-  const segmentPaths = useMemo(() => {
-    if (total <= 0) return [];
+  const { segmentEls, leftCapColor, rightCapColor } = useMemo(() => {
+    if (total <= 0) {
+      return { segmentEls: [], leftCapColor: TRACK_COLOR, rightCapColor: TRACK_COLOR };
+    }
 
     let cumFrac = 0;
-    const els: React.ReactNode[] = [];
+    const segmentEls: React.ReactNode[] = [];
+    let firstColor: string | null = null;
+    let lastColor: string | null = null;
 
     for (let i = 0; i < segments.length; i++) {
       const seg = segments[i];
@@ -97,18 +108,21 @@ export default function DonutChart({ segments, total, centerValue }: DonutChartP
       const frac = Math.min(rawFrac, available);
       if (frac <= 0) continue;
 
+      if (firstColor === null) firstColor = seg.color;
+      lastColor = seg.color;
+
       const startFrac = cumFrac;
       const endFrac = cumFrac + frac;
       // Avoid degenerate arc when end point equals start (SVG renders nothing)
       const clampedEnd = endFrac >= 1 ? 0.9999 : endFrac;
 
-      els.push(
+      segmentEls.push(
         <path
           key={i}
           fill="none"
           stroke={seg.color}
           strokeWidth={strokeWidth}
-          strokeLinecap="round"
+          strokeLinecap="butt"
           d={buildSegmentPath(cx, cy, r, startFrac, clampedEnd)}
         />
       );
@@ -116,7 +130,13 @@ export default function DonutChart({ segments, total, centerValue }: DonutChartP
       cumFrac = endFrac;
     }
 
-    return els;
+    return {
+      segmentEls,
+      // Left cap: first segment's colour if any segment is present, else track
+      leftCapColor: firstColor ?? TRACK_COLOR,
+      // Right cap: last segment's colour only when segments fill the full arc
+      rightCapColor: cumFrac >= 1 ? (lastColor ?? TRACK_COLOR) : TRACK_COLOR,
+    };
   }, [segments, total]);
 
   return (
@@ -126,17 +146,23 @@ export default function DonutChart({ segments, total, centerValue }: DonutChartP
       role="img"
       aria-label={`${centerValue} days remaining`}
     >
-      {/* Background track */}
+      {/* Background track — butt ends; round caps are added explicitly below */}
       <path
         fill="none"
-        stroke="#f3f4f6"
+        stroke={TRACK_COLOR}
         strokeWidth={strokeWidth}
-        strokeLinecap="round"
+        strokeLinecap="butt"
         d={trackPath}
       />
 
-      {/* Coloured segments */}
-      {segmentPaths}
+      {/* Coloured segments — butt ends so junctions between segments are flat */}
+      {segmentEls}
+
+      {/* Round caps at the two outer endpoints of the arc.
+          Drawn on top of track + segments to restore the rounded appearance only
+          at the very start (left) and very end (right) of the half-donut. */}
+      <circle cx={cx - r} cy={cy} r={capR} fill={leftCapColor} />
+      <circle cx={cx + r} cy={cy} r={capR} fill={rightCapColor} />
 
       {/* Remaining count — centred inside the curve */}
       <text

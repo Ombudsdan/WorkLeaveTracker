@@ -128,13 +128,13 @@ describe("SummaryCard — half-donut chart", () => {
     expect(svgText).toContain("Remaining"); // half-donut shows the label
   });
 
-  it("renders the half-donut track as a path (not a circle)", () => {
+  it("renders the half-donut track as a path with two circle end-caps", () => {
     const { container } = render(<SummaryCard user={alice} bankHolidays={[]} />);
     const svg = container.querySelector("svg");
     expect(svg).toBeInTheDocument();
-    // Half-donut track is a <path>, not a <circle>
+    // Track is a <path>; the two outer round caps are rendered as <circle> elements
     const circles = svg!.querySelectorAll("circle");
-    expect(circles.length).toBe(0);
+    expect(circles.length).toBe(2);
     const paths = svg!.querySelectorAll("path");
     expect(paths.length).toBeGreaterThanOrEqual(1); // at least the track path
   });
@@ -437,9 +437,9 @@ describe("SummaryCard — donut uses effective total as ring denominator", () =>
     const { container } = render(<SummaryCard user={userAllUsed} bankHolidays={[]} />);
     const svg = container.querySelector("svg");
     expect(svg).toBeInTheDocument();
-    // Half-donut uses paths for all segments (no circles)
+    // Segments are always paths; only the 2 end-cap circles are <circle> elements
     const circles = svg!.querySelectorAll("circle");
-    expect(circles.length).toBe(0);
+    expect(circles.length).toBe(2);
     // Both the track path and the segment path should be present
     const paths = svg!.querySelectorAll("path");
     expect(paths.length).toBeGreaterThanOrEqual(2);

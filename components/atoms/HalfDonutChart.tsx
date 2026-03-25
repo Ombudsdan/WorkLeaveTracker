@@ -58,7 +58,9 @@ export default function HalfDonutChart({ total, used, status }: HalfDonutChartPr
   const cy = 52; // push the centre down so there is room for text above the baseline
   const r = 38;
   const strokeWidth = 14;
+  const capR = strokeWidth / 2;
 
+  const trackColor = "#f3f4f6";
   const remaining = total - used;
   const color = STATUS_HEX_COLORS[status];
 
@@ -77,6 +79,10 @@ export default function HalfDonutChart({ total, used, status }: HalfDonutChartPr
   // would be identical, which SVG renders as nothing.  Use a near-full arc.
   const usedPath = buildUsedArcPath(cx, cy, r, fraction >= 1 ? 0.9999 : fraction);
 
+  // Cap colours: restore round appearance only at the two outer arc endpoints
+  const leftCapColor = fraction > 0 ? color : trackColor;
+  const rightCapColor = fraction >= 1 ? color : trackColor;
+
   return (
     <svg
       viewBox="0 0 100 65"
@@ -84,25 +90,29 @@ export default function HalfDonutChart({ total, used, status }: HalfDonutChartPr
       role="img"
       aria-label={`${remaining} days remaining`}
     >
-      {/* Background track */}
+      {/* Background track — butt ends; round caps are added explicitly below */}
       <path
         fill="none"
-        stroke="#f3f4f6"
+        stroke={trackColor}
         strokeWidth={strokeWidth}
-        strokeLinecap="round"
+        strokeLinecap="butt"
         d={trackPath}
       />
 
-      {/* Used / booked arc */}
+      {/* Used / booked arc — butt ends so the junction with the track is flat */}
       {showUsedArc && (
         <path
           fill="none"
           stroke={color}
           strokeWidth={strokeWidth}
-          strokeLinecap="round"
+          strokeLinecap="butt"
           d={usedPath}
         />
       )}
+
+      {/* Round caps at the two outer endpoints of the arc */}
+      <circle cx={cx - r} cy={cy} r={capR} fill={leftCapColor} />
+      <circle cx={cx + r} cy={cy} r={capR} fill={rightCapColor} />
 
       {/* Remaining count — centred inside the curve */}
       <text

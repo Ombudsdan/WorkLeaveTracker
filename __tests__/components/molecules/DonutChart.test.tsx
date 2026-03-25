@@ -32,7 +32,7 @@ describe("DonutChart — rendering", () => {
     expect(paths.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("uses paths (not circles) for all elements", () => {
+  it("uses paths for arc segments and circles only for the two round end-caps", () => {
     const { container } = render(
       <DonutChart
         segments={[{ value: 25, color: "#86efac" }]}
@@ -40,7 +40,8 @@ describe("DonutChart — rendering", () => {
         centerValue={0}
       />
     );
-    expect(container.querySelectorAll("circle").length).toBe(0);
+    // Two circle end-caps (one per outer endpoint) — not for segments themselves
+    expect(container.querySelectorAll("circle").length).toBe(2);
     expect(container.querySelectorAll("path").length).toBeGreaterThanOrEqual(1);
   });
 });
