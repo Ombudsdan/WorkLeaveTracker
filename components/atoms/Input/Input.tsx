@@ -45,7 +45,15 @@ export default function Input({
   );
 }
 
-export type InputType = "text" | "email" | "number" | "password" | "date" | "search" | "tel" | "url";
+export type InputType =
+  | "text"
+  | "email"
+  | "number"
+  | "password"
+  | "date"
+  | "search"
+  | "tel"
+  | "url";
 
 export interface InputProps {
   id?: string;
