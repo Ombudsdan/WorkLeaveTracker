@@ -108,9 +108,7 @@ export default function ConnectionsPage() {
             }`}
           >
             Manage Connections
-            {pendingCount > 0 && (
-              <NotificationBlob count={pendingCount} label="pending requests" />
-            )}
+            {pendingCount > 0 && <NotificationBlob count={pendingCount} label="pending requests" />}
           </button>
         </div>
 
