@@ -92,13 +92,13 @@ describe("ConnectionsPanel — basic rendering", () => {
     render(
       <ConnectionsPanel
         currentUser={minimalAlice}
-        allUsers={[minimalAlice, bob, charlieNoPin]}
+        allUsers={[minimalAlice, charlieNoPin]}
         onUserChange={jest.fn()}
         onAllUsersChange={jest.fn()}
       />
     );
     expect(screen.getByText("Connections")).toBeInTheDocument();
-    expect(screen.getByText("Not following anyone yet.")).toBeInTheDocument();
+    expect(screen.getByText("No active connections yet.")).toBeInTheDocument();
   });
 
   it("renders the Add Connection button", () => {
@@ -132,19 +132,7 @@ describe("ConnectionsPanel — basic rendering", () => {
     expect(screen.getByRole("button", { name: /add connection/i })).toBeDisabled();
   });
 
-  it("shows 'Not following anyone yet.' when no connections", () => {
-    render(
-      <ConnectionsPanel
-        currentUser={alice}
-        allUsers={[alice, bob]}
-        onUserChange={jest.fn()}
-        onAllUsersChange={jest.fn()}
-      />
-    );
-    expect(screen.getByText("Not following anyone yet.")).toBeInTheDocument();
-  });
-
-  it("shows 'Nobody is following you yet.' when no followers", () => {
+  it("shows 'No active connections yet.' when no connections and no followers", () => {
     render(
       <ConnectionsPanel
         currentUser={alice}
@@ -153,10 +141,10 @@ describe("ConnectionsPanel — basic rendering", () => {
         onAllUsersChange={jest.fn()}
       />
     );
-    expect(screen.getByText("Nobody is following you yet.")).toBeInTheDocument();
+    expect(screen.getByText("No active connections yet.")).toBeInTheDocument();
   });
 
-  it("shows connected users (people I'm following)", () => {
+  it("shows connected users in My Connections list", () => {
     const aliceWithBob: PublicUser = {
       ...alice,
       profile: { ...alice.profile, pinnedUserIds: ["u2"] },
@@ -169,11 +157,10 @@ describe("ConnectionsPanel — basic rendering", () => {
         onAllUsersChange={jest.fn()}
       />
     );
-    // Bob appears in both "Following" (indigo) and "Following Me" (green) sections
-    expect(screen.getAllByText(/Bob Jones/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText(/Bob Jones/i)).toBeInTheDocument();
   });
 
-  it("shows followers (people following me)", () => {
+  it("shows followers in My Connections list", () => {
     render(
       <ConnectionsPanel
         currentUser={alice}
@@ -516,6 +503,32 @@ describe("ConnectionsPanel — revoked connections archive", () => {
     );
     // Multiple "Pending" may appear (one in Awaiting Approval, one in Archive)
     expect(screen.getAllByText("Pending").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("hides the 'Request to reconnect' button when the user is already an active connection", () => {
+    const aliceWithRevoked: PublicUser = {
+      ...alice,
+      profile: {
+        ...alice.profile,
+        // Bob is in revokedConnections but also actively connected
+        revokedConnections: [{ userId: "u2", date: "2025-12-01T00:00:00.000Z" }],
+        pinnedUserIds: ["u2"],
+      },
+    };
+    render(
+      <ConnectionsPanel
+        currentUser={aliceWithRevoked}
+        allUsers={[aliceWithRevoked, bob]}
+        onUserChange={jest.fn()}
+        onAllUsersChange={jest.fn()}
+      />
+    );
+    // Reconnect button must not appear because Bob is already connected
+    expect(
+      screen.queryByRole("button", { name: /request to reconnect with bob/i })
+    ).toBeNull();
+    // Archive section is still shown
+    expect(screen.getByText("Archive")).toBeInTheDocument();
   });
 
   it("calls sendPinRequest when 'Request to reconnect' is clicked", async () => {
