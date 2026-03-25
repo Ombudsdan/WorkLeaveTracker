@@ -21,7 +21,7 @@ import {
   getEntryDuration,
 } from "@/utils/dateHelpers";
 import { SICK_LEAVE_ENABLED } from "@/utils/features";
-import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil, Trash2, X } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -367,24 +367,13 @@ export default function CalendarView({
         <h3 className="font-bold text-gray-800">
           {MONTH_NAMES_LONG[calendarMonth]} {calendarYear}
         </h3>
-        <div className="flex items-center gap-2">
-          {isOwnProfile && onAdd && (
-            <button
-              onClick={() => onAdd()}
-              className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-4 py-1.5 rounded-lg hover:bg-indigo-700 transition font-medium cursor-pointer"
-            >
-              <Plus size={14} />
-              Add Leave
-            </button>
-          )}
-          <button
-            onClick={nextMonth}
-            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer"
-            aria-label="Next month"
-          >
-            <ChevronRight size={18} />
-          </button>
-        </div>
+        <button
+          onClick={nextMonth}
+          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer"
+          aria-label="Next month"
+        >
+          <ChevronRight size={18} />
+        </button>
       </div>
 
       {/* Day labels */}

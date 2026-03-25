@@ -36,28 +36,18 @@ export default function NavBar({ activePage, pendingRequestCount = 0 }: NavBarPr
           Dashboard
         </a>
         <a
-          href="/profile"
-          className={`relative flex items-center gap-1 ${
-            activePage === "profile"
-              ? "text-indigo-700 font-semibold"
-              : "text-gray-600 hover:text-indigo-700"
-          }`}
-          aria-label={`Profile${pendingRequestCount > 0 ? ` (${pendingRequestCount} pending)` : ""}`}
-        >
-          Profile
-          {pendingRequestCount > 0 && (
-            <NotificationBlob count={pendingRequestCount} label="pending requests" />
-          )}
-        </a>
-        <a
           href="/connections"
-          className={
+          className={`relative flex items-center gap-1 ${
             activePage === "connections"
               ? "text-indigo-700 font-semibold"
               : "text-gray-600 hover:text-indigo-700"
-          }
+          }`}
+          aria-label={`Connections${pendingRequestCount > 0 ? ` (${pendingRequestCount} pending)` : ""}`}
         >
           Connections
+          {pendingRequestCount > 0 && (
+            <NotificationBlob count={pendingRequestCount} label="pending requests" />
+          )}
         </a>
         <a
           href="/annual-planner"
@@ -68,6 +58,16 @@ export default function NavBar({ activePage, pendingRequestCount = 0 }: NavBarPr
           }
         >
           Annual Planner
+        </a>
+        <a
+          href="/profile"
+          className={
+            activePage === "profile"
+              ? "text-indigo-700 font-semibold"
+              : "text-gray-600 hover:text-indigo-700"
+          }
+        >
+          Profile
         </a>
         {session && (
           <>
@@ -109,29 +109,18 @@ export default function NavBar({ activePage, pendingRequestCount = 0 }: NavBarPr
               Dashboard
             </a>
             <a
-              href="/profile"
+              href="/connections"
               onClick={closeMenu}
               className={`flex items-center gap-1 ${
-                activePage === "profile"
+                activePage === "connections"
                   ? "text-indigo-700 font-semibold"
                   : "text-gray-600 hover:text-indigo-700"
               }`}
             >
-              Profile
+              Connections
               {pendingRequestCount > 0 && (
                 <NotificationBlob count={pendingRequestCount} label="pending requests" />
               )}
-            </a>
-            <a
-              href="/connections"
-              onClick={closeMenu}
-              className={
-                activePage === "connections"
-                  ? "text-indigo-700 font-semibold"
-                  : "text-gray-600 hover:text-indigo-700"
-              }
-            >
-              Connections
             </a>
             <a
               href="/annual-planner"
@@ -143,6 +132,17 @@ export default function NavBar({ activePage, pendingRequestCount = 0 }: NavBarPr
               }
             >
               Annual Planner
+            </a>
+            <a
+              href="/profile"
+              onClick={closeMenu}
+              className={
+                activePage === "profile"
+                  ? "text-indigo-700 font-semibold"
+                  : "text-gray-600 hover:text-indigo-700"
+              }
+            >
+              Profile
             </a>
             {session && (
               <>
