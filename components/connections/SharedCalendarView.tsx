@@ -112,11 +112,11 @@ export default function SharedCalendarView({
       <td
         key={dateStr}
         className={`min-w-[28px] h-7 border border-gray-100 text-center text-[10px] relative ${bgClass} ${todayBorder}`}
-        title={topEntry ? `${topEntry.status}: ${topEntry.startDate} – ${topEntry.endDate}` : undefined}
+        title={
+          topEntry ? `${topEntry.status}: ${topEntry.startDate} – ${topEntry.endDate}` : undefined
+        }
       >
-        {topEntry && (
-          <span className="sr-only">{topEntry.status}</span>
-        )}
+        {topEntry && <span className="sr-only">{topEntry.status}</span>}
       </td>
     );
   }
@@ -146,7 +146,10 @@ export default function SharedCalendarView({
 
       {/* Scrollable calendar table */}
       <div className="overflow-x-auto pb-3">
-        <table className="border-collapse w-full" style={{ tableLayout: "fixed", minWidth: `${daysInMonth * 28 + 100}px` }}>
+        <table
+          className="border-collapse w-full"
+          style={{ tableLayout: "fixed", minWidth: `${daysInMonth * 28 + 100}px` }}
+        >
           <colgroup>
             {/* Name column */}
             <col style={{ width: "100px" }} />
@@ -159,7 +162,9 @@ export default function SharedCalendarView({
           {/* Header: day numbers */}
           <thead>
             <tr>
-              <th className="sticky left-0 z-20 bg-white text-left text-xs font-medium text-gray-400 pb-1 pr-2">Person</th>
+              <th className="sticky left-0 z-20 bg-white text-left text-xs font-medium text-gray-400 pb-1 pr-2">
+                Person
+              </th>
               {dayStrings.map((dateStr) => {
                 const day = parseInt(dateStr.slice(8), 10);
                 const isClash = clashDates.has(dateStr);
@@ -168,7 +173,11 @@ export default function SharedCalendarView({
                   <th
                     key={dateStr}
                     className={`text-center text-[10px] font-medium pb-1 h-6 ${
-                      isClash ? "text-red-600 font-bold" : isToday ? "text-indigo-600 font-bold" : "text-gray-400"
+                      isClash
+                        ? "text-red-600 font-bold"
+                        : isToday
+                          ? "text-indigo-600 font-bold"
+                          : "text-gray-400"
                     }`}
                   >
                     {day}
@@ -183,14 +192,15 @@ export default function SharedCalendarView({
             {allUsers.map((user, idx) => (
               <tr key={user.id}>
                 {/* User label */}
-                <td className="sticky left-0 z-10 bg-white text-xs font-medium text-gray-700 pr-2 py-0.5 truncate" title={`${user.profile.firstName} ${user.profile.lastName}`}>
+                <td
+                  className="sticky left-0 z-10 bg-white text-xs font-medium text-gray-700 pr-2 py-0.5 truncate"
+                  title={`${user.profile.firstName} ${user.profile.lastName}`}
+                >
                   <span className="inline-flex items-center gap-1.5">
                     <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-[9px] font-bold shrink-0">
                       {initials(user.profile.firstName, user.profile.lastName)}
                     </span>
-                    <span className="truncate">
-                      {idx === 0 ? "You" : user.profile.firstName}
-                    </span>
+                    <span className="truncate">{idx === 0 ? "You" : user.profile.firstName}</span>
                   </span>
                 </td>
 

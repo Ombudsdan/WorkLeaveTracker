@@ -58,9 +58,9 @@ export function migrateUsersAllowances<T extends { yearAllowances: YearAllowance
  * Returns a new array of user objects. Users whose profiles are unchanged
  * are returned as the same object reference.
  */
-export function migrateConnectionsBidirectional<
-  T extends { id: string; profile: UserProfile },
->(users: T[]): T[] {
+export function migrateConnectionsBidirectional<T extends { id: string; profile: UserProfile }>(
+  users: T[]
+): T[] {
   // Build a mutable map of pinnedUserIds per user so we can patch in bulk
   const pinnedMap = new Map<string, string[]>(
     users.map((u) => [u.id, [...(u.profile.pinnedUserIds ?? /* c8 ignore next */ [])]])

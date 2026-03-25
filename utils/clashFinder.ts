@@ -56,8 +56,7 @@ export function findClashes(
       const match = user.entries.find(
         (entry) =>
           entry.type === LeaveType.Holiday &&
-          (entry.status === LeaveStatus.Approved ||
-            entry.status === LeaveStatus.Requested) &&
+          (entry.status === LeaveStatus.Approved || entry.status === LeaveStatus.Requested) &&
           dateStr >= entry.startDate &&
           dateStr <= entry.endDate
       );
@@ -111,9 +110,7 @@ export function groupClashesIntoRanges(clashes: ClashDate[]): ClashRange[] {
 
     const prevDate = new Date(rangeEnd);
     const curDate = new Date(clash.date);
-    const dayDiff = Math.round(
-      (curDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24)
-    );
+    const dayDiff = Math.round((curDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
 
     if (dayDiff === 1 && clashKey === userKey) {
       // Extend the current range

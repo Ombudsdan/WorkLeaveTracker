@@ -52,43 +52,31 @@ const bob: PublicUser = {
 
 describe("SharedCalendarView — rendering", () => {
   it("renders the current month heading", () => {
-    render(
-      <SharedCalendarView currentUser={alice} pinnedUsers={[]} bankHolidays={[]} />
-    );
+    render(<SharedCalendarView currentUser={alice} pinnedUsers={[]} bankHolidays={[]} />);
     expect(screen.getByRole("heading", { name: /March 2026/i })).toBeInTheDocument();
   });
 
   it("renders 'You' label for the current user row", () => {
-    render(
-      <SharedCalendarView currentUser={alice} pinnedUsers={[]} bankHolidays={[]} />
-    );
+    render(<SharedCalendarView currentUser={alice} pinnedUsers={[]} bankHolidays={[]} />);
     expect(screen.getByText("You")).toBeInTheDocument();
   });
 
   it("renders the first name of pinned users", () => {
-    render(
-      <SharedCalendarView currentUser={alice} pinnedUsers={[bob]} bankHolidays={[]} />
-    );
+    render(<SharedCalendarView currentUser={alice} pinnedUsers={[bob]} bankHolidays={[]} />);
     expect(screen.getByText("Bob")).toBeInTheDocument();
   });
 
   it("renders day numbers 1 through 31 for March", () => {
-    render(
-      <SharedCalendarView currentUser={alice} pinnedUsers={[]} bankHolidays={[]} />
-    );
+    render(<SharedCalendarView currentUser={alice} pinnedUsers={[]} bankHolidays={[]} />);
     // There should be cells for day 1 and day 31
     const allCells = screen.getAllByRole("columnheader");
-    const dayNums = allCells
-      .map((c) => parseInt(c.textContent ?? "", 10))
-      .filter((n) => !isNaN(n));
+    const dayNums = allCells.map((c) => parseInt(c.textContent ?? "", 10)).filter((n) => !isNaN(n));
     expect(dayNums).toContain(1);
     expect(dayNums).toContain(31);
   });
 
   it("renders a legend with Approved, Requested, Planned, Bank Holiday items (no Clash)", () => {
-    render(
-      <SharedCalendarView currentUser={alice} pinnedUsers={[]} bankHolidays={[]} />
-    );
+    render(<SharedCalendarView currentUser={alice} pinnedUsers={[]} bankHolidays={[]} />);
     expect(screen.getByText("Approved")).toBeInTheDocument();
     expect(screen.getByText("Requested")).toBeInTheDocument();
     expect(screen.getByText("Planned")).toBeInTheDocument();
@@ -97,9 +85,7 @@ describe("SharedCalendarView — rendering", () => {
   });
 
   it("renders user initials in the name column", () => {
-    render(
-      <SharedCalendarView currentUser={alice} pinnedUsers={[bob]} bankHolidays={[]} />
-    );
+    render(<SharedCalendarView currentUser={alice} pinnedUsers={[bob]} bankHolidays={[]} />);
     // Alice Smith → AS, Bob Jones → BJ
     expect(screen.getByText("AS")).toBeInTheDocument();
     expect(screen.getByText("BJ")).toBeInTheDocument();
@@ -109,18 +95,14 @@ describe("SharedCalendarView — rendering", () => {
 describe("SharedCalendarView — month navigation", () => {
   it("navigates to the previous month on ‹ click", async () => {
     const user = setup();
-    render(
-      <SharedCalendarView currentUser={alice} pinnedUsers={[]} bankHolidays={[]} />
-    );
+    render(<SharedCalendarView currentUser={alice} pinnedUsers={[]} bankHolidays={[]} />);
     await user.click(screen.getByRole("button", { name: "Previous month" }));
     expect(screen.getByRole("heading", { name: /February 2026/i })).toBeInTheDocument();
   });
 
   it("navigates to the next month on › click", async () => {
     const user = setup();
-    render(
-      <SharedCalendarView currentUser={alice} pinnedUsers={[]} bankHolidays={[]} />
-    );
+    render(<SharedCalendarView currentUser={alice} pinnedUsers={[]} bankHolidays={[]} />);
     await user.click(screen.getByRole("button", { name: "Next month" }));
     expect(screen.getByRole("heading", { name: /April 2026/i })).toBeInTheDocument();
   });
@@ -128,9 +110,7 @@ describe("SharedCalendarView — month navigation", () => {
   it("wraps from January to December when navigating back", async () => {
     jest.setSystemTime(new Date("2026-01-15"));
     const user = setup();
-    render(
-      <SharedCalendarView currentUser={alice} pinnedUsers={[]} bankHolidays={[]} />
-    );
+    render(<SharedCalendarView currentUser={alice} pinnedUsers={[]} bankHolidays={[]} />);
     await user.click(screen.getByRole("button", { name: "Previous month" }));
     expect(screen.getByRole("heading", { name: /December 2025/i })).toBeInTheDocument();
   });
@@ -138,9 +118,7 @@ describe("SharedCalendarView — month navigation", () => {
   it("wraps from December to January when navigating forward", async () => {
     jest.setSystemTime(new Date("2026-12-01"));
     const user = setup();
-    render(
-      <SharedCalendarView currentUser={alice} pinnedUsers={[]} bankHolidays={[]} />
-    );
+    render(<SharedCalendarView currentUser={alice} pinnedUsers={[]} bankHolidays={[]} />);
     await user.click(screen.getByRole("button", { name: "Next month" }));
     expect(screen.getByRole("heading", { name: /January 2027/i })).toBeInTheDocument();
   });
@@ -245,11 +223,7 @@ describe("SharedCalendarView — clash highlighting", () => {
     };
 
     const { container } = render(
-      <SharedCalendarView
-        currentUser={aliceWithLeave}
-        pinnedUsers={[bob]}
-        bankHolidays={[]}
-      />
+      <SharedCalendarView currentUser={aliceWithLeave} pinnedUsers={[bob]} bankHolidays={[]} />
     );
 
     // Check table cells only (not the legend swatch)
@@ -364,11 +338,7 @@ describe("SharedCalendarView — leave cell colouring", () => {
 
   it("applies purple background to cells on bank holiday dates", () => {
     const { container } = render(
-      <SharedCalendarView
-        currentUser={alice}
-        pinnedUsers={[]}
-        bankHolidays={[bh("2026-03-20")]}
-      />
+      <SharedCalendarView currentUser={alice} pinnedUsers={[]} bankHolidays={[bh("2026-03-20")]} />
     );
     const purpleCells = container.querySelectorAll("td.bg-purple-100");
     expect(purpleCells.length).toBeGreaterThan(0);
@@ -397,9 +367,7 @@ describe("SharedCalendarView — sticky person column", () => {
 
 describe("SharedCalendarView — no pinned users", () => {
   it("renders only the current user row when there are no pinned users", () => {
-    render(
-      <SharedCalendarView currentUser={alice} pinnedUsers={[]} bankHolidays={[]} />
-    );
+    render(<SharedCalendarView currentUser={alice} pinnedUsers={[]} bankHolidays={[]} />);
     // "You" row should be present; no "Bob" row
     expect(screen.getByText("You")).toBeInTheDocument();
     expect(screen.queryByText("Bob")).not.toBeInTheDocument();

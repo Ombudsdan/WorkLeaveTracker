@@ -111,11 +111,7 @@ export default function ConnectionsPage() {
         </div>
 
         {activeTab === "shared-view" && (
-          <SharedView
-            currentUser={currentUser}
-            allUsers={allUsers}
-            bankHolidays={bankHolidays}
-          />
+          <SharedView currentUser={currentUser} allUsers={allUsers} bankHolidays={bankHolidays} />
         )}
 
         {activeTab === "manage" && (
