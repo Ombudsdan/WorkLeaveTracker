@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { Menu, X } from "lucide-react";
+import NotificationBlob from "@/components/atoms/NotificationBlob";
 
 interface NavBarProps {
   activePage: "dashboard" | "profile" | "connections" | "annual-planner";
@@ -45,9 +46,7 @@ export default function NavBar({ activePage, pendingRequestCount = 0 }: NavBarPr
         >
           Profile
           {pendingRequestCount > 0 && (
-            <span className="inline-flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full h-4 min-w-4 px-1 leading-none">
-              {pendingRequestCount}
-            </span>
+            <NotificationBlob count={pendingRequestCount} label="pending requests" />
           )}
         </a>
         <a
@@ -120,9 +119,7 @@ export default function NavBar({ activePage, pendingRequestCount = 0 }: NavBarPr
             >
               Profile
               {pendingRequestCount > 0 && (
-                <span className="inline-flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full h-4 min-w-4 px-1 leading-none">
-                  {pendingRequestCount}
-                </span>
+                <NotificationBlob count={pendingRequestCount} label="pending requests" />
               )}
             </a>
             <a

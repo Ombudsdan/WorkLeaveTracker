@@ -1,13 +1,7 @@
 "use client";
 import { useMemo } from "react";
 import { LeaveStatus } from "@/types";
-
-// Segment colour matches the Tailwind status colours used elsewhere in the app
-const STATUS_COLORS: Record<LeaveStatus, string> = {
-  [LeaveStatus.Approved]: "#86efac", // green-300
-  [LeaveStatus.Requested]: "#93c5fd", // blue-300
-  [LeaveStatus.Planned]: "#fde047", // yellow-300
-};
+import { STATUS_HEX_COLORS } from "@/variables/colours";
 
 export interface HalfDonutChartProps {
   /** Total allowance (denominator of the arc) */
@@ -66,7 +60,7 @@ export default function HalfDonutChart({ total, used, status }: HalfDonutChartPr
   const strokeWidth = 14;
 
   const remaining = total - used;
-  const color = STATUS_COLORS[status];
+  const color = STATUS_HEX_COLORS[status];
 
   // Clamp fraction to [0, 1] so the arc never overflows the track
   const fraction = useMemo(() => {

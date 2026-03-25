@@ -9,3 +9,9 @@ export type { HalfDonutChartProps } from "./HalfDonutChart";
 
 export { default as Input } from "./Input";
 export type { InputProps, InputType } from "./Input";
+
+export { default as NotificationBlob } from "./NotificationBlob";
+export type { NotificationBlobProps } from "./NotificationBlob";
+
+export { default as StatusBadge } from "./StatusBadge";
+export type { StatusBadgeProps } from "./StatusBadge";

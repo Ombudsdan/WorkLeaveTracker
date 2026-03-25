@@ -106,37 +106,41 @@ describe("SummaryCard — with approved entries", () => {
     render(<SummaryCard user={userWithEntries} bankHolidays={[]} />);
     // Remaining = 25 total - 0 bank holidays - 5 approved = 20
     // Remaining is now shown outside the breakdown, always visible
-    const remainingRow = screen.getByText("Remaining").closest("div");
+    // Use getAllByText since "Remaining" also appears as a label in the half-donut SVG
+    const allRemaining = screen.getAllByText("Remaining");
+    const remainingSpan = allRemaining.find((el) => el.tagName.toLowerCase() === "span");
+    expect(remainingSpan).toBeDefined();
+    const remainingRow = remainingSpan!.closest("div");
     expect(remainingRow?.textContent).toContain("20");
   });
 });
 
-describe("SummaryCard — single-ring donut", () => {
+describe("SummaryCard — half-donut chart", () => {
   it("renders the SVG donut chart by default (no click required)", () => {
     const { container } = render(<SummaryCard user={alice} bankHolidays={[]} />);
     expect(container.querySelector("svg")).toBeInTheDocument();
   });
 
-  it("shows remaining days in the donut center without 'remaining' label text", () => {
+  it("shows remaining days and 'Remaining' label in the half-donut SVG", () => {
     const { container } = render(<SummaryCard user={alice} bankHolidays={[]} />);
     const svgText = container.querySelector("svg")?.textContent;
     expect(svgText).toContain("25"); // 25 remaining when no entries
-    expect(svgText).not.toContain("remaining"); // label removed from donut
+    expect(svgText).toContain("Remaining"); // half-donut shows the label
   });
 
-  it("renders only one SVG ring (single circle track)", () => {
+  it("renders the half-donut track as a path (not a circle)", () => {
     const { container } = render(<SummaryCard user={alice} bankHolidays={[]} />);
-    // Single ring: one track circle (gray) — only 1 circle element in the SVG
     const svg = container.querySelector("svg");
     expect(svg).toBeInTheDocument();
+    // Half-donut track is a <path>, not a <circle>
     const circles = svg!.querySelectorAll("circle");
-    // There should be exactly 1 circle (the track; segments are paths when value > 0)
-    expect(circles.length).toBe(1);
+    expect(circles.length).toBe(0);
+    const paths = svg!.querySelectorAll("path");
+    expect(paths.length).toBeGreaterThanOrEqual(1); // at least the track path
   });
 
-  it("uses largeArc=1 when a segment spans more than half the ring (pct > 0.5)", () => {
-    // approved = 14 out of 25 total → pct = 56% → arc = 201.6° > 180° → largeArc flag = 1
-    // This means the path 'd' attribute will contain ' 1 1 ' (largeArcFlag=1, sweepFlag=1)
+  it("always uses largeArc=0 since no segment can span more than 180°", () => {
+    // approved = 14 out of 25 total → pct = 56% → in a half-donut this is 100.8° → largeArc=0
     const userWith14Days: PublicUser = {
       ...alice,
       entries: [
@@ -152,10 +156,10 @@ describe("SummaryCard — single-ring donut", () => {
     const { container } = render(<SummaryCard user={userWith14Days} bankHolidays={[]} />);
     const svg = container.querySelector("svg");
     expect(svg).toBeInTheDocument();
-    // The arc path element should have largeArcFlag=1 in its 'd' attribute
+    // In a half-donut each segment spans at most 180°, so largeArc is always 0
     const paths = svg!.querySelectorAll("path");
     const hasLargeArc = Array.from(paths).some((p) => p.getAttribute("d")?.includes(" 1 1 "));
-    expect(hasLargeArc).toBe(true);
+    expect(hasLargeArc).toBe(false);
   });
 });
 
@@ -345,9 +349,12 @@ describe("SummaryCard — breakdown layout", () => {
 
   it("shows Remaining row as bold with correct value (outside breakdown)", () => {
     render(<SummaryCard user={alice} bankHolidays={[]} />);
-    // Remaining is now always visible outside the breakdown, below the status key rows
-    const remainingLabel = screen.getByText("Remaining");
-    const remainingRow = remainingLabel.closest("div");
+    // Remaining is always visible outside the breakdown, below the status key rows
+    // Use getAllByText since "Remaining" also appears in the half-donut SVG
+    const allRemaining = screen.getAllByText("Remaining");
+    const remainingSpan = allRemaining.find((el) => el.tagName.toLowerCase() === "span");
+    expect(remainingSpan).toBeDefined();
+    const remainingRow = remainingSpan!.closest("div");
     expect(remainingRow?.textContent).toContain("25");
   });
 
@@ -376,11 +383,11 @@ describe("SummaryCard — breakdown layout", () => {
   it("'Remaining' is not rendered inside the breakdown panel", async () => {
     const user = setup();
     render(<SummaryCard user={alice} bankHolidays={[]} />);
-    // Before opening breakdown, Remaining is visible outside
-    expect(screen.getByText("Remaining")).toBeInTheDocument();
+    // Before opening breakdown: "Remaining" appears in both the half-donut SVG and the status key
+    expect(screen.getAllByText("Remaining")).toHaveLength(2);
     await user.click(screen.getByRole("button", { name: /view breakdown/i }));
-    // After opening, still just one Remaining element (not duplicated inside breakdown)
-    expect(screen.getAllByText("Remaining")).toHaveLength(1);
+    // After opening breakdown, count should still be 2 (not duplicated inside breakdown)
+    expect(screen.getAllByText("Remaining")).toHaveLength(2);
   });
 });
 
@@ -410,8 +417,8 @@ describe("SummaryCard — donut uses effective total as ring denominator", () =>
     expect(paths.length).toBeGreaterThan(0);
   });
 
-  it("renders a circle (not a path) when a single segment fills the entire ring (pct=1)", () => {
-    // total allowance = 1, one approved day → pct = 1/1 = 1 → circle rendered
+  it("renders a path (not a circle) when a single segment fills the entire arc (pct=1)", () => {
+    // total allowance = 1, one approved day → pct = 1/1 = 1 → clamped to near-full path
     const userAllUsed: PublicUser = {
       ...alice,
       yearAllowances: [
@@ -430,9 +437,12 @@ describe("SummaryCard — donut uses effective total as ring denominator", () =>
     const { container } = render(<SummaryCard user={userAllUsed} bankHolidays={[]} />);
     const svg = container.querySelector("svg");
     expect(svg).toBeInTheDocument();
-    // Two circles: the gray track + the 100%-segment circle
+    // Half-donut uses paths for all segments (no circles)
     const circles = svg!.querySelectorAll("circle");
-    expect(circles.length).toBe(2);
+    expect(circles.length).toBe(0);
+    // Both the track path and the segment path should be present
+    const paths = svg!.querySelectorAll("path");
+    expect(paths.length).toBeGreaterThanOrEqual(2);
   });
 });
 
@@ -464,8 +474,11 @@ describe("SummaryCard — breakdown Remaining colour when over-allocated", () =>
     };
     render(<SummaryCard user={overAllocated} bankHolidays={[]} />);
     // Remaining is now always visible outside the breakdown — no button click needed
-    const remainingLabel = screen.getByText("Remaining");
-    expect(remainingLabel.className).toContain("text-red-600");
+    // Use getAllByText since "Remaining" also appears in the half-donut SVG
+    const allRemaining = screen.getAllByText("Remaining");
+    const remainingSpan = allRemaining.find((el) => el.tagName.toLowerCase() === "span");
+    expect(remainingSpan).toBeDefined();
+    expect(remainingSpan!.className).toContain("text-red-600");
   });
 
   it("shows the negative number in the donut center when over-allocated", () => {

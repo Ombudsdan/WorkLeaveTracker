@@ -1,5 +1,15 @@
 import { LeaveStatus, LeaveType } from "@/types";
 
+/**
+ * Hex colour values for leave statuses — used in SVG/canvas contexts where
+ * Tailwind class strings cannot be applied directly.
+ */
+export const STATUS_HEX_COLORS: Record<LeaveStatus, string> = {
+  [LeaveStatus.Approved]: "#86efac", // green-300
+  [LeaveStatus.Requested]: "#93c5fd", // blue-300
+  [LeaveStatus.Planned]: "#fde047", // yellow-300
+};
+
 /** Tailwind classes for leave entry card borders and backgrounds */
 export const STATUS_COLORS: Record<LeaveStatus, string> = {
   [LeaveStatus.Planned]: "bg-yellow-100 text-yellow-800 border-yellow-300",
