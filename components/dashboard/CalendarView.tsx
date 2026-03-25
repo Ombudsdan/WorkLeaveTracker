@@ -22,7 +22,7 @@ import {
   getLeaveDataBounds,
 } from "@/utils/dateHelpers";
 import { SICK_LEAVE_ENABLED } from "@/utils/features";
-import { Pencil, Trash2, X } from "lucide-react";
+import { Pencil, Trash2, X, ChevronLeft, ChevronRight } from "lucide-react";
 import MonthYearPicker from "@/components/molecules/MonthYearPicker";
 
 // ---------------------------------------------------------------------------
@@ -153,6 +153,31 @@ export default function CalendarView({
     }
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [popover]);
+
+  const atMin =
+    calendarYear < pickerMin.year ||
+    (calendarYear === pickerMin.year && calendarMonth <= pickerMin.month);
+  const atMax =
+    calendarYear > pickerMax.year ||
+    (calendarYear === pickerMax.year && calendarMonth >= pickerMax.month);
+
+  function prevMonth() {
+    if (calendarMonth === 0) {
+      setCalendarMonth(11);
+      setCalendarYear((y) => y - 1);
+    } else {
+      setCalendarMonth((m) => m - 1);
+    }
+  }
+
+  function nextMonth() {
+    if (calendarMonth === 11) {
+      setCalendarMonth(0);
+      setCalendarYear((y) => y + 1);
+    } else {
+      setCalendarMonth((m) => m + 1);
+    }
+  }
 
   function handleCellClick(entry: LeaveEntry, cellEl: HTMLElement) {
     if (popover?.entry.id === entry.id) {
@@ -361,7 +386,15 @@ export default function CalendarView({
   return (
     <div ref={calendarRef} className="bg-white rounded-2xl shadow p-5 relative">
       {/* Header */}
-      <div className="flex items-center justify-center mb-4">
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={prevMonth}
+          disabled={atMin}
+          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+          aria-label="Previous month"
+        >
+          <ChevronLeft size={18} />
+        </button>
         <MonthYearPicker
           year={calendarYear}
           month={calendarMonth}
@@ -374,6 +407,14 @@ export default function CalendarView({
           maxYear={pickerMax.year}
           maxMonth={pickerMax.month}
         />
+        <button
+          onClick={nextMonth}
+          disabled={atMax}
+          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+          aria-label="Next month"
+        >
+          <ChevronRight size={18} />
+        </button>
       </div>
 
       {/* Day labels */}

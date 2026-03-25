@@ -109,6 +109,28 @@ describe("CalendarView — header and navigation", () => {
     await user.click(screen.getByRole("button", { name: "January 2027" }));
     expect(screen.getByRole("button", { name: /January 2027.*open month-year picker/i })).toBeInTheDocument();
   });
+
+  it("navigates to the next month via the Next month chevron", async () => {
+    const user = setup();
+    render(<CalendarView user={alice} bankHolidays={[]} />);
+    await user.click(screen.getByRole("button", { name: "Next month" }));
+    expect(screen.getByRole("button", { name: /April 2026.*open month-year picker/i })).toBeInTheDocument();
+  });
+
+  it("navigates to the previous month via the Previous month chevron", async () => {
+    const user = setup();
+    render(<CalendarView user={aliceWithHistory} bankHolidays={[]} />);
+    await user.click(screen.getByRole("button", { name: "Previous month" }));
+    expect(screen.getByRole("button", { name: /February 2026.*open month-year picker/i })).toBeInTheDocument();
+  });
+
+  it("wraps from January to December of the previous year via chevron", async () => {
+    jest.setSystemTime(new Date("2026-01-15"));
+    const user = setup();
+    render(<CalendarView user={aliceWithHistory} bankHolidays={[]} />);
+    await user.click(screen.getByRole("button", { name: "Previous month" }));
+    expect(screen.getByRole("button", { name: /December 2025.*open month-year picker/i })).toBeInTheDocument();
+  });
 });
 
 describe("CalendarView — day headers", () => {
