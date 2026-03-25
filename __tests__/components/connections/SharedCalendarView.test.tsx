@@ -373,3 +373,215 @@ describe("SharedCalendarView — no pinned users", () => {
     expect(screen.queryByText("Bob")).not.toBeInTheDocument();
   });
 });
+
+describe("SharedCalendarView — current day marker", () => {
+  it("applies underline to today's header cell", () => {
+    const { container } = render(
+      <SharedCalendarView currentUser={alice} pinnedUsers={[]} bankHolidays={[]} />
+    );
+    // Today is 2026-03-15 → day "15" header should have underline class
+    const todayHeader = Array.from(container.querySelectorAll("th")).find(
+      (el) => el.textContent === "15"
+    );
+    expect(todayHeader).toBeTruthy();
+    expect(todayHeader?.className).toMatch(/underline/);
+    expect(todayHeader?.className).toMatch(/text-indigo-600/);
+  });
+
+  it("does not apply blue outline to today's data cells", () => {
+    const { container } = render(
+      <SharedCalendarView currentUser={alice} pinnedUsers={[]} bankHolidays={[]} />
+    );
+    // No td should have the old outline-indigo-500 class
+    expect(container.querySelectorAll("td.outline-indigo-500").length).toBe(0);
+  });
+});
+
+describe("SharedCalendarView — interactivity (add leave)", () => {
+  it("calls onAddLeave with the date when clicking an empty cell in the current user row", async () => {
+    const user = setup();
+    const onAddLeave = jest.fn();
+    const { container } = render(
+      <SharedCalendarView
+        currentUser={alice}
+        pinnedUsers={[]}
+        bankHolidays={[]}
+        onAddLeave={onAddLeave}
+      />
+    );
+    // Click the cell for day 20 in Alice's row (Alice has no entries)
+    // The first <tbody> row belongs to Alice; day 20 maps to the 20th td (after the sticky name td)
+    const aliceRow = container.querySelector("tbody tr");
+    const cells = aliceRow?.querySelectorAll("td");
+    // cells[0] is the name cell; cells[20] is day 20 (1-indexed offset by the name cell)
+    const day20Cell = cells?.[20];
+    expect(day20Cell).toBeTruthy();
+    await user.click(day20Cell!);
+    expect(onAddLeave).toHaveBeenCalledWith("2026-03-20");
+  });
+
+  it("does not call onAddLeave when clicking a cell in a pinned user's row", async () => {
+    const user = setup();
+    const onAddLeave = jest.fn();
+    const { container } = render(
+      <SharedCalendarView
+        currentUser={alice}
+        pinnedUsers={[bob]}
+        bankHolidays={[]}
+        onAddLeave={onAddLeave}
+      />
+    );
+    // Click a cell in Bob's row (second <tbody> row)
+    const rows = container.querySelectorAll("tbody tr");
+    const bobRow = rows[1];
+    const cells = bobRow?.querySelectorAll("td");
+    await user.click(cells![20]);
+    expect(onAddLeave).not.toHaveBeenCalled();
+  });
+});
+
+describe("SharedCalendarView — leave entry popover", () => {
+  const aliceWithLeave: PublicUser = {
+    ...alice,
+    entries: [
+      {
+        id: "e1",
+        startDate: "2026-03-20",
+        endDate: "2026-03-20",
+        status: LeaveStatus.Approved,
+        type: LeaveType.Holiday,
+        duration: LeaveDuration.Full,
+        notes: "Beach trip",
+      },
+    ],
+  };
+
+  it("shows a popover when clicking a leave cell", async () => {
+    const user = setup();
+    render(<SharedCalendarView currentUser={aliceWithLeave} pinnedUsers={[]} bankHolidays={[]} />);
+    // Find the leave cell for day 20 and click it
+    const leaveCell = screen
+      .getAllByRole("cell")
+      .find((el) => el.title === "approved: 2026-03-20 – 2026-03-20");
+    expect(leaveCell).toBeTruthy();
+    await user.click(leaveCell!);
+    // Popover should be visible with leave details
+    const tooltip = screen.getByRole("tooltip");
+    expect(tooltip).toBeInTheDocument();
+    // Both "Approved" badge (in popover) and in legend exist; check the popover has the note
+    expect(screen.getByText("Beach trip")).toBeInTheDocument();
+    // The tooltip itself should contain the status badge
+    expect(tooltip.textContent).toMatch(/Approved/);
+  });
+
+  it("closes the popover when clicking the close button", async () => {
+    const user = setup();
+    render(<SharedCalendarView currentUser={aliceWithLeave} pinnedUsers={[]} bankHolidays={[]} />);
+    const leaveCell = screen
+      .getAllByRole("cell")
+      .find((el) => el.title === "approved: 2026-03-20 – 2026-03-20");
+    await user.click(leaveCell!);
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  it("shows edit and delete buttons in the popover for own leave entries when handlers provided", async () => {
+    const user = setup();
+    const onEdit = jest.fn();
+    const onDelete = jest.fn();
+    render(
+      <SharedCalendarView
+        currentUser={aliceWithLeave}
+        pinnedUsers={[]}
+        bankHolidays={[]}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />
+    );
+    const leaveCell = screen
+      .getAllByRole("cell")
+      .find((el) => el.title === "approved: 2026-03-20 – 2026-03-20");
+    await user.click(leaveCell!);
+    expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument();
+  });
+
+  it("does not show edit/delete in the popover for a connection's leave entry", async () => {
+    const bobWithLeave: PublicUser = {
+      ...bob,
+      entries: [
+        {
+          id: "e2",
+          startDate: "2026-03-20",
+          endDate: "2026-03-20",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.Full,
+        },
+      ],
+    };
+    const user = setup();
+    const onEdit = jest.fn();
+    const onDelete = jest.fn();
+    render(
+      <SharedCalendarView
+        currentUser={alice}
+        pinnedUsers={[bobWithLeave]}
+        bankHolidays={[]}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />
+    );
+    // Bob's leave cell
+    const leaveCells = screen
+      .getAllByRole("cell")
+      .filter((el) => el.title === "approved: 2026-03-20 – 2026-03-20");
+    // Click Bob's cell (second row's cell)
+    await user.click(leaveCells[0]);
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Delete" })).not.toBeInTheDocument();
+  });
+});
+
+describe("SharedCalendarView — View Calendar button", () => {
+  it("renders a 'View calendar' button for each pinned user", () => {
+    render(<SharedCalendarView currentUser={alice} pinnedUsers={[bob]} bankHolidays={[]} />);
+    expect(
+      screen.getByRole("button", { name: "View calendar for Bob" })
+    ).toBeInTheDocument();
+  });
+
+  it("does not render a 'View calendar' button for the current user row", () => {
+    render(<SharedCalendarView currentUser={alice} pinnedUsers={[bob]} bankHolidays={[]} />);
+    expect(
+      screen.queryByRole("button", { name: "View calendar for Alice" })
+    ).not.toBeInTheDocument();
+  });
+
+  it("toggles the expanded calendar when clicking the View Calendar button", async () => {
+    const user = setup();
+    render(<SharedCalendarView currentUser={alice} pinnedUsers={[bob]} bankHolidays={[]} />);
+    const viewBtn = screen.getByRole("button", { name: "View calendar for Bob" });
+    // Calendar should not be visible initially
+    expect(screen.queryByText("Bob's Calendar")).not.toBeInTheDocument();
+    // Click to expand
+    await user.click(viewBtn);
+    expect(screen.getByText("Bob's Calendar")).toBeInTheDocument();
+    // Click close button to collapse
+    await user.click(screen.getByRole("button", { name: "Close calendar" }));
+    expect(screen.queryByText("Bob's Calendar")).not.toBeInTheDocument();
+  });
+
+  it("collapses the calendar when clicking the same View Calendar button again", async () => {
+    const user = setup();
+    render(<SharedCalendarView currentUser={alice} pinnedUsers={[bob]} bankHolidays={[]} />);
+    const viewBtn = screen.getByRole("button", { name: "View calendar for Bob" });
+    await user.click(viewBtn);
+    expect(screen.getByText("Bob's Calendar")).toBeInTheDocument();
+    // Click again to collapse
+    await user.click(viewBtn);
+    expect(screen.queryByText("Bob's Calendar")).not.toBeInTheDocument();
+  });
+});
