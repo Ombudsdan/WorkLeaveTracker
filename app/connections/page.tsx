@@ -7,7 +7,6 @@ import NavBar from "@/components/NavBar";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import ConnectionsPanel from "@/components/ConnectionsPanel";
 import SharedCalendarView from "@/components/connections/SharedCalendarView";
-import ClashSummary from "@/components/connections/ClashSummary";
 import { usersController } from "@/controllers/usersController";
 import { holidaysController } from "@/controllers/holidaysController";
 
@@ -153,24 +152,10 @@ function SharedView({ currentUser, allUsers, bankHolidays }: SharedViewProps) {
   }, [currentUser, allUsers]);
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6">
-      {/* Main calendar */}
-      <div className="flex-1 min-w-0">
-        <SharedCalendarView
-          currentUser={currentUser}
-          pinnedUsers={pinnedUsers}
-          bankHolidays={bankHolidays}
-        />
-      </div>
-
-      {/* Clash summary side panel */}
-      <div className="lg:w-72 shrink-0">
-        <ClashSummary
-          currentUser={currentUser}
-          pinnedUsers={pinnedUsers}
-          bankHolidays={bankHolidays}
-        />
-      </div>
-    </div>
+    <SharedCalendarView
+      currentUser={currentUser}
+      pinnedUsers={pinnedUsers}
+      bankHolidays={bankHolidays}
+    />
   );
 }

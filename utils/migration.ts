@@ -1,4 +1,4 @@
-import type { YearAllowance } from "@/types";
+import type { YearAllowance, UserProfile } from "@/types";
 import { yearAllowanceDates } from "@/utils/dateHelpers";
 
 /**
@@ -48,5 +48,40 @@ export function migrateUsersAllowances<T extends { yearAllowances: YearAllowance
     );
     if (!changed) return user;
     return { ...user, yearAllowances: migrated };
+  });
+}
+
+/**
+ * Ensure connections are bidirectional: if user A has user B in their
+ * pinnedUserIds but B does not have A, add A to B's pinnedUserIds (capped at 3).
+ *
+ * Returns a new array of user objects. Users whose profiles are unchanged
+ * are returned as the same object reference.
+ */
+export function migrateConnectionsBidirectional<
+  T extends { id: string; profile: UserProfile },
+>(users: T[]): T[] {
+  // Build a mutable map of pinnedUserIds per user so we can patch in bulk
+  const pinnedMap = new Map<string, string[]>(
+    users.map((u) => [u.id, [...(u.profile.pinnedUserIds ?? /* c8 ignore next */ [])]])
+  );
+
+  for (const user of users) {
+    for (const targetId of user.profile.pinnedUserIds ?? /* c8 ignore next */ []) {
+      const targetPinned = pinnedMap.get(targetId);
+      if (targetPinned === undefined) continue; // target not in the users list
+      if (!targetPinned.includes(user.id) && targetPinned.length < 3) {
+        targetPinned.push(user.id);
+      }
+    }
+  }
+
+  return users.map((user) => {
+    const original = user.profile.pinnedUserIds ?? /* c8 ignore next */ [];
+    const updated = pinnedMap.get(user.id) ?? /* c8 ignore next */ original;
+    if (updated.length === original.length && updated.every((id, i) => id === original[i])) {
+      return user;
+    }
+    return { ...user, profile: { ...user.profile, pinnedUserIds: updated } };
   });
 }

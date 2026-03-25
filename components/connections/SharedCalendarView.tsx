@@ -106,13 +106,12 @@ export default function SharedCalendarView({
       bgClass = "bg-purple-100";
     }
 
-    const clashRing = isClash ? "ring-2 ring-red-500 ring-inset z-10" : "";
     const todayBorder = isToday ? "outline outline-2 outline-indigo-500 outline-offset-[-2px]" : "";
 
     return (
       <td
         key={dateStr}
-        className={`min-w-[28px] h-7 border border-gray-100 text-center text-[10px] relative ${bgClass} ${clashRing} ${todayBorder}`}
+        className={`min-w-[28px] h-7 border border-gray-100 text-center text-[10px] relative ${bgClass} ${todayBorder}`}
         title={topEntry ? `${topEntry.status}: ${topEntry.startDate} – ${topEntry.endDate}` : undefined}
       >
         {topEntry && (
@@ -146,7 +145,7 @@ export default function SharedCalendarView({
       </div>
 
       {/* Scrollable calendar table */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto pb-3">
         <table className="border-collapse w-full" style={{ tableLayout: "fixed", minWidth: `${daysInMonth * 28 + 100}px` }}>
           <colgroup>
             {/* Name column */}
@@ -160,7 +159,7 @@ export default function SharedCalendarView({
           {/* Header: day numbers */}
           <thead>
             <tr>
-              <th className="text-left text-xs font-medium text-gray-400 pb-1 pr-2">Person</th>
+              <th className="sticky left-0 z-20 bg-white text-left text-xs font-medium text-gray-400 pb-1 pr-2">Person</th>
               {dayStrings.map((dateStr) => {
                 const day = parseInt(dateStr.slice(8), 10);
                 const isClash = clashDates.has(dateStr);
@@ -184,7 +183,7 @@ export default function SharedCalendarView({
             {allUsers.map((user, idx) => (
               <tr key={user.id}>
                 {/* User label */}
-                <td className="text-xs font-medium text-gray-700 pr-2 py-0.5 truncate" title={`${user.profile.firstName} ${user.profile.lastName}`}>
+                <td className="sticky left-0 z-10 bg-white text-xs font-medium text-gray-700 pr-2 py-0.5 truncate" title={`${user.profile.firstName} ${user.profile.lastName}`}>
                   <span className="inline-flex items-center gap-1.5">
                     <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-[9px] font-bold shrink-0">
                       {initials(user.profile.firstName, user.profile.lastName)}
@@ -216,9 +215,6 @@ export default function SharedCalendarView({
         </span>
         <span className="flex items-center gap-1">
           <span className="w-3 h-3 rounded bg-purple-100" /> Bank Holiday
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded ring-2 ring-red-500" /> Clash
         </span>
       </div>
     </div>

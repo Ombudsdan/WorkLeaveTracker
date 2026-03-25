@@ -77,16 +77,12 @@ export default function ConnectionsPanel({
 
   async function handleUnpin(userId: string) {
     setActionError("");
-    const newPinned = pinnedIds.filter((id) => id !== userId);
-    const updated = await usersController.updateProfile({
-      ...profile,
-      pinnedUserIds: newPinned,
-    });
-    if (!updated) {
-      setActionError("Failed to remove connection.");
+    const result = await usersController.disconnect(userId);
+    if (!result.ok) {
+      setActionError(result.error ?? "Failed to remove connection.");
       return;
     }
-    onUserChange(updated);
+    await refreshUsers();
   }
 
   async function handleRevokeFollower(followerId: string) {

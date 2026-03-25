@@ -7,7 +7,7 @@ import { usersController } from "@/controllers/usersController";
 jest.mock("@/controllers/usersController", () => ({
   usersController: {
     respondToPinRequest: jest.fn(),
-    updateProfile: jest.fn(),
+    disconnect: jest.fn(),
     revokeConnection: jest.fn(),
     sendPinRequest: jest.fn(),
     fetchAll: jest.fn(),
@@ -317,32 +317,10 @@ describe("ConnectionsPanel — interactions", () => {
     expect(screen.getByText("Failed to accept.")).toBeInTheDocument();
   });
 
-  it("calls updateProfile when Remove connection is clicked", async () => {
+  it("calls disconnect when Remove connection is clicked", async () => {
     const user = setup();
-    const updatedAlice: PublicUser = { ...alice };
-    (usersController.updateProfile as jest.Mock).mockResolvedValue(updatedAlice);
-
-    const aliceWithBob: PublicUser = {
-      ...alice,
-      profile: { ...alice.profile, pinnedUserIds: ["u2"] },
-    };
-    const onUserChange = jest.fn();
-    render(
-      <ConnectionsPanel
-        currentUser={aliceWithBob}
-        allUsers={[aliceWithBob, bob]}
-        onUserChange={onUserChange}
-        onAllUsersChange={jest.fn()}
-      />
-    );
-    await user.click(screen.getByRole("button", { name: /remove/i }));
-    expect(usersController.updateProfile).toHaveBeenCalled();
-    expect(onUserChange).toHaveBeenCalledWith(updatedAlice);
-  });
-
-  it("shows error when Remove fails", async () => {
-    const user = setup();
-    (usersController.updateProfile as jest.Mock).mockResolvedValue(null);
+    (usersController.disconnect as jest.Mock).mockResolvedValue({ ok: true });
+    (usersController.fetchAll as jest.Mock).mockResolvedValue([]);
 
     const aliceWithBob: PublicUser = {
       ...alice,
@@ -357,7 +335,30 @@ describe("ConnectionsPanel — interactions", () => {
       />
     );
     await user.click(screen.getByRole("button", { name: /remove/i }));
-    expect(screen.getByText("Failed to remove connection.")).toBeInTheDocument();
+    expect(usersController.disconnect).toHaveBeenCalledWith("u2");
+  });
+
+  it("shows error when Remove fails", async () => {
+    const user = setup();
+    (usersController.disconnect as jest.Mock).mockResolvedValue({
+      ok: false,
+      error: "Failed to disconnect",
+    });
+
+    const aliceWithBob: PublicUser = {
+      ...alice,
+      profile: { ...alice.profile, pinnedUserIds: ["u2"] },
+    };
+    render(
+      <ConnectionsPanel
+        currentUser={aliceWithBob}
+        allUsers={[aliceWithBob, bob]}
+        onUserChange={jest.fn()}
+        onAllUsersChange={jest.fn()}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: /remove/i }));
+    expect(screen.getByText("Failed to disconnect")).toBeInTheDocument();
   });
 
   it("calls revokeConnection when Revoke is clicked", async () => {

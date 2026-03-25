@@ -38,11 +38,15 @@ export async function POST(request: Request) {
   );
 
   let myPinned = myProfile.pinnedUserIds ?? [];
+  let requesterPinned = requesterProfile.pinnedUserIds ?? [];
 
   if (accept) {
-    // Add requester to my pinned list (cap at 3)
+    // Add requester to my pinned list (cap at 3) — bidirectional: add me to requester's list too
     if (!myPinned.includes(requesterId) && myPinned.length < 3) {
       myPinned = [...myPinned, requesterId];
+    }
+    if (!requesterPinned.includes(me!.id) && requesterPinned.length < 3) {
+      requesterPinned = [...requesterPinned, me!.id];
     }
   }
 
@@ -58,6 +62,7 @@ export async function POST(request: Request) {
     profile: {
       ...requesterProfile,
       pendingPinRequestsSent: requesterSent,
+      pinnedUserIds: requesterPinned,
     },
   });
 

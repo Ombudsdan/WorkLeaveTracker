@@ -85,7 +85,7 @@ describe("SharedCalendarView — rendering", () => {
     expect(dayNums).toContain(31);
   });
 
-  it("renders a legend with Approved, Requested, Planned, Bank Holiday, Clash items", () => {
+  it("renders a legend with Approved, Requested, Planned, Bank Holiday items (no Clash)", () => {
     render(
       <SharedCalendarView currentUser={alice} pinnedUsers={[]} bankHolidays={[]} />
     );
@@ -93,7 +93,7 @@ describe("SharedCalendarView — rendering", () => {
     expect(screen.getByText("Requested")).toBeInTheDocument();
     expect(screen.getByText("Planned")).toBeInTheDocument();
     expect(screen.getByText("Bank Holiday")).toBeInTheDocument();
-    expect(screen.getByText("Clash")).toBeInTheDocument();
+    expect(screen.queryByText("Clash")).not.toBeInTheDocument();
   });
 
   it("renders user initials in the name column", () => {
@@ -189,7 +189,7 @@ describe("SharedCalendarView — clash highlighting", () => {
     expect(dayTen).toBeTruthy();
   });
 
-  it("applies clash ring to clashing day cells", () => {
+  it("does not apply clash ring to clashing day cells (ring was removed)", () => {
     const aliceWithLeave: PublicUser = {
       ...alice,
       entries: [
@@ -225,8 +225,8 @@ describe("SharedCalendarView — clash highlighting", () => {
       />
     );
 
-    const clashCells = container.querySelectorAll(".ring-red-500");
-    expect(clashCells.length).toBeGreaterThan(0);
+    // Ring was removed from cells — only the day header goes red for clashes
+    expect(container.querySelectorAll("td.ring-red-500").length).toBe(0);
   });
 
   it("does not highlight days where only one user has leave", () => {
@@ -372,6 +372,26 @@ describe("SharedCalendarView — leave cell colouring", () => {
     );
     const purpleCells = container.querySelectorAll("td.bg-purple-100");
     expect(purpleCells.length).toBeGreaterThan(0);
+  });
+});
+
+describe("SharedCalendarView — sticky person column", () => {
+  it("applies sticky class to the Person header cell", () => {
+    const { container } = render(
+      <SharedCalendarView currentUser={alice} pinnedUsers={[]} bankHolidays={[]} />
+    );
+    const personHeader = container.querySelector("th.sticky");
+    expect(personHeader).toBeTruthy();
+    expect(personHeader?.textContent).toBe("Person");
+  });
+
+  it("applies sticky class to each person name cell in the body", () => {
+    const { container } = render(
+      <SharedCalendarView currentUser={alice} pinnedUsers={[bob]} bankHolidays={[]} />
+    );
+    const stickyBodyCells = container.querySelectorAll("td.sticky");
+    // One sticky cell per user row (2 users: alice + bob)
+    expect(stickyBodyCells.length).toBe(2);
   });
 });
 
