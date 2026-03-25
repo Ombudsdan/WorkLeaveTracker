@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { Plus } from "lucide-react";
 import type { PublicUser, LeaveEntry, BankHolidayEntry } from "@/types";
 import NavBar from "@/components/NavBar";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -205,6 +206,22 @@ export default function DashboardPage() {
             Calendar
           </button>
         </div>
+
+        {/* Add Leave button — shown above the layout when viewing own profile */}
+        {isOwnProfile && (
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={() => {
+                setAddModalInitialDate(undefined);
+                setShowAddModal(true);
+              }}
+              className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-4 py-1.5 rounded-lg hover:bg-indigo-700 transition font-medium cursor-pointer"
+            >
+              <Plus size={14} />
+              Add Leave
+            </button>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div

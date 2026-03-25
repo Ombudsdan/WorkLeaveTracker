@@ -7,6 +7,7 @@ import NavBar from "@/components/NavBar";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import ConnectionsPanel from "@/components/ConnectionsPanel";
 import SharedCalendarView from "@/components/connections/SharedCalendarView";
+import NotificationBlob from "@/components/atoms/NotificationBlob/NotificationBlob";
 import { usersController } from "@/controllers/usersController";
 import { holidaysController } from "@/controllers/holidaysController";
 
@@ -100,13 +101,16 @@ export default function ConnectionsPage() {
           </button>
           <button
             onClick={() => setActiveTab("manage")}
-            className={`px-4 py-2 text-sm font-medium rounded-t-lg transition cursor-pointer ${
+            className={`px-4 py-2 text-sm font-medium rounded-t-lg transition cursor-pointer flex items-center gap-1 ${
               activeTab === "manage"
                 ? "text-indigo-700 border-b-2 border-indigo-600 bg-white"
                 : "text-gray-500 hover:text-gray-700"
             }`}
           >
             Manage Connections
+            {pendingCount > 0 && (
+              <NotificationBlob count={pendingCount} label="pending requests" />
+            )}
           </button>
         </div>
 
