@@ -144,6 +144,7 @@ export default function SharedCalendarView({
     const containerRect = containerRef.current?.getBoundingClientRect();
     if (!containerRect) return;
     const top = rect.bottom - containerRect.top + 6;
+    // 220 ≈ popover card width (w-52 = 208px) + a small margin — keep the card within bounds
     const left = Math.min(rect.left - containerRect.left, containerRect.width - 220);
     setPopover({ entry, isOwnEntry, nonWorkingDays, top, left });
   }
