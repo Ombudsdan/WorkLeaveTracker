@@ -23,6 +23,8 @@ const config: Config = {
     "components/**/*.tsx",
     "types/index.ts",
     "!components/Providers.tsx",
+    "!components/**/*.test.tsx",
+    "!components/**/*.test.ts",
   ],
   coverageThreshold: {
     global: {

@@ -2,115 +2,17 @@
 import { useState, useMemo, useEffect } from "react";
 import { LeaveStatus, LeaveType, BankHolidayHandling } from "@/types";
 import type { PublicUser, BankHolidayEntry } from "@/types";
-import { STATUS_DOT } from "@/variables/colours";
+import { STATUS_DOT, STATUS_HEX_COLORS } from "@/variables/colours";
 import { calcLeaveSummary } from "@/utils/leaveCalc";
 import { countEntryDays, getActiveYearAllowance, formatYearWindow } from "@/utils/dateHelpers";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { SICK_LEAVE_ENABLED } from "@/utils/features";
+import DonutChart from "@/components/molecules/DonutChart";
+import type { DonutSegment } from "@/components/molecules/DonutChart";
 
 interface SummaryCardProps {
   user: PublicUser;
   bankHolidays: BankHolidayEntry[];
-}
-
-// Chart segment colours — match the Tailwind status colours used elsewhere
-const DONUT_COLORS = {
-  approved: "#86efac", // green-300
-  requested: "#93c5fd", // blue-300
-  planned: "#fde047", // yellow-300
-} as const;
-
-// ---------------------------------------------------------------------------
-// Single-ring donut (approved → requested → planned, no remaining segment)
-// ---------------------------------------------------------------------------
-
-interface DonutSegment {
-  value: number;
-  color: string;
-}
-
-function buildArcPath(
-  cx: number,
-  cy: number,
-  r: number,
-  startAngle: number,
-  endAngle: number
-): string {
-  const toRad = (deg: number) => (deg * Math.PI) / 180;
-  const x1 = cx + r * Math.cos(toRad(startAngle));
-  const y1 = cy + r * Math.sin(toRad(startAngle));
-  const x2 = cx + r * Math.cos(toRad(endAngle));
-  const y2 = cy + r * Math.sin(toRad(endAngle));
-  const largeArc = endAngle - startAngle > 180 ? 1 : 0;
-  return `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}`;
-}
-
-function SingleRingDonut({
-  segments,
-  total,
-  centerValue,
-}: {
-  segments: DonutSegment[];
-  total: number;
-  centerValue: number;
-}) {
-  const cx = 50;
-  const cy = 50;
-  const R = 38;
-  const strokeWidth = 14;
-
-  const paths = useMemo(
-    () =>
-      segments
-        .filter((s) => s.value > 0 && total > 0)
-        .reduce<{ els: React.ReactNode[]; angle: number }>(
-          ({ els, angle }, seg, i) => {
-            const pct = seg.value / total;
-            const endAngle = angle + pct * 360;
-            const el =
-              pct >= 1 ? (
-                <circle
-                  key={i}
-                  cx={cx}
-                  cy={cy}
-                  r={R}
-                  fill="none"
-                  stroke={seg.color}
-                  strokeWidth={strokeWidth}
-                />
-              ) : (
-                <path
-                  key={i}
-                  fill="none"
-                  stroke={seg.color}
-                  strokeWidth={strokeWidth}
-                  d={buildArcPath(cx, cy, R, angle, endAngle)}
-                />
-              );
-            return { els: [...els, el], angle: endAngle };
-          },
-          { els: [], angle: -90 }
-        ).els,
-    [segments, total]
-  );
-
-  return (
-    <svg viewBox="0 0 100 100" className="w-28 h-28 shrink-0">
-      {/* Track (gray background ring) */}
-      <circle cx={cx} cy={cy} r={R} fill="none" stroke="#f3f4f6" strokeWidth={strokeWidth} />
-      {paths}
-      {/* Centre: remaining days (x=cx, y=cy — vertically centred now that the label is removed) */}
-      <text
-        x={cx}
-        y={cy}
-        textAnchor="middle"
-        dominantBaseline="middle"
-        style={{ fontSize: 16, fontWeight: "bold", fill: "#111827" }}
-      >
-        {centerValue}
-      </text>
-    </svg>
-  );
 }
 
 // ---------------------------------------------------------------------------
@@ -172,9 +74,9 @@ export default function SummaryCard({ user, bankHolidays }: SummaryCardProps) {
   // Single ring: approved → requested → planned; denominator is effective total
   // so the gray track represents the remaining bookable budget
   const ringSegments: DonutSegment[] = [
-    { value: summary.approved, color: DONUT_COLORS.approved },
-    { value: summary.requested, color: DONUT_COLORS.requested },
-    { value: summary.planned, color: DONUT_COLORS.planned },
+    { value: summary.approved, color: STATUS_HEX_COLORS[LeaveStatus.Approved] },
+    { value: summary.requested, color: STATUS_HEX_COLORS[LeaveStatus.Requested] },
+    { value: summary.planned, color: STATUS_HEX_COLORS[LeaveStatus.Planned] },
   ];
 
   const statusRows: { label: string; status: LeaveStatus; count: number }[] = [
@@ -238,13 +140,15 @@ export default function SummaryCard({ user, bankHolidays }: SummaryCardProps) {
 
       {activeTab === "holiday" ? (
         <>
-          {/* Donut + status key */}
+          {/* Half-donut + status key */}
           <div className="flex items-center gap-4 mb-4">
-            <SingleRingDonut
-              segments={ringSegments}
-              total={Math.max(effectiveTotal, 1)}
-              centerValue={remaining}
-            />
+            <div className="w-28 shrink-0">
+              <DonutChart
+                segments={ringSegments}
+                total={Math.max(effectiveTotal, 1)}
+                centerValue={remaining}
+              />
+            </div>
             <div className="flex-1 space-y-1.5">
               {statusRows.map(({ label, status, count }) => (
                 <div key={status} className="flex justify-between text-sm">

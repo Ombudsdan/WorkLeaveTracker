@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { Menu, X } from "lucide-react";
+import NotificationBlob from "@/components/atoms/NotificationBlob";
 
 interface NavBarProps {
   activePage: "dashboard" | "profile" | "connections" | "annual-planner";
@@ -35,30 +36,18 @@ export default function NavBar({ activePage, pendingRequestCount = 0 }: NavBarPr
           Dashboard
         </a>
         <a
-          href="/profile"
-          className={`relative flex items-center gap-1 ${
-            activePage === "profile"
-              ? "text-indigo-700 font-semibold"
-              : "text-gray-600 hover:text-indigo-700"
-          }`}
-          aria-label={`Profile${pendingRequestCount > 0 ? ` (${pendingRequestCount} pending)` : ""}`}
-        >
-          Profile
-          {pendingRequestCount > 0 && (
-            <span className="inline-flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full h-4 min-w-4 px-1 leading-none">
-              {pendingRequestCount}
-            </span>
-          )}
-        </a>
-        <a
           href="/connections"
-          className={
+          className={`relative flex items-center gap-1 ${
             activePage === "connections"
               ? "text-indigo-700 font-semibold"
               : "text-gray-600 hover:text-indigo-700"
-          }
+          }`}
+          aria-label={`Connections${pendingRequestCount > 0 ? ` (${pendingRequestCount} pending)` : ""}`}
         >
           Connections
+          {pendingRequestCount > 0 && (
+            <NotificationBlob count={pendingRequestCount} label="pending requests" />
+          )}
         </a>
         <a
           href="/annual-planner"
@@ -69,6 +58,16 @@ export default function NavBar({ activePage, pendingRequestCount = 0 }: NavBarPr
           }
         >
           Annual Planner
+        </a>
+        <a
+          href="/profile"
+          className={
+            activePage === "profile"
+              ? "text-indigo-700 font-semibold"
+              : "text-gray-600 hover:text-indigo-700"
+          }
+        >
+          Profile
         </a>
         {session && (
           <>
@@ -110,31 +109,18 @@ export default function NavBar({ activePage, pendingRequestCount = 0 }: NavBarPr
               Dashboard
             </a>
             <a
-              href="/profile"
+              href="/connections"
               onClick={closeMenu}
               className={`flex items-center gap-1 ${
-                activePage === "profile"
+                activePage === "connections"
                   ? "text-indigo-700 font-semibold"
                   : "text-gray-600 hover:text-indigo-700"
               }`}
             >
-              Profile
-              {pendingRequestCount > 0 && (
-                <span className="inline-flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full h-4 min-w-4 px-1 leading-none">
-                  {pendingRequestCount}
-                </span>
-              )}
-            </a>
-            <a
-              href="/connections"
-              onClick={closeMenu}
-              className={
-                activePage === "connections"
-                  ? "text-indigo-700 font-semibold"
-                  : "text-gray-600 hover:text-indigo-700"
-              }
-            >
               Connections
+              {pendingRequestCount > 0 && (
+                <NotificationBlob count={pendingRequestCount} label="pending requests" />
+              )}
             </a>
             <a
               href="/annual-planner"
@@ -146,6 +132,17 @@ export default function NavBar({ activePage, pendingRequestCount = 0 }: NavBarPr
               }
             >
               Annual Planner
+            </a>
+            <a
+              href="/profile"
+              onClick={closeMenu}
+              className={
+                activePage === "profile"
+                  ? "text-indigo-700 font-semibold"
+                  : "text-gray-600 hover:text-indigo-700"
+              }
+            >
+              Profile
             </a>
             {session && (
               <>

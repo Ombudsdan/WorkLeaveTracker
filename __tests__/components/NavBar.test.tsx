@@ -183,7 +183,7 @@ describe("NavBar — mobile menu interactions", () => {
     expect(mockSignOutFn).toHaveBeenCalledWith({ callbackUrl: "/login" });
   });
 
-  it("shows Profile link with badge in mobile menu when there are pending requests", async () => {
+  it("shows Connections link with badge in mobile menu when there are pending requests", async () => {
     render(<NavBar activePage="dashboard" pendingRequestCount={2} />);
     await userEvent.click(screen.getByRole("button", { name: "Toggle menu" }));
     // Badge should appear in both desktop and mobile nav
@@ -206,7 +206,7 @@ describe("NavBar — mobile menu interactions", () => {
   });
 });
 
-describe("NavBar — profile notification badge", () => {
+describe("NavBar — connections notification badge", () => {
   beforeEach(() => {
     mockUseSession.mockReturnValue({ data: null });
   });
@@ -216,7 +216,7 @@ describe("NavBar — profile notification badge", () => {
     expect(screen.queryByText("0")).toBeNull();
   });
 
-  it("shows the badge count on the Profile link when pendingRequestCount > 0", () => {
+  it("shows the badge count on the Connections link when pendingRequestCount > 0", () => {
     render(<NavBar activePage="dashboard" pendingRequestCount={3} />);
     expect(screen.getAllByText("3").length).toBeGreaterThan(0);
   });
