@@ -53,6 +53,12 @@ export default function ConnectionsPanel({
   const followers = allUsers.filter(
     (u) => u.id !== currentUser.id && (u.profile.pinnedUserIds ?? []).includes(currentUser.id)
   );
+  // Combined "My Connections" list: users I'm following appear first,
+  // followed by any followers who are not already in my pinned list.
+  const myConnections = [
+    ...connectedUsers,
+    ...followers.filter((f) => !pinnedIds.includes(f.id)),
+  ];
   const otherUsers = allUsers.filter((u) => u.id !== currentUser.id);
 
   async function handleAccept(requesterId: string) {
@@ -218,10 +224,10 @@ export default function ConnectionsPanel({
         </section>
       )}
 
-      {/* People I'm following */}
+      {/* My Connections */}
       <section className="bg-white rounded-2xl shadow p-5">
         <h4 className="font-semibold text-gray-700 text-sm uppercase tracking-wide mb-3 flex items-center gap-2">
-          People I&apos;m Following
+          My Connections
           <button
             onClick={() => setShowInfoModal(true)}
             aria-label="What are connections?"
@@ -230,11 +236,11 @@ export default function ConnectionsPanel({
             <Info size={14} />
           </button>
         </h4>
-        {connectedUsers.length === 0 ? (
-          <p className="text-sm text-gray-400">Not following anyone yet.</p>
+        {myConnections.length === 0 ? (
+          <p className="text-sm text-gray-400">No active connections yet.</p>
         ) : (
           <ul className="space-y-2">
-            {connectedUsers.map((u) => (
+            {myConnections.map((u) => (
               <li
                 key={u.id}
                 className="flex items-center justify-between bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2 text-sm"
@@ -245,46 +251,23 @@ export default function ConnectionsPanel({
                     ({u.profile.email})
                   </span>
                 </span>
-                <button
-                  onClick={() => handleUnpin(u.id)}
-                  className="text-xs text-red-500 hover:text-red-700 ml-3 cursor-pointer"
-                >
-                  Remove
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      {/* People following me */}
-      <section className="bg-white rounded-2xl shadow p-5">
-        <h4 className="font-semibold text-gray-700 text-sm uppercase tracking-wide mb-3">
-          People Following Me
-        </h4>
-        {followers.length === 0 ? (
-          <p className="text-sm text-gray-400">Nobody is following you yet.</p>
-        ) : (
-          <ul className="space-y-2">
-            {followers.map((u) => (
-              <li
-                key={u.id}
-                className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-sm"
-              >
-                <span className="text-green-800 font-medium">
-                  {u.profile.firstName} {u.profile.lastName}
-                  <span className="ml-1 text-green-600 font-normal text-xs">
-                    ({u.profile.email})
-                  </span>
-                </span>
-                <button
-                  onClick={() => handleRevokeFollower(u.id)}
-                  className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 ml-3 cursor-pointer"
-                  aria-label={`Revoke ${u.profile.firstName}'s access`}
-                >
-                  <ShieldOff size={13} />
-                  Revoke
-                </button>
+                {pinnedIds.includes(u.id) ? (
+                  <button
+                    onClick={() => handleUnpin(u.id)}
+                    className="text-xs text-red-500 hover:text-red-700 ml-3 cursor-pointer"
+                  >
+                    Remove
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleRevokeFollower(u.id)}
+                    className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 ml-3 cursor-pointer"
+                    aria-label={`Revoke ${u.profile.firstName}'s access`}
+                  >
+                    <ShieldOff size={13} />
+                    Revoke
+                  </button>
+                )}
               </li>
             ))}
           </ul>
@@ -305,6 +288,7 @@ export default function ConnectionsPanel({
                 ? `${revoker.profile.firstName} ${revoker.profile.lastName}`
                 : "Unknown user";
               const alreadySent = sentIds.includes(rc.userId);
+              const alreadyConnected = pinnedIds.includes(rc.userId);
               return (
                 <li
                   key={rc.userId}
@@ -316,7 +300,7 @@ export default function ConnectionsPanel({
                       Connection removed on {formatUtcDate(rc.date)}
                     </span>
                   </span>
-                  {alreadySent ? (
+                  {alreadyConnected ? null : alreadySent ? (
                     <span className="text-xs text-amber-600 font-medium ml-3">Pending</span>
                   ) : (
                     <button

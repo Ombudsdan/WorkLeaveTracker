@@ -7,7 +7,6 @@ import type { PublicUser, LeaveEntry, BankHolidayEntry } from "@/types";
 import NavBar from "@/components/NavBar";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import SessionExpiredScreen from "@/components/SessionExpiredScreen";
-import UserSelector from "@/components/dashboard/UserSelector";
 import SummaryCard from "@/components/dashboard/SummaryCard";
 import LeaveList from "@/components/dashboard/LeaveList";
 import CalendarView from "@/components/dashboard/CalendarView";
@@ -28,9 +27,7 @@ export default function DashboardPage() {
   const router = useRouter();
 
   const [currentUser, setCurrentUser] = useState<PublicUser | null>(null);
-  const [allUsers, setAllUsers] = useState<PublicUser[]>([]);
   const [bankHolidays, setBankHolidays] = useState<BankHolidayEntry[]>([]);
-  const [viewingUserId, setViewingUserId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [addModalInitialDate, setAddModalInitialDate] = useState<string | undefined>(undefined);
   const [editingEntry, setEditingEntry] = useState<LeaveEntry | null>(null);
@@ -133,12 +130,6 @@ export default function DashboardPage() {
     );
   }
 
-  const displayedUser = viewingUserId
-    ? (allUsers.find((user) => user.id === viewingUserId) ?? currentUser)
-    : currentUser;
-
-  const isOwnProfile = !viewingUserId || viewingUserId === currentUser.id;
-
   const allowanceWarning = getYearAllowanceWarning(currentUser);
   /** The year we need to configure if the warning is visible */
   const nextAllowanceYear = (() => {
@@ -169,18 +160,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Tab strip — only rendered when the user has pinned connections */}
-        {(currentUser.profile.pinnedUserIds ?? []).length > 0 && (
-          <div className="bg-white rounded-2xl shadow mb-6 border-b border-gray-200 overflow-hidden">
-            <UserSelector
-              currentUser={currentUser}
-              allUsers={allUsers}
-              viewingUserId={viewingUserId}
-              onSelectUser={setViewingUserId}
-            />
-          </div>
-        )}
-
         {/* Mobile-only toggle between Upcoming Leave list and Calendar */}
         <div className="flex lg:hidden mb-4 bg-white rounded-xl shadow border border-gray-100 overflow-hidden">
           <button
@@ -207,31 +186,29 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* Add Leave button — shown above the layout when viewing own profile */}
-        {isOwnProfile && (
-          <div className="flex justify-end mb-4">
-            <button
-              onClick={() => {
-                setAddModalInitialDate(undefined);
-                setShowAddModal(true);
-              }}
-              className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-4 py-1.5 rounded-lg hover:bg-indigo-700 transition font-medium cursor-pointer"
-            >
-              <Plus size={14} />
-              Add Leave
-            </button>
-          </div>
-        )}
+        {/* Add Leave button */}
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={() => {
+              setAddModalInitialDate(undefined);
+              setShowAddModal(true);
+            }}
+            className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-4 py-1.5 rounded-lg hover:bg-indigo-700 transition font-medium cursor-pointer"
+          >
+            <Plus size={14} />
+            Add Leave
+          </button>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div
             className={`lg:col-span-1 space-y-4 ${mobileView === "list" ? "block" : "hidden"} lg:block`}
           >
-            <SummaryCard user={displayedUser} bankHolidays={bankHolidays} />
+            <SummaryCard user={currentUser} bankHolidays={bankHolidays} />
             <LeaveList
-              user={displayedUser}
+              user={currentUser}
               bankHolidays={bankHolidays}
-              isOwnProfile={isOwnProfile}
+              isOwnProfile={true}
               onEdit={setEditingEntry}
               onDelete={handleDeleteEntry}
             />
@@ -241,15 +218,15 @@ export default function DashboardPage() {
             className={`lg:col-span-2 ${mobileView === "calendar" ? "block" : "hidden"} lg:block`}
           >
             <CalendarView
-              user={displayedUser}
+              user={currentUser}
               bankHolidays={bankHolidays}
-              isOwnProfile={isOwnProfile}
+              isOwnProfile={true}
               onAdd={(date) => {
                 setAddModalInitialDate(date);
                 setShowAddModal(true);
               }}
-              onEdit={isOwnProfile ? setEditingEntry : undefined}
-              onDelete={isOwnProfile ? handleDeleteEntry : undefined}
+              onEdit={setEditingEntry}
+              onDelete={handleDeleteEntry}
             />
           </div>
         </div>
@@ -302,7 +279,6 @@ export default function DashboardPage() {
     sessionId: string | null | undefined
   ): "redirected" | "found" | "not_found" {
     setBankHolidays(holidays);
-    setAllUsers(users);
     const me = users.find(
       (u) =>
         (sessionId != null && u.id === sessionId) ||
@@ -342,13 +318,9 @@ export default function DashboardPage() {
     }
   }
 
-  /** Update the current user's entries in both currentUser and allUsers state. */
+  /** Update the current user's entries in the currentUser state. */
   function applyEntryUpdate(updater: (entries: LeaveEntry[]) => LeaveEntry[]) {
-    const userId = currentUser?.id;
     setCurrentUser((prev) => (prev ? { ...prev, entries: updater(prev.entries) } : prev));
-    setAllUsers((prev) =>
-      prev.map((u) => (u.id === userId ? { ...u, entries: updater(u.entries) } : u))
-    );
   }
 
   async function handleSaveWarningAllowance(ya: YearAllowance) {
