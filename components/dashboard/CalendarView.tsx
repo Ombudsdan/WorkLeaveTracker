@@ -230,23 +230,33 @@ export default function CalendarView({
 
     const todayRing = isToday ? "ring-2 ring-indigo-500" : "";
 
+    // Small, high-contrast date badge pinned to the top-right corner of every cell
+    const dateBadge = (
+      <span
+        aria-hidden="true"
+        className="absolute top-0.5 right-0.5 min-w-[1.125rem] h-[1.125rem] px-0.5 flex items-center justify-center bg-gray-900 text-white text-[9px] font-bold rounded-full pointer-events-none z-10 shadow-sm leading-none"
+      >
+        {day}
+      </span>
+    );
+
     if (layout.kind === "empty") {
       const isClickable = !isNWD && !isBankHoliday && isOwnProfile && !!onAdd;
       return (
         <div
           key={day}
-          className={`relative aspect-square rounded-lg overflow-hidden text-xs font-medium transition ${isClickable ? "cursor-pointer hover:ring-2 hover:ring-indigo-300" : "cursor-default"} ${defaultClass} ${todayRing}`}
+          className={`group relative aspect-square rounded-lg overflow-hidden text-xs font-medium transition ${isClickable ? "cursor-pointer hover:ring-2 hover:ring-indigo-300" : "cursor-default"} ${defaultClass} ${todayRing}`}
           onClick={isClickable ? () => onAdd!(dateStr) : undefined}
         >
-          <div className="h-full flex flex-col items-center justify-center">
-            <span>{day}</span>
+          {dateBadge}
+          <div className="h-full flex flex-col items-center justify-end pb-0.5">
             {isBankHoliday && (
-              <span className="text-purple-400 text-[8px] leading-none truncate w-full text-center px-0.5">
+              <span className="text-purple-400 text-[8px] leading-none truncate w-full text-center px-0.5 opacity-0 group-hover:opacity-100 wide:opacity-100 transition-opacity">
                 {bankHolidayName ?? "BH"}
               </span>
             )}
             {isWeekdayNWD && (
-              <span className="text-gray-400 text-[8px] leading-none truncate w-full text-center px-0.5">
+              <span className="text-gray-400 text-[8px] leading-none truncate w-full text-center px-0.5 opacity-0 group-hover:opacity-100 wide:opacity-100 transition-opacity">
                 Non-Working
               </span>
             )}
@@ -261,18 +271,18 @@ export default function CalendarView({
       return (
         <div
           key={day}
-          className={`relative aspect-square rounded-lg overflow-hidden text-xs font-medium transition cursor-pointer ${getCalendarEntryClass(e)} ${todayRing}`}
+          className={`group relative aspect-square rounded-lg overflow-hidden text-xs font-medium transition cursor-pointer ${getCalendarEntryClass(e)} ${todayRing}`}
           onClick={(ev) => handleCellClick(e, ev.currentTarget as HTMLElement)}
           title={label}
         >
-          <div className="h-full flex flex-col items-center justify-center">
-            <span>{day}</span>
-            {label && (
-              <span className="text-[7px] leading-tight truncate w-full text-center px-0.5 opacity-80">
+          {dateBadge}
+          {label && (
+            <div className="h-full flex flex-col justify-end pb-0.5 px-0.5">
+              <span className="text-[7px] leading-tight truncate w-full text-center opacity-0 group-hover:opacity-100 wide:opacity-100 transition-opacity">
                 {label}
               </span>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       );
     }
@@ -283,16 +293,17 @@ export default function CalendarView({
       return (
         <div
           key={day}
-          className={`relative aspect-square rounded-lg overflow-hidden text-xs font-medium transition cursor-pointer ${todayRing}`}
+          className={`group relative aspect-square rounded-lg overflow-hidden text-xs font-medium transition cursor-pointer ${todayRing}`}
           title={label}
         >
+          {dateBadge}
           <div className="flex flex-col h-full">
             <div
               className={`flex-1 flex items-center justify-center overflow-hidden px-0.5 ${getCalendarEntryClass(e)}`}
               onClick={(ev) => handleCellClick(e, ev.currentTarget as HTMLElement)}
             >
               {label && (
-                <span className="text-[7px] leading-tight text-center truncate w-full">
+                <span className="text-[7px] leading-tight text-center truncate w-full opacity-0 group-hover:opacity-100 wide:opacity-100 transition-opacity">
                   {label}
                 </span>
               )}
@@ -300,11 +311,6 @@ export default function CalendarView({
             <div
               className={`flex-1 flex items-center justify-center ${defaultClass || CALENDAR_CELL_DEFAULT}`}
             />
-          </div>
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <span className="w-4 h-4 rounded-full bg-white/90 flex items-center justify-center text-[9px] font-bold text-gray-700 shadow-sm">
-              {day}
-            </span>
           </div>
         </div>
       );
@@ -316,9 +322,10 @@ export default function CalendarView({
       return (
         <div
           key={day}
-          className={`relative aspect-square rounded-lg overflow-hidden text-xs font-medium transition cursor-pointer ${todayRing}`}
+          className={`group relative aspect-square rounded-lg overflow-hidden text-xs font-medium transition cursor-pointer ${todayRing}`}
           title={label}
         >
+          {dateBadge}
           <div className="flex flex-col h-full">
             <div
               className={`flex-1 flex items-center justify-center ${defaultClass || CALENDAR_CELL_DEFAULT}`}
@@ -328,16 +335,11 @@ export default function CalendarView({
               onClick={(ev) => handleCellClick(e, ev.currentTarget as HTMLElement)}
             >
               {label && (
-                <span className="text-[7px] leading-tight text-center truncate w-full">
+                <span className="text-[7px] leading-tight text-center truncate w-full opacity-0 group-hover:opacity-100 wide:opacity-100 transition-opacity">
                   {label}
                 </span>
               )}
             </div>
-          </div>
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <span className="w-4 h-4 rounded-full bg-white/90 flex items-center justify-center text-[9px] font-bold text-gray-700 shadow-sm">
-              {day}
-            </span>
           </div>
         </div>
       );
@@ -350,15 +352,16 @@ export default function CalendarView({
     return (
       <div
         key={day}
-        className={`relative aspect-square rounded-lg overflow-hidden text-xs font-medium transition ${todayRing}`}
+        className={`group relative aspect-square rounded-lg overflow-hidden text-xs font-medium transition ${todayRing}`}
       >
+        {dateBadge}
         <div className="flex flex-col h-full">
           <div
             className={`flex-1 flex items-center justify-center overflow-hidden px-0.5 cursor-pointer ${getCalendarEntryClass(topEntry)}`}
             onClick={(e) => handleCellClick(topEntry, e.currentTarget as HTMLElement)}
           >
             {topLabel && (
-              <span className="text-[7px] leading-tight text-center truncate w-full">
+              <span className="text-[7px] leading-tight text-center truncate w-full opacity-0 group-hover:opacity-100 wide:opacity-100 transition-opacity">
                 {topLabel}
               </span>
             )}
@@ -368,16 +371,11 @@ export default function CalendarView({
             onClick={(e) => handleCellClick(botEntry, e.currentTarget as HTMLElement)}
           >
             {botLabel && (
-              <span className="text-[7px] leading-tight text-center truncate w-full">
+              <span className="text-[7px] leading-tight text-center truncate w-full opacity-0 group-hover:opacity-100 wide:opacity-100 transition-opacity">
                 {botLabel}
               </span>
             )}
           </div>
-        </div>
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <span className="w-4 h-4 rounded-full bg-white/90 flex items-center justify-center text-[9px] font-bold text-gray-700 shadow-sm">
-            {day}
-          </span>
         </div>
       </div>
     );
