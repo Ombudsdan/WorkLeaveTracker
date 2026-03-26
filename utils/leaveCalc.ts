@@ -4,7 +4,6 @@ import {
   countWorkingDays,
   getActiveYearAllowance,
   getEntryDuration,
-  toIsoDate,
 } from "@/utils/dateHelpers";
 
 export interface LeaveSummary {
@@ -60,14 +59,20 @@ export function calcLeaveSummary(
   }
 
   const sm = activeYa.holidayStartMonth ?? 1;
-  const start = new Date(activeYa.year, sm - 1, 1);
-  const endExclusive = new Date(activeYa.year + 1, sm - 1, 1);
+  // ISO date strings for year boundaries — avoids local-vs-UTC midnight mismatches
+  // that can occur in BST (UTC+1) when comparing new Date("YYYY-MM-DD") (UTC) against
+  // new Date(year, month, day) (local).
+  const smPadded = String(sm).padStart(2, "0");
+  const yearStartStr = `${activeYa.year}-${smPadded}-01`;
+  const yearEndStr = `${activeYa.year + 1}-${smPadded}-01`; // exclusive upper bound
 
-  // Bank holidays that fall within this holiday year on working days
+  // Bank holidays that fall within this holiday year on working days.
+  // Use string comparison for range checks to stay timezone-agnostic.
   const relevantBankHolidays = bankHolidays.filter((d) => {
-    const date = new Date(d);
     return (
-      date >= start && date < endExclusive && !user.profile.nonWorkingDays.includes(date.getDay())
+      d >= yearStartStr &&
+      d < yearEndStr &&
+      !user.profile.nonWorkingDays.includes(new Date(d).getDay())
     );
   });
 
@@ -82,9 +87,8 @@ export function calcLeaveSummary(
 
   for (const entry of user.entries) {
     if (entry.type !== LeaveType.Holiday) continue;
-    const es = new Date(entry.startDate);
-    const ee = new Date(entry.endDate);
-    if (ee < start || es >= endExclusive) continue;
+    // String comparison: ISO date strings sort lexicographically == chronologically
+    if (entry.endDate < yearStartStr || entry.startDate >= yearEndStr) continue;
 
     const days =
       getEntryDuration(entry) !== LeaveDuration.Full
@@ -167,36 +171,43 @@ export function calcMonthlyLeaveBreakdown(
   if (!activeYa) return [];
 
   const sm = activeYa.holidayStartMonth ?? 1;
-  const yearStart = new Date(activeYa.year, sm - 1, 1);
-  const yearEndExclusive = new Date(activeYa.year + 1, sm - 1, 1);
+  // Timezone-agnostic ISO string boundaries — same approach as calcLeaveSummary
+  const smPadded = String(sm).padStart(2, "0");
+  const yearStartStr = `${activeYa.year}-${smPadded}-01`;
+  const yearEndStr = `${activeYa.year + 1}-${smPadded}-01`; // exclusive
 
-  // Reuse the same bank-holiday filter as calcLeaveSummary for consistency
+  // Reuse the same bank-holiday filter as calcLeaveSummary for consistency.
+  // String comparison avoids local-vs-UTC midnight issues (e.g. BST).
   const relevantBankHolidays = bankHolidays.filter((d) => {
-    const date = new Date(d);
     return (
-      date >= yearStart &&
-      date < yearEndExclusive &&
-      !user.profile.nonWorkingDays.includes(date.getDay())
+      d >= yearStartStr &&
+      d < yearEndStr &&
+      !user.profile.nonWorkingDays.includes(new Date(d).getDay())
     );
   });
 
   const result: MonthlyLeaveData[] = [];
 
+  // Derive the first month of the holiday year from the year/sm values directly
+  // so we never depend on a locally-constructed Date object for iteration.
   for (let i = 0; i < 12; i++) {
-    const monthDate = new Date(yearStart.getFullYear(), yearStart.getMonth() + i, 1);
-    const year = monthDate.getFullYear();
-    const month = monthDate.getMonth();
+    // JavaScript handles month overflow (e.g. month 13 → next year) automatically.
+    const monthDate = new Date(activeYa.year, sm - 1 + i, 1);
+    const year = monthDate.getFullYear(); // local year — correct for month labels
+    const month = monthDate.getMonth(); // local month — correct for month labels
 
-    const monthStart = new Date(year, month, 1);
-    const monthEndDate = new Date(year, month + 1, 0); // last day of month
-    const monthStartStr = toIsoDate(monthStart);
-    const monthEndStr = toIsoDate(monthEndDate);
+    // Build ISO strings for this month's boundaries without converting back through
+    // toIsoDate (which calls toISOString → UTC, losing an hour in BST).
+    const monthPadded = String(month + 1).padStart(2, "0");
+    const lastDayOfMonth = new Date(year, month + 1, 0).getDate(); // local getDate() ✓
+    const monthStartStr = `${year}-${monthPadded}-01`;
+    const monthEndStr = `${year}-${monthPadded}-${String(lastDayOfMonth).padStart(2, "0")}`;
 
-    // Bank holidays in this month from the year-level relevant set
-    const monthBankHolidays = relevantBankHolidays.filter((d) => {
-      const date = new Date(d);
-      return date >= monthStart && date <= monthEndDate;
-    });
+    // Bank holidays in this month from the year-level relevant set.
+    // String comparison: ISO dates sort lexicographically == chronologically.
+    const monthBankHolidays = relevantBankHolidays.filter(
+      (d) => d >= monthStartStr && d <= monthEndStr
+    );
 
     let approved = 0;
     let requested = 0;
@@ -204,11 +215,8 @@ export function calcMonthlyLeaveBreakdown(
     const monthEntries: LeaveEntry[] = [];
 
     for (const entry of user.entries) {
-      const entryStart = new Date(entry.startDate);
-      const entryEnd = new Date(entry.endDate);
-
-      // Skip entries that don't overlap this month
-      if (entryEnd < monthStart || entryStart > monthEndDate) continue;
+      // Skip entries that don't overlap this month (string comparison)
+      if (entry.endDate < monthStartStr || entry.startDate > monthEndStr) continue;
 
       // All entry types are included in the list; only holiday days count in the bar
       monthEntries.push(entry);
@@ -221,8 +229,8 @@ export function calcMonthlyLeaveBreakdown(
         days = 0.5;
       } else {
         // Clip the entry date range to this month's bounds before counting
-        const clippedStart = entryStart < monthStart ? monthStartStr : entry.startDate;
-        const clippedEnd = entryEnd > monthEndDate ? monthEndStr : entry.endDate;
+        const clippedStart = entry.startDate < monthStartStr ? monthStartStr : entry.startDate;
+        const clippedEnd = entry.endDate > monthEndStr ? monthEndStr : entry.endDate;
         days = countWorkingDays(
           clippedStart,
           clippedEnd,

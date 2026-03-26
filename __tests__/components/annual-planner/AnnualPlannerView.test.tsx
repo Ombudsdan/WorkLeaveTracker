@@ -73,9 +73,11 @@ describe("AnnualPlannerView — bar chart", () => {
 
   it("renders the colour legend with all four categories", () => {
     render(<AnnualPlannerView user={baseUser} bankHolidays={[]} />);
-    expect(screen.getByText("Approved")).toBeInTheDocument();
-    expect(screen.getByText("Requested")).toBeInTheDocument();
-    expect(screen.getByText("Planned")).toBeInTheDocument();
+    // Use getAllByText because "Approved", "Requested", "Planned" also appear in the
+    // Year Summary section added for calcLeaveSummary consistency.
+    expect(screen.getAllByText("Approved").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Requested").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Planned").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Bank Holidays")).toBeInTheDocument();
   });
 
@@ -548,5 +550,74 @@ describe("AnnualPlannerView — within context checks", () => {
     const bars = screen.getAllByTestId("monthly-leave-bar");
     // First bar (January) should contain the text "January"
     expect(within(bars[0]).getByText("January")).toBeInTheDocument();
+  });
+});
+
+describe("AnnualPlannerView — year summary section", () => {
+  it("renders the 'Year Summary' heading", () => {
+    render(<AnnualPlannerView user={baseUser} bankHolidays={[]} />);
+    expect(screen.getByText("Year Summary")).toBeInTheDocument();
+  });
+
+  it("shows total entitlement from calcLeaveSummary", () => {
+    render(<AnnualPlannerView user={baseUser} bankHolidays={[]} />);
+    const summary = screen.getByTestId("year-summary");
+    expect(within(summary).getByText("Total Entitlement")).toBeInTheDocument();
+    expect(within(summary).getByText("Remaining")).toBeInTheDocument();
+  });
+
+  it("shows remaining days from calcLeaveSummary", () => {
+    const user: PublicUser = {
+      ...baseUser,
+      entries: [
+        {
+          id: "e1",
+          startDate: "2026-03-09",
+          endDate: "2026-03-13",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    render(<AnnualPlannerView user={user} bankHolidays={[]} />);
+    const summary = screen.getByTestId("year-summary");
+    // 25 total - 5 approved = 20 remaining
+    expect(within(summary).getByText(/20 days/)).toBeInTheDocument();
+  });
+
+  it("shows bank holiday count from calcLeaveSummary when there are bank holidays", () => {
+    // 2026-05-04 is a Monday (Early May bank holiday)
+    render(<AnnualPlannerView user={baseUser} bankHolidays={[bh("2026-05-04")]} />);
+    const summary = screen.getByTestId("year-summary");
+    expect(within(summary).getByText(/bank holidays on working days/i)).toBeInTheDocument();
+  });
+
+  it("does not show bank holiday row when there are no bank holidays", () => {
+    render(<AnnualPlannerView user={baseUser} bankHolidays={[]} />);
+    const summary = screen.getByTestId("year-summary");
+    expect(within(summary).queryByText(/bank holidays on working days/i)).not.toBeInTheDocument();
+  });
+
+  it("shows remaining in red when negative", () => {
+    const user: PublicUser = {
+      ...baseUser,
+      yearAllowances: [
+        { year: 2026, company: "Acme", holidayStartMonth: 1, core: 2, bought: 0, carried: 0 },
+      ],
+      entries: [
+        {
+          id: "e1",
+          startDate: "2026-03-09",
+          endDate: "2026-03-13",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    render(<AnnualPlannerView user={user} bankHolidays={[]} />);
+    const summary = screen.getByTestId("year-summary");
+    // 2 - 5 = -3 remaining — should have red text
+    const remaining = within(summary).getByText(/-3 days/);
+    expect(remaining.className).toContain("text-red-600");
   });
 });

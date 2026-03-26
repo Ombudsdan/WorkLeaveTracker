@@ -882,3 +882,64 @@ describe("calcMonthlyLeaveBreakdown — sick leave entries included in list", ()
     expect(march.totalCombined).toBe(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Timezone-safety: bank holidays on last day of a summer month
+// ---------------------------------------------------------------------------
+
+describe("calcMonthlyLeaveBreakdown — bank holiday on last day of summer month", () => {
+  // 2026-08-31 is a Monday (the August Bank Holiday).  In a UTC+1 (BST) browser,
+  // new Date(2026, 8, 0) (last day of August) is 23:00 UTC on 30 Aug, so comparing
+  // a UTC-midnight bank holiday date against it would silently drop the holiday.
+  // After the fix we use ISO string comparisons and this edge case is handled correctly.
+  it("counts the bank holiday on 2026-08-31 in August, not September or dropped", () => {
+    // 2026-08-31 is a Monday → working day for a Mon–Fri worker
+    const result = calcMonthlyLeaveBreakdown(baseUser, ["2026-08-31"]);
+    const aug = result.find((m) => m.month === 7)!; // August = index 7
+    const sep = result.find((m) => m.month === 8)!;
+    expect(aug.bankHolidays).toBe(1);
+    expect(sep.bankHolidays).toBe(0);
+  });
+
+  it("is consistent with calcLeaveSummary for a summer-month-end bank holiday", () => {
+    const summary = calcLeaveSummary(baseUser, ["2026-08-31"]);
+    const monthly = calcMonthlyLeaveBreakdown(baseUser, ["2026-08-31"]);
+    const totalMonthlyBankHols = monthly.reduce((sum, m) => sum + m.bankHolidays, 0);
+    expect(totalMonthlyBankHols).toBe(summary.bankHolidaysOnWorkingDays);
+  });
+});
+
+describe("calcLeaveSummary vs calcMonthlyLeaveBreakdown — approved days match", () => {
+  it("sum of monthly approved days equals calcLeaveSummary approved", () => {
+    const user: PublicUser = {
+      ...baseUser,
+      entries: [
+        {
+          id: "e1",
+          startDate: "2026-03-09",
+          endDate: "2026-03-13",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+        {
+          id: "e2",
+          startDate: "2026-06-01",
+          endDate: "2026-06-05",
+          status: LeaveStatus.Requested,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    const bankHols = ["2026-05-04", "2026-08-31"]; // May Day + Summer BH
+    const summary = calcLeaveSummary(user, bankHols);
+    const monthly = calcMonthlyLeaveBreakdown(user, bankHols);
+
+    const totalApproved = monthly.reduce((s, m) => s + m.approved, 0);
+    const totalRequested = monthly.reduce((s, m) => s + m.requested, 0);
+    const totalBankHols = monthly.reduce((s, m) => s + m.bankHolidays, 0);
+
+    expect(totalApproved).toBe(summary.approved);
+    expect(totalRequested).toBe(summary.requested);
+    expect(totalBankHols).toBe(summary.bankHolidaysOnWorkingDays);
+  });
+});
