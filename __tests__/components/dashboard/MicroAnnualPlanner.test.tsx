@@ -1,4 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import MicroAnnualPlanner from "@/components/dashboard/MicroAnnualPlanner";
 import { LeaveStatus, LeaveType } from "@/types";
 import type { PublicUser } from "@/types";
@@ -177,15 +178,15 @@ describe("MicroAnnualPlanner — leave coloring", () => {
     expect(greenBoxes).toHaveLength(0);
   });
 
-  it("marks bank holiday boxes as non-working (gray-100)", () => {
+  it("marks bank holiday boxes with the bank-holiday purple colour (bg-purple-100)", () => {
     render(
       <MicroAnnualPlanner user={alice} bankHolidays={[{ date: "2026-03-16", title: "Test BH" }]} />
     );
     const marchRow = screen.getByTestId("month-row-Mar");
-    // Day 16 is a bank holiday → should use bg-gray-100
+    // Day 16 is a bank holiday → should use bg-purple-100
     const boxes = within(marchRow).getAllByTestId("day-box");
     const day16Box = boxes[15]; // 0-indexed: day 16 is index 15
-    expect(day16Box.className).toContain("bg-gray-100");
+    expect(day16Box.className).toContain("bg-purple-100");
   });
 });
 
@@ -207,5 +208,99 @@ describe("MicroAnnualPlanner — April-start holiday year", () => {
     expect(rows[0]).toHaveAttribute("data-testid", "month-row-Apr");
     // Last row should be Mar
     expect(rows[11]).toHaveAttribute("data-testid", "month-row-Mar");
+  });
+});
+
+describe("MicroAnnualPlanner — grey colour swap", () => {
+  it("renders weekend boxes with the darker grey (bg-gray-300)", () => {
+    // Alice's nonWorkingDays = [0, 6]; March 2026 day 1 = Sun (dow=0) → weekend
+    render(<MicroAnnualPlanner user={alice} bankHolidays={[]} />);
+    const marchRow = screen.getByTestId("month-row-Mar");
+    const boxes = within(marchRow).getAllByTestId("day-box");
+    // Day 1 (Sun) = index 0 → weekend
+    expect(boxes[0].className).toContain("bg-gray-300");
+  });
+
+  it("renders working-day-no-leave boxes with the lighter grey (bg-gray-100)", () => {
+    // March 2026 day 2 = Mon (dow=1) → working day, no leave
+    render(<MicroAnnualPlanner user={alice} bankHolidays={[]} />);
+    const marchRow = screen.getByTestId("month-row-Mar");
+    const boxes = within(marchRow).getAllByTestId("day-box");
+    // Day 2 (Mon) = index 1 → working day with no leave
+    expect(boxes[1].className).toContain("bg-gray-100");
+    expect(boxes[1].className).not.toContain("bg-gray-300");
+  });
+});
+
+describe("MicroAnnualPlanner — legend", () => {
+  it("shows the Bank Holiday entry in the legend", () => {
+    render(<MicroAnnualPlanner user={alice} bankHolidays={[]} />);
+    expect(screen.getByText("Bank Holiday")).toBeInTheDocument();
+  });
+});
+
+describe("MicroAnnualPlanner — popovers", () => {
+  const aliceWithLeave: PublicUser = {
+    ...alice,
+    entries: [
+      {
+        id: "e1",
+        startDate: "2026-03-09",
+        endDate: "2026-03-09",
+        status: LeaveStatus.Approved,
+        type: LeaveType.Holiday,
+        notes: "Beach trip",
+      },
+    ],
+  };
+
+  it("shows a popover with leave info when clicking a leave box", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    render(<MicroAnnualPlanner user={aliceWithLeave} bankHolidays={[]} />);
+    const marchRow = screen.getByTestId("month-row-Mar");
+    const boxes = within(marchRow).getAllByTestId("day-box");
+    // Day 9 = index 8 → has approved leave
+    await user.click(boxes[8]);
+    const tooltip = screen.getByRole("tooltip");
+    expect(tooltip).toBeInTheDocument();
+    expect(tooltip.textContent).toMatch(/approved/i);
+  });
+
+  it("shows a popover with the bank holiday name when clicking a bank holiday box", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    render(
+      <MicroAnnualPlanner
+        user={alice}
+        bankHolidays={[{ date: "2026-03-16", title: "St Patrick's Day" }]}
+      />
+    );
+    const marchRow = screen.getByTestId("month-row-Mar");
+    const boxes = within(marchRow).getAllByTestId("day-box");
+    // Day 16 = index 15 → bank holiday
+    await user.click(boxes[15]);
+    const tooltip = screen.getByRole("tooltip");
+    expect(tooltip).toBeInTheDocument();
+    expect(tooltip.textContent).toContain("St Patrick's Day");
+  });
+
+  it("closes the popover when the Close button is clicked", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    render(<MicroAnnualPlanner user={aliceWithLeave} bankHolidays={[]} />);
+    const marchRow = screen.getByTestId("month-row-Mar");
+    const boxes = within(marchRow).getAllByTestId("day-box");
+    await user.click(boxes[8]);
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Close popover" }));
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  it("does not open a popover when clicking an empty working day", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    render(<MicroAnnualPlanner user={alice} bankHolidays={[]} />);
+    const marchRow = screen.getByTestId("month-row-Mar");
+    const boxes = within(marchRow).getAllByTestId("day-box");
+    // Day 2 (Mon) = index 1 → no leave, no bank holiday
+    await user.click(boxes[1]);
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });
 });

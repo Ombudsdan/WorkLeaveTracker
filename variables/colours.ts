@@ -10,6 +10,16 @@ export const STATUS_HEX_COLORS: Record<LeaveStatus, string> = {
   [LeaveStatus.Planned]: "#fde047", // yellow-300
 };
 
+/**
+ * Hex colour values matching the STATUS_DOT Tailwind classes.
+ * Used in inline style gradients (e.g. half-day circles in MiniCalendar).
+ */
+export const STATUS_DOT_HEX: Record<LeaveStatus, string> = {
+  [LeaveStatus.Approved]: "#22c55e", // green-500
+  [LeaveStatus.Requested]: "#3b82f6", // blue-500
+  [LeaveStatus.Planned]: "#facc15", // yellow-400
+};
+
 /** Tailwind classes for leave entry card borders and backgrounds */
 export const STATUS_COLORS: Record<LeaveStatus, string> = {
   [LeaveStatus.Planned]: "bg-yellow-100 text-yellow-800 border-yellow-300",

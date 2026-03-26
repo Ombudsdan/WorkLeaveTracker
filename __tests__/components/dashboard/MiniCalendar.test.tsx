@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import MiniCalendar from "@/components/dashboard/MiniCalendar";
-import { LeaveStatus, LeaveType } from "@/types";
+import { LeaveStatus, LeaveType, LeaveDuration } from "@/types";
 import type { PublicUser } from "@/types";
 
 // Fix date so tests are deterministic: 2026-03-15 (Sunday)
@@ -194,5 +195,200 @@ describe("MiniCalendar — leave days show colored dots", () => {
     };
     render(<MiniCalendar user={userOtherMonth} bankHolidays={[]} />);
     expect(screen.queryAllByTestId("leave-dot")).toHaveLength(0);
+  });
+});
+
+describe("MiniCalendar — month navigation", () => {
+  function setup() {
+    return userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+  }
+
+  it("renders Previous month and Next month buttons", () => {
+    render(<MiniCalendar user={alice} bankHolidays={[]} />);
+    expect(screen.getByRole("button", { name: "Previous month" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Next month" })).toBeInTheDocument();
+  });
+
+  it("navigates to the next month when Next month is clicked", async () => {
+    const user = setup();
+    render(<MiniCalendar user={alice} bankHolidays={[]} />);
+    await user.click(screen.getByRole("button", { name: "Next month" }));
+    // Should now show April 2026
+    expect(
+      screen.getByRole("button", { name: /April 2026.*open month-year picker/i })
+    ).toBeInTheDocument();
+  });
+
+  it("navigates to the previous month when Previous month is clicked", async () => {
+    const user = setup();
+    // Alice has entries in 2026, so min bound is at or before March 2026
+    // Give Alice a historical entry to ensure min goes back to 2025
+    const aliceWithHistory: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "eh",
+          startDate: "2025-06-01",
+          endDate: "2025-06-01",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    render(<MiniCalendar user={aliceWithHistory} bankHolidays={[]} />);
+    await user.click(screen.getByRole("button", { name: "Previous month" }));
+    expect(
+      screen.getByRole("button", { name: /February 2026.*open month-year picker/i })
+    ).toBeInTheDocument();
+  });
+
+  it("disables Previous month at the earliest navigable month", () => {
+    // With no historical entries, min = current month (March 2026) so at min already
+    render(<MiniCalendar user={alice} bankHolidays={[]} />);
+    expect(screen.getByRole("button", { name: "Previous month" })).toBeDisabled();
+  });
+
+  it("opens the MonthYearPicker when the label is clicked", async () => {
+    const user = setup();
+    render(<MiniCalendar user={alice} bankHolidays={[]} />);
+    await user.click(
+      screen.getByRole("button", { name: /March 2026.*open month-year picker/i })
+    );
+    expect(screen.getByRole("dialog", { name: "Month-year picker" })).toBeInTheDocument();
+  });
+});
+
+describe("MiniCalendar — bank holidays", () => {
+  it("renders bank holidays with the purple bg-purple-100 style", () => {
+    render(<MiniCalendar user={alice} bankHolidays={[{ date: "2026-03-16", title: "Good Friday" }]} />);
+    const bhDot = screen.getByTestId("bank-holiday-dot");
+    expect(bhDot).toBeInTheDocument();
+    expect(bhDot.className).toContain("bg-purple-100");
+  });
+
+  it("shows the day number inside the bank holiday dot", () => {
+    render(<MiniCalendar user={alice} bankHolidays={[{ date: "2026-03-16", title: "Good Friday" }]} />);
+    const bhDot = screen.getByTestId("bank-holiday-dot");
+    expect(bhDot.textContent).toBe("16");
+  });
+
+  it("shows a popover with the bank holiday name when clicked", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    render(<MiniCalendar user={alice} bankHolidays={[{ date: "2026-03-16", title: "Good Friday" }]} />);
+    await user.click(screen.getByTestId("bank-holiday-dot"));
+    const popover = screen.getByRole("tooltip");
+    expect(popover).toBeInTheDocument();
+    expect(popover.textContent).toContain("Good Friday");
+  });
+
+  it("shows Bank Holiday in the legend", () => {
+    render(<MiniCalendar user={alice} bankHolidays={[]} />);
+    expect(screen.getByText("Bank Holiday")).toBeInTheDocument();
+  });
+});
+
+describe("MiniCalendar — half-day circle rendering", () => {
+  it("renders a half-morning entry with a gradient style (top half coloured)", () => {
+    const aliceAM: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e-am",
+          startDate: "2026-03-16",
+          endDate: "2026-03-16",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfMorning,
+        },
+      ],
+    };
+    render(<MiniCalendar user={aliceAM} bankHolidays={[]} />);
+    const dots = screen.getAllByTestId("leave-dot");
+    expect(dots).toHaveLength(1);
+    // A half-morning should use a linear-gradient (not a solid background-color)
+    const style = dots[0].getAttribute("style") ?? "";
+    expect(style).toMatch(/linear-gradient/);
+  });
+
+  it("renders a half-afternoon entry with a gradient style (bottom half coloured)", () => {
+    const alicePM: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e-pm",
+          startDate: "2026-03-16",
+          endDate: "2026-03-16",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfAfternoon,
+        },
+      ],
+    };
+    render(<MiniCalendar user={alicePM} bankHolidays={[]} />);
+    const dots = screen.getAllByTestId("leave-dot");
+    expect(dots).toHaveLength(1);
+    const style = dots[0].getAttribute("style") ?? "";
+    expect(style).toMatch(/linear-gradient/);
+  });
+
+  it("renders a full-day entry with a solid background (no gradient)", () => {
+    const aliceFull: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e-full",
+          startDate: "2026-03-16",
+          endDate: "2026-03-16",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.Full,
+        },
+      ],
+    };
+    render(<MiniCalendar user={aliceFull} bankHolidays={[]} />);
+    const dots = screen.getAllByTestId("leave-dot");
+    expect(dots).toHaveLength(1);
+    const style = dots[0].getAttribute("style") ?? "";
+    // Full-day circle uses background-color, not gradient
+    expect(style).not.toMatch(/linear-gradient/);
+  });
+});
+
+describe("MiniCalendar — leave click popover", () => {
+  const aliceWithLeave: PublicUser = {
+    ...alice,
+    entries: [
+      {
+        id: "e1",
+        startDate: "2026-03-16",
+        endDate: "2026-03-16",
+        status: LeaveStatus.Approved,
+        type: LeaveType.Holiday,
+        notes: "Approved leave",
+      },
+    ],
+  };
+
+  it("shows a popover when a leave dot is clicked", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    render(<MiniCalendar user={aliceWithLeave} bankHolidays={[]} />);
+    await user.click(screen.getAllByTestId("leave-dot")[0]);
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+  });
+
+  it("popover contains the leave notes", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    render(<MiniCalendar user={aliceWithLeave} bankHolidays={[]} />);
+    await user.click(screen.getAllByTestId("leave-dot")[0]);
+    expect(screen.getByRole("tooltip").textContent).toContain("Approved leave");
+  });
+
+  it("closes the popover when the Close button is clicked", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    render(<MiniCalendar user={aliceWithLeave} bankHolidays={[]} />);
+    await user.click(screen.getAllByTestId("leave-dot")[0]);
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Close popover" }));
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });
 });

@@ -30,6 +30,7 @@ export default function DashboardPage() {
   const router = useRouter();
 
   const [currentUser, setCurrentUser] = useState<PublicUser | null>(null);
+  const [allUsers, setAllUsers] = useState<PublicUser[]>([]);
   const [activeProfileUser, setActiveProfileUser] = useState<PublicUser | null>(null);
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [bankHolidays, setBankHolidays] = useState<BankHolidayEntry[]>([]);
@@ -145,6 +146,10 @@ export default function DashboardPage() {
 
   const pendingConnectionRequests = (currentUser.profile.pendingPinRequestsReceived ?? []).length;
 
+  // Build the list of pinned users for the Connections widget
+  const pinnedIds = currentUser.profile.pinnedUserIds ?? [];
+  const pinnedUsers = allUsers.filter((u) => pinnedIds.includes(u.id));
+
   return (
     <div className="min-h-screen bg-gray-50">
       <NavBar activePage="dashboard" pendingRequestCount={pendingConnectionRequests} />
@@ -217,10 +222,10 @@ export default function DashboardPage() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          {/* Left column: mini-calendar, annual planner, leave list, connections */}
           <div
             className={`lg:col-span-2 space-y-4 ${mobileView === "list" ? "block" : "hidden"} lg:block`}
           >
-            <SummaryCard user={currentUser} bankHolidays={bankHolidays} />
             <MiniCalendar user={currentUser} bankHolidays={bankHolidays} />
             <MicroAnnualPlanner user={currentUser} bankHolidays={bankHolidays} />
             <LeaveList
@@ -240,19 +245,36 @@ export default function DashboardPage() {
                     </span>
                   )}
                 </div>
+                {pinnedUsers.length === 0 ? (
+                  <p className="text-xs text-gray-400 mb-2">No connections yet.</p>
+                ) : (
+                  <ul className="space-y-1.5 mb-3">
+                    {pinnedUsers.map((u) => (
+                      <li key={u.id} className="flex items-center gap-2 text-xs text-gray-700">
+                        <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-[9px] font-bold flex items-center justify-center shrink-0">
+                          {u.profile.firstName.charAt(0)}
+                          {u.profile.lastName.charAt(0)}
+                        </span>
+                        {u.profile.firstName} {u.profile.lastName}
+                      </li>
+                    ))}
+                  </ul>
+                )}
                 <Link
                   href="/connections"
                   className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
                 >
-                  View Connections →
+                  Manage Connections →
                 </Link>
               </div>
             )}
           </div>
 
+          {/* Right column: summary card + main calendar */}
           <div
-            className={`lg:col-span-3 ${mobileView === "calendar" ? "block" : "hidden"} lg:block`}
+            className={`lg:col-span-3 space-y-4 ${mobileView === "calendar" ? "block" : "hidden"} lg:block`}
           >
+            <SummaryCard user={currentUser} bankHolidays={bankHolidays} />
             <CalendarView
               user={currentUser}
               bankHolidays={bankHolidays}
@@ -315,6 +337,7 @@ export default function DashboardPage() {
     sessionId: string | null | undefined
   ): "redirected" | "found" | "not_found" {
     setBankHolidays(holidays);
+    setAllUsers(users);
     const me = users.find(
       (u) =>
         (sessionId != null && u.id === sessionId) ||
