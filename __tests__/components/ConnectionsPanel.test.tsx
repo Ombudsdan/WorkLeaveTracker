@@ -10,6 +10,7 @@ jest.mock("@/controllers/usersController", () => ({
     disconnect: jest.fn(),
     revokeConnection: jest.fn(),
     sendPinRequest: jest.fn(),
+    cancelPinRequest: jest.fn(),
     fetchAll: jest.fn(),
   },
 }));
@@ -209,7 +210,9 @@ describe("ConnectionsPanel — pending requests", () => {
       />
     );
     expect(screen.getByText(/awaiting approval/i)).toBeInTheDocument();
-    expect(screen.getByText("Pending")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /revoke request to bob/i })
+    ).toBeInTheDocument();
   });
 });
 
@@ -441,6 +444,70 @@ describe("ConnectionsPanel — interactions", () => {
     );
     await user.click(screen.getByRole("button", { name: /decline request from bob/i }));
     expect(screen.getByText("Failed to decline.")).toBeInTheDocument();
+  });
+
+  it("calls cancelPinRequest when Revoke Request is clicked", async () => {
+    const user = setup();
+    (usersController.cancelPinRequest as jest.Mock).mockResolvedValue({ ok: true });
+    (usersController.fetchAll as jest.Mock).mockResolvedValue([]);
+
+    const aliceWithSent: PublicUser = {
+      ...alice,
+      profile: { ...alice.profile, pendingPinRequestsSent: ["u2"] },
+    };
+    render(
+      <ConnectionsPanel
+        currentUser={aliceWithSent}
+        allUsers={[aliceWithSent, bob]}
+        onUserChange={jest.fn()}
+        onAllUsersChange={jest.fn()}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: /revoke request to bob/i }));
+    expect(usersController.cancelPinRequest).toHaveBeenCalledWith("u2");
+  });
+
+  it("shows error when cancelPinRequest fails", async () => {
+    const user = setup();
+    (usersController.cancelPinRequest as jest.Mock).mockResolvedValue({
+      ok: false,
+      error: "Cancel error",
+    });
+
+    const aliceWithSent: PublicUser = {
+      ...alice,
+      profile: { ...alice.profile, pendingPinRequestsSent: ["u2"] },
+    };
+    render(
+      <ConnectionsPanel
+        currentUser={aliceWithSent}
+        allUsers={[aliceWithSent, bob]}
+        onUserChange={jest.fn()}
+        onAllUsersChange={jest.fn()}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: /revoke request to bob/i }));
+    expect(screen.getByText("Cancel error")).toBeInTheDocument();
+  });
+
+  it("shows default error when cancelPinRequest fails with no error string", async () => {
+    const user = setup();
+    (usersController.cancelPinRequest as jest.Mock).mockResolvedValue({ ok: false });
+
+    const aliceWithSent: PublicUser = {
+      ...alice,
+      profile: { ...alice.profile, pendingPinRequestsSent: ["u2"] },
+    };
+    render(
+      <ConnectionsPanel
+        currentUser={aliceWithSent}
+        allUsers={[aliceWithSent, bob]}
+        onUserChange={jest.fn()}
+        onAllUsersChange={jest.fn()}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: /revoke request to bob/i }));
+    expect(screen.getByText("Failed to cancel request.")).toBeInTheDocument();
   });
 });
 
