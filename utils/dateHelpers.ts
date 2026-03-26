@@ -241,8 +241,7 @@ export function getLeaveDataBounds(
       }
     : todayMY;
 
-  const maxIsBeforeMin =
-    max.year < min.year || (max.year === min.year && max.month < min.month);
+  const maxIsBeforeMin = max.year < min.year || (max.year === min.year && max.month < min.month);
   return { min, max: maxIsBeforeMin ? { ...min } : max };
 }
 

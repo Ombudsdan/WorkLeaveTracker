@@ -58,7 +58,20 @@ describe("MonthYearPicker — rendering", () => {
     const user = setup();
     render(<MonthYearPicker {...defaultProps} />);
     await user.click(screen.getByRole("button", { name: /March 2026.*open month-year picker/i }));
-    const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthLabels = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
     monthLabels.forEach((name) => {
       expect(screen.getByText(name)).toBeInTheDocument();
     });
@@ -177,13 +190,7 @@ describe("MonthYearPicker — bounds enforcement", () => {
     const user = setup();
     // minYear=2026, minMonth=3 (April) — only April+ in 2026 are valid
     render(
-      <MonthYearPicker
-        {...defaultProps}
-        minYear={2026}
-        minMonth={3}
-        maxYear={2026}
-        maxMonth={11}
-      />
+      <MonthYearPicker {...defaultProps} minYear={2026} minMonth={3} maxYear={2026} maxMonth={11} />
     );
     await user.click(screen.getByRole("button", { name: /March 2026.*open month-year picker/i }));
     // January, February, March are disabled

@@ -80,7 +80,9 @@ const bob: PublicUser = {
 describe("SharedCalendarView — rendering", () => {
   it("renders the current month heading as a clickable button", () => {
     render(<SharedCalendarView currentUser={alice} pinnedUsers={[]} bankHolidays={[]} />);
-    expect(screen.getByRole("button", { name: /March 2026.*open month-year picker/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /March 2026.*open month-year picker/i })
+    ).toBeInTheDocument();
   });
 
   it("renders 'You' label for the current user row", () => {
@@ -132,53 +134,73 @@ describe("SharedCalendarView — month navigation", () => {
     render(<SharedCalendarView currentUser={alice} pinnedUsers={[]} bankHolidays={[]} />);
     await user.click(screen.getByRole("button", { name: /March 2026.*open month-year picker/i }));
     await user.click(screen.getByRole("button", { name: "April 2026" }));
-    expect(screen.getByRole("button", { name: /April 2026.*open month-year picker/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /April 2026.*open month-year picker/i })
+    ).toBeInTheDocument();
   });
 
   it("navigates to a prior year via the picker year navigation", async () => {
     jest.setSystemTime(new Date("2026-01-15"));
     const user = setup();
-    render(<SharedCalendarView currentUser={aliceWithHistory} pinnedUsers={[]} bankHolidays={[]} />);
+    render(
+      <SharedCalendarView currentUser={aliceWithHistory} pinnedUsers={[]} bankHolidays={[]} />
+    );
     await user.click(screen.getByRole("button", { name: /January 2026.*open month-year picker/i }));
     // "Previous year" is enabled because aliceWithHistory has 2025 data
     await user.click(screen.getByRole("button", { name: "Previous year" }));
     expect(screen.getByRole("dialog")).toHaveTextContent("2025");
     await user.click(screen.getByRole("button", { name: "September 2025" }));
-    expect(screen.getByRole("button", { name: /September 2025.*open month-year picker/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /September 2025.*open month-year picker/i })
+    ).toBeInTheDocument();
   });
 
   it("navigates to the next year via the picker year navigation", async () => {
     jest.setSystemTime(new Date("2026-12-01"));
     const user = setup();
     render(<SharedCalendarView currentUser={aliceWithFuture} pinnedUsers={[]} bankHolidays={[]} />);
-    await user.click(screen.getByRole("button", { name: /December 2026.*open month-year picker/i }));
+    await user.click(
+      screen.getByRole("button", { name: /December 2026.*open month-year picker/i })
+    );
     // "Next year" is enabled because aliceWithFuture has a 2027 allowance
     await user.click(screen.getByRole("button", { name: "Next year" }));
     expect(screen.getByRole("dialog")).toHaveTextContent("2027");
     await user.click(screen.getByRole("button", { name: "January 2027" }));
-    expect(screen.getByRole("button", { name: /January 2027.*open month-year picker/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /January 2027.*open month-year picker/i })
+    ).toBeInTheDocument();
   });
 
   it("navigates to the next month via the Next month chevron", async () => {
     const user = setup();
     render(<SharedCalendarView currentUser={alice} pinnedUsers={[]} bankHolidays={[]} />);
     await user.click(screen.getByRole("button", { name: "Next month" }));
-    expect(screen.getByRole("button", { name: /April 2026.*open month-year picker/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /April 2026.*open month-year picker/i })
+    ).toBeInTheDocument();
   });
 
   it("navigates to the previous month via the Previous month chevron", async () => {
     const user = setup();
-    render(<SharedCalendarView currentUser={aliceWithHistory} pinnedUsers={[]} bankHolidays={[]} />);
+    render(
+      <SharedCalendarView currentUser={aliceWithHistory} pinnedUsers={[]} bankHolidays={[]} />
+    );
     await user.click(screen.getByRole("button", { name: "Previous month" }));
-    expect(screen.getByRole("button", { name: /February 2026.*open month-year picker/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /February 2026.*open month-year picker/i })
+    ).toBeInTheDocument();
   });
 
   it("wraps from January to December of the previous year via chevron", async () => {
     jest.setSystemTime(new Date("2026-01-15"));
     const user = setup();
-    render(<SharedCalendarView currentUser={aliceWithHistory} pinnedUsers={[]} bankHolidays={[]} />);
+    render(
+      <SharedCalendarView currentUser={aliceWithHistory} pinnedUsers={[]} bankHolidays={[]} />
+    );
     await user.click(screen.getByRole("button", { name: "Previous month" }));
-    expect(screen.getByRole("button", { name: /December 2025.*open month-year picker/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /December 2025.*open month-year picker/i })
+    ).toBeInTheDocument();
   });
 });
 
