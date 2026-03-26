@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Plus } from "lucide-react";
 import type { PublicUser, LeaveEntry, BankHolidayEntry } from "@/types";
 import NavBar from "@/components/NavBar";
@@ -27,6 +28,8 @@ export default function DashboardPage() {
   const router = useRouter();
 
   const [currentUser, setCurrentUser] = useState<PublicUser | null>(null);
+  const [activeProfileUser, setActiveProfileUser] = useState<PublicUser | null>(null);
+  const [isReadOnly, setIsReadOnly] = useState(false);
   const [bankHolidays, setBankHolidays] = useState<BankHolidayEntry[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [addModalInitialDate, setAddModalInitialDate] = useState<string | undefined>(undefined);
@@ -160,6 +163,15 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {isReadOnly && activeProfileUser && (
+          <div className="mb-4 bg-indigo-50 border border-indigo-300 text-indigo-800 rounded-xl px-4 py-3 text-sm font-medium flex items-center gap-2">
+            <span className="text-indigo-500 text-lg leading-none">👁</span>
+            <span>
+              Viewing {activeProfileUser.profile.firstName} {activeProfileUser.profile.lastName}&apos;s Dashboard
+            </span>
+          </div>
+        )}
+
         {/* Mobile-only toggle between Upcoming Leave list and Calendar */}
         <div className="flex lg:hidden mb-4 bg-white rounded-xl shadow border border-gray-100 overflow-hidden">
           <button
@@ -187,22 +199,24 @@ export default function DashboardPage() {
         </div>
 
         {/* Add Leave button */}
-        <div className="flex justify-end mb-4">
-          <button
-            onClick={() => {
-              setAddModalInitialDate(undefined);
-              setShowAddModal(true);
-            }}
-            className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-4 py-1.5 rounded-lg hover:bg-indigo-700 transition font-medium cursor-pointer"
-          >
-            <Plus size={14} />
-            Add Leave
-          </button>
-        </div>
+        {!isReadOnly && (
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={() => {
+                setAddModalInitialDate(undefined);
+                setShowAddModal(true);
+              }}
+              className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-4 py-1.5 rounded-lg hover:bg-indigo-700 transition font-medium cursor-pointer"
+            >
+              <Plus size={14} />
+              Add Leave
+            </button>
+          </div>
+        )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           <div
-            className={`lg:col-span-1 space-y-4 ${mobileView === "list" ? "block" : "hidden"} lg:block`}
+            className={`lg:col-span-2 space-y-4 ${mobileView === "list" ? "block" : "hidden"} lg:block`}
           >
             <SummaryCard user={currentUser} bankHolidays={bankHolidays} />
             <LeaveList
@@ -212,10 +226,28 @@ export default function DashboardPage() {
               onEdit={setEditingEntry}
               onDelete={handleDeleteEntry}
             />
+            {!isReadOnly && (
+              <div className="bg-white rounded-xl shadow border border-gray-100 p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-sm font-semibold text-gray-700">Connections</h2>
+                  {pendingConnectionRequests > 0 && (
+                    <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">
+                      {pendingConnectionRequests} pending
+                    </span>
+                  )}
+                </div>
+                <Link
+                  href="/connections"
+                  className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                >
+                  View Connections →
+                </Link>
+              </div>
+            )}
           </div>
 
           <div
-            className={`lg:col-span-2 ${mobileView === "calendar" ? "block" : "hidden"} lg:block`}
+            className={`lg:col-span-3 ${mobileView === "calendar" ? "block" : "hidden"} lg:block`}
           >
             <CalendarView
               user={currentUser}
@@ -290,6 +322,7 @@ export default function DashboardPage() {
         return "redirected";
       }
       setCurrentUser(me);
+      setActiveProfileUser(me);
       return "found";
     }
     return "not_found";
