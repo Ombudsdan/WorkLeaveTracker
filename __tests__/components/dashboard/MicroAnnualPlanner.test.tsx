@@ -304,3 +304,51 @@ describe("MicroAnnualPlanner — popovers", () => {
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });
 });
+
+describe("MicroAnnualPlanner — subtitle shows leave period", () => {
+  it("renders a subtitle with the leave period dates", () => {
+    render(<MicroAnnualPlanner user={alice} bankHolidays={[]} />);
+    const subtitle = screen.getByTestId("annual-planner-subtitle");
+    expect(subtitle).toBeInTheDocument();
+    // Should contain "2026" somewhere in the date range text
+    expect(subtitle.textContent).toMatch(/2026/);
+  });
+});
+
+describe("MicroAnnualPlanner — popover matches CalendarView style", () => {
+  const aliceWithLeave = {
+    ...alice,
+    entries: [
+      {
+        id: "e1",
+        startDate: "2026-03-09",
+        endDate: "2026-03-09",
+        status: "approved" as import("@/types").LeaveStatus,
+        type: "holiday" as import("@/types").LeaveType,
+        notes: "Spa day",
+      },
+    ],
+  };
+
+  it("shows a status badge in the popover", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    const { within } = await import("@testing-library/react");
+    render(<MicroAnnualPlanner user={aliceWithLeave as import("@/types").PublicUser} bankHolidays={[]} />);
+    const marchRow = screen.getByTestId("month-row-Mar");
+    const boxes = within(marchRow).getAllByTestId("day-box");
+    await user.click(boxes[8]);
+    const tooltip = screen.getByRole("tooltip");
+    expect(tooltip.textContent).toContain("Approved");
+  });
+
+  it("shows the date range in the popover", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    const { within } = await import("@testing-library/react");
+    render(<MicroAnnualPlanner user={aliceWithLeave as import("@/types").PublicUser} bankHolidays={[]} />);
+    const marchRow = screen.getByTestId("month-row-Mar");
+    const boxes = within(marchRow).getAllByTestId("day-box");
+    await user.click(boxes[8]);
+    const tooltip = screen.getByRole("tooltip");
+    expect(tooltip.textContent).toContain("9 Mar");
+  });
+});

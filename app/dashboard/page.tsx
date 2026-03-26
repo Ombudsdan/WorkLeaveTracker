@@ -3,7 +3,6 @@ import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Plus } from "lucide-react";
 import type { PublicUser, LeaveEntry, BankHolidayEntry } from "@/types";
 import NavBar from "@/components/NavBar";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -205,22 +204,6 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* Add Leave button */}
-        {!isReadOnly && (
-          <div className="flex justify-end mb-4">
-            <button
-              onClick={() => {
-                setAddModalInitialDate(undefined);
-                setShowAddModal(true);
-              }}
-              className="flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-4 py-1.5 rounded-lg hover:bg-indigo-700 transition font-medium cursor-pointer"
-            >
-              <Plus size={14} />
-              Add Leave
-            </button>
-          </div>
-        )}
-
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           {/* Left column: mini-calendar, annual planner, leave list, connections */}
           <div
@@ -239,16 +222,24 @@ export default function DashboardPage() {
               <div className="bg-white rounded-xl shadow border border-gray-100 p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h2 className="text-sm font-semibold text-gray-700">Connections</h2>
-                  {pendingConnectionRequests > 0 && (
-                    <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">
-                      {pendingConnectionRequests} pending
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {pendingConnectionRequests > 0 && (
+                      <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">
+                        {pendingConnectionRequests} pending
+                      </span>
+                    )}
+                    <Link
+                      href="/connections"
+                      className="inline-flex items-center gap-1 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition-colors"
+                    >
+                      Manage
+                    </Link>
+                  </div>
                 </div>
                 {pinnedUsers.length === 0 ? (
-                  <p className="text-xs text-gray-400 mb-2">No connections yet.</p>
+                  <p className="text-xs text-gray-400">No connections yet.</p>
                 ) : (
-                  <ul className="space-y-1.5 mb-3">
+                  <ul className="space-y-1.5">
                     {pinnedUsers.map((u) => (
                       <li key={u.id} className="flex items-center gap-2 text-xs text-gray-700">
                         <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-[9px] font-bold flex items-center justify-center shrink-0">
@@ -260,12 +251,6 @@ export default function DashboardPage() {
                     ))}
                   </ul>
                 )}
-                <Link
-                  href="/connections"
-                  className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
-                >
-                  Manage Connections →
-                </Link>
               </div>
             )}
           </div>
@@ -274,7 +259,18 @@ export default function DashboardPage() {
           <div
             className={`lg:col-span-3 space-y-4 ${mobileView === "calendar" ? "block" : "hidden"} lg:block`}
           >
-            <SummaryCard user={currentUser} bankHolidays={bankHolidays} />
+            <SummaryCard
+              user={currentUser}
+              bankHolidays={bankHolidays}
+              onAddLeave={
+                isReadOnly
+                  ? undefined
+                  : () => {
+                      setAddModalInitialDate(undefined);
+                      setShowAddModal(true);
+                    }
+              }
+            />
             <CalendarView
               user={currentUser}
               bankHolidays={bankHolidays}

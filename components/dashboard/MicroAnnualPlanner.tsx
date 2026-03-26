@@ -2,23 +2,28 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import Link from "next/link";
 import type { PublicUser, BankHolidayEntry, LeaveEntry } from "@/types";
-import { LeaveStatus, LeaveType } from "@/types";
-import { getDaysInMonth, getActiveYearAllowance } from "@/utils/dateHelpers";
-import { X } from "lucide-react";
+import { LeaveStatus, LeaveType, LeaveDuration } from "@/types";
+import { STATUS_COLORS } from "@/variables/colours";
+import {
+  getDaysInMonth,
+  getActiveYearAllowance,
+  formatYearWindow,
+  getEntryDuration,
+  countEntryDays,
+} from "@/utils/dateHelpers";
+import { X, LayoutList } from "lucide-react";
 
 export interface MicroAnnualPlannerProps {
   user: PublicUser;
   bankHolidays: BankHolidayEntry[];
 }
 
-/** Priority for multi-entry days: Approved beats Requested beats Planned */
 const STATUS_PRIORITY: Record<LeaveStatus, number> = {
   [LeaveStatus.Approved]: 0,
   [LeaveStatus.Requested]: 1,
   [LeaveStatus.Planned]: 2,
 };
 
-/** Tailwind bg classes for leave-status day boxes */
 const BOX_COLORS: Record<LeaveStatus, string> = {
   [LeaveStatus.Approved]: "bg-green-400",
   [LeaveStatus.Requested]: "bg-blue-400",
@@ -36,9 +41,7 @@ interface DayBox {
   dateStr: string;
   status: LeaveStatus | null;
   leaveEntry: LeaveEntry | null;
-  /** True when the day falls on one of the user's non-working weekday patterns */
   isWeekend: boolean;
-  /** True when the date is a UK bank holiday */
   isBankHoliday: boolean;
   bankHolidayTitle?: string;
 }
@@ -59,16 +62,41 @@ interface PopoverInfo {
   left: number;
 }
 
+function formatDateRange(startDate: string, endDate: string): string {
+  const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" };
+  const start = new Date(startDate).toLocaleDateString("en-GB", opts);
+  if (startDate === endDate) return start;
+  const end = new Date(endDate).toLocaleDateString("en-GB", opts);
+  return `${start} – ${end}`;
+}
+
+function getDurationLabel(entry: LeaveEntry, nonWorkingDays: number[], bhDates: string[]): string {
+  const dur = getEntryDuration(entry);
+  if (dur === LeaveDuration.HalfMorning) return "Half day (AM)";
+  if (dur === LeaveDuration.HalfAfternoon) return "Half day (PM)";
+  const days = countEntryDays(entry, nonWorkingDays, bhDates);
+  return `${days} working day${days === 1 ? "" : "s"}`;
+}
+
+function getEntryLabel(entry: LeaveEntry): string {
+  const dur = getEntryDuration(entry);
+  const base = entry.notes ?? "";
+  if (dur === LeaveDuration.HalfMorning) return base ? `${base} (AM)` : "(AM)";
+  if (dur === LeaveDuration.HalfAfternoon) return base ? `${base} (PM)` : "(PM)";
+  return base || "No description";
+}
+
 export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPlannerProps) {
   const activeYa = getActiveYearAllowance(user.yearAllowances);
   const [popover, setPopover] = useState<PopoverInfo | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const bankHolidayDates = useMemo(() => bankHolidays.map((bh) => bh.date), [bankHolidays]);
+
   const rows = useMemo<MonthRow[]>(() => {
     if (!activeYa) return [];
 
     const sm = activeYa.holidayStartMonth ?? 1;
-    // Bank holiday map: date → title
     const bhMap = new Map(bankHolidays.map((bh) => [bh.date, bh.title]));
 
     return Array.from({ length: 12 }, (_, i) => {
@@ -88,7 +116,6 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
         const isBankHoliday = bhMap.has(dateStr);
         const bankHolidayTitle = bhMap.get(dateStr);
 
-        // Bank holidays and weekends are non-working — no leave is shown on them
         const isNonWorking = isWeekend || isBankHoliday;
 
         let bestStatus: LeaveStatus | null = null;
@@ -121,7 +148,6 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
     });
   }, [activeYa, user.entries, user.profile.nonWorkingDays, bankHolidays]);
 
-  // Close popover on outside click
   useEffect(() => {
     if (!popover) return;
     function handleOutside(e: MouseEvent) {
@@ -143,7 +169,7 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
     const containerRect = containerRef.current?.getBoundingClientRect();
     if (!containerRect) return;
     const top = rect.bottom - containerRect.top + 4;
-    const left = Math.min(rect.left - containerRect.left, containerRect.width - 160);
+    const left = Math.min(rect.left - containerRect.left, containerRect.width - 200);
     setPopover({
       dateStr: day.dateStr,
       status: day.status,
@@ -162,15 +188,20 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
       className="bg-white rounded-xl shadow border border-gray-100 p-4 relative"
       data-testid="micro-annual-planner"
     >
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-1">
         <h2 className="text-sm font-semibold text-gray-700">Annual Overview</h2>
         <Link
           href="/annual-planner"
-          className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+          className="inline-flex items-center gap-1 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition-colors"
         >
-          Full Planner →
+          <LayoutList size={11} />
+          Full Planner
         </Link>
       </div>
+      {/* Leave period subtitle */}
+      <p className="text-xs text-gray-400 mb-3" data-testid="annual-planner-subtitle">
+        {formatYearWindow(activeYa)}
+      </p>
 
       <div className="space-y-1">
         {rows.map((row) => (
@@ -205,7 +236,6 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
                   />
                 );
               })}
-              {/* Padding boxes to align all months to MAX_DAYS_IN_MONTH columns */}
               {Array.from({ length: MAX_DAYS_IN_MONTH - row.days.length }, (_, k) => (
                 <div key={`pad-${k}`} className="flex-1" />
               ))}
@@ -234,10 +264,10 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
         </span>
       </div>
 
-      {/* Popover */}
+      {/* Popover — styled to match CalendarView */}
       {popover && (
         <div
-          className="absolute z-30 bg-white rounded-xl shadow-xl border border-gray-200 p-3 w-40 text-xs"
+          className="absolute z-30 bg-white rounded-xl shadow-xl border border-gray-200 p-3 w-52 text-xs"
           style={{ top: popover.top, left: popover.left }}
           role="tooltip"
           data-testid="annual-planner-popover"
@@ -247,17 +277,35 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
             className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 cursor-pointer"
             aria-label="Close popover"
           >
-            <X size={11} />
+            <X className="w-3 h-3" />
           </button>
-          {popover.bankHolidayTitle ? (
-            <p className="font-medium text-purple-700 pr-4">{popover.bankHolidayTitle}</p>
-          ) : (
+
+          {/* Bank holiday */}
+          {popover.bankHolidayTitle && !popover.status && (
             <>
-              <p className="font-semibold capitalize text-gray-700 mb-0.5">{popover.status}</p>
-              <p className="text-gray-400">{popover.dateStr}</p>
-              {popover.leaveEntry?.notes && (
-                <p className="text-gray-600 truncate mt-0.5">{popover.leaveEntry.notes}</p>
-              )}
+              <div className="inline-flex items-center px-1.5 py-0.5 rounded font-semibold mb-2 border text-[10px] bg-purple-100 text-purple-700 border-purple-300">
+                Bank Holiday
+              </div>
+              <p className="font-medium text-gray-800 mb-1 pr-4">{popover.bankHolidayTitle}</p>
+              <p className="text-gray-500">{formatDateRange(popover.dateStr, popover.dateStr)}</p>
+            </>
+          )}
+
+          {/* Leave entry */}
+          {popover.status && popover.leaveEntry && (
+            <>
+              <div className={`inline-flex items-center px-1.5 py-0.5 rounded font-semibold mb-2 border text-[10px] ${STATUS_COLORS[popover.status]}`}>
+                {popover.status.charAt(0).toUpperCase() + popover.status.slice(1)}
+              </div>
+              <p className="font-medium text-gray-800 mb-1 pr-4">
+                {getEntryLabel(popover.leaveEntry)}
+              </p>
+              <p className="text-gray-500 mb-1">
+                {formatDateRange(popover.leaveEntry.startDate, popover.leaveEntry.endDate)}
+              </p>
+              <p className="text-gray-500">
+                {getDurationLabel(popover.leaveEntry, user.profile.nonWorkingDays, bankHolidayDates)}
+              </p>
             </>
           )}
         </div>

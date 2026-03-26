@@ -94,10 +94,11 @@ describe("MiniCalendar — leave days show colored dots", () => {
     expect(dots).toHaveLength(5);
   });
 
-  it("does not show day numbers for days that have a leave dot", () => {
+  it("shows day numbers inside leave dots", () => {
     render(<MiniCalendar user={aliceWithLeave} bankHolidays={[]} />);
-    // Day 9 has leave so should not appear as plain text
-    expect(screen.queryByText("9")).toBeNull();
+    // Day 9 has leave — day number should appear INSIDE the leave dot
+    const dot = screen.getAllByTestId("leave-dot").find((el) => el.textContent === "9");
+    expect(dot).toBeTruthy();
   });
 
   it("shows dots for requested leave", () => {
@@ -390,5 +391,71 @@ describe("MiniCalendar — leave click popover", () => {
     expect(screen.getByRole("tooltip")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Close popover" }));
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+});
+
+describe("MiniCalendar — today indicator uses ring (not solid fill)", () => {
+  it("today's date span does not have bg-indigo-600 class", () => {
+    // System time is 2026-03-15 so day 15 is today
+    render(<MiniCalendar user={alice} bankHolidays={[]} />);
+    // Find span containing '15'
+    const spans = document.querySelectorAll("span");
+    const todaySpan = Array.from(spans).find(
+      (el) => el.textContent === "15" && el.tagName === "SPAN"
+    );
+    expect(todaySpan).toBeTruthy();
+    expect(todaySpan?.className).not.toContain("bg-indigo-600");
+    expect(todaySpan?.className).toContain("ring-indigo-600");
+  });
+});
+
+describe("MiniCalendar — popover matches CalendarView style", () => {
+  const aliceWithLeave: PublicUser = {
+    ...alice,
+    entries: [
+      {
+        id: "e1",
+        startDate: "2026-03-16",
+        endDate: "2026-03-16",
+        status: LeaveStatus.Approved,
+        type: LeaveType.Holiday,
+        notes: "Beach day",
+      },
+    ],
+  };
+
+  it("popover shows a status badge", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    render(<MiniCalendar user={aliceWithLeave} bankHolidays={[]} />);
+    await user.click(screen.getAllByTestId("leave-dot")[0]);
+    const tooltip = screen.getByRole("tooltip");
+    // Badge text is the status capitalised
+    expect(tooltip.textContent).toContain("Approved");
+  });
+
+  it("popover shows the date range", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    render(<MiniCalendar user={aliceWithLeave} bankHolidays={[]} />);
+    await user.click(screen.getAllByTestId("leave-dot")[0]);
+    const tooltip = screen.getByRole("tooltip");
+    expect(tooltip.textContent).toContain("16 Mar");
+  });
+
+  it("popover shows the duration line", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    render(<MiniCalendar user={aliceWithLeave} bankHolidays={[]} />);
+    await user.click(screen.getAllByTestId("leave-dot")[0]);
+    const tooltip = screen.getByRole("tooltip");
+    expect(tooltip.textContent).toMatch(/working day/i);
+  });
+
+  it("bank holiday popover shows a 'Bank Holiday' badge", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    render(<MiniCalendar user={alice} bankHolidays={[{ date: "2026-03-17", title: "St Patrick" }]} />);
+    const bh = screen.getAllByTestId("bank-holiday-dot");
+    await user.click(bh[0]);
+    const tooltip = screen.getByRole("tooltip");
+    expect(tooltip.textContent).toContain("Bank Holiday");
+    expect(tooltip.textContent).toContain("St Patrick");
   });
 });
