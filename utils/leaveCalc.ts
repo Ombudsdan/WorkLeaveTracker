@@ -1,10 +1,6 @@
 import { LeaveStatus, LeaveType, LeaveDuration, BankHolidayHandling } from "@/types";
 import type { LeaveEntry, PublicUser, YearAllowance } from "@/types";
-import {
-  countWorkingDays,
-  getActiveYearAllowance,
-  getEntryDuration,
-} from "@/utils/dateHelpers";
+import { countWorkingDays, getActiveYearAllowance, getEntryDuration } from "@/utils/dateHelpers";
 
 export interface LeaveSummary {
   /** Raw entitlement: core + bought + carried (never reduced by bank holidays) */

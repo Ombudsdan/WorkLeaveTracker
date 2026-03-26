@@ -164,7 +164,9 @@ export default function ProfilePage() {
       if (periodEndStr <= todayStr) return true;
       // Active/future period — include only if it has entries that have already ended
       const periodStartStr = `${ya.year}-${smPadded}-01`;
-      return entries.some((e) => e.endDate < todayStr && e.endDate >= periodStartStr && e.startDate < periodEndStr);
+      return entries.some(
+        (e) => e.endDate < todayStr && e.endDate >= periodStartStr && e.startDate < periodEndStr
+      );
     });
 
   const selectedPeriodYa = pastPeriods.find(

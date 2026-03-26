@@ -73,8 +73,7 @@ export default function AnnualPlannerView({ user, bankHolidays }: AnnualPlannerV
     () => calcLeaveSummary(user, bankHolidayDates, effectiveYa ?? undefined),
     [user, bankHolidayDates, effectiveYa]
   );
-  const deductBankHolidays =
-    effectiveYa?.bankHolidayHandling === BankHolidayHandling.Deduct;
+  const deductBankHolidays = effectiveYa?.bankHolidayHandling === BankHolidayHandling.Deduct;
 
   // The scale denominator is the maximum totalCombined across all months (minimum 1)
   const maxDays = useMemo(
