@@ -10,6 +10,7 @@ import {
   formatYearWindow,
   yearAllowanceDates,
   yearAllowancesOverlap,
+  getLeaveDataBounds,
 } from "@/utils/dateHelpers";
 import { LeaveStatus, LeaveType } from "@/types";
 import type { LeaveEntry, YearAllowance } from "@/types";
@@ -602,5 +603,107 @@ describe("yearAllowancesOverlap", () => {
         { startDate: "2025-01-01", endDate: "2025-12-31" }
       )
     ).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getLeaveDataBounds
+// ---------------------------------------------------------------------------
+describe("getLeaveDataBounds", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-03-15")); // Sunday 15 March 2026
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it("returns current month for both min and max when no users have data", () => {
+    const result = getLeaveDataBounds([{ entries: [], yearAllowances: [] }]);
+    expect(result.min).toEqual({ year: 2026, month: 2 }); // March
+    expect(result.max).toEqual({ year: 2026, month: 2 }); // March
+  });
+
+  it("returns the earliest entry startDate as min", () => {
+    const entries: LeaveEntry[] = [
+      {
+        id: "e1",
+        startDate: "2025-06-10",
+        endDate: "2025-06-14",
+        status: LeaveStatus.Approved,
+        type: LeaveType.Holiday,
+      },
+      {
+        id: "e2",
+        startDate: "2024-12-01",
+        endDate: "2024-12-05",
+        status: LeaveStatus.Approved,
+        type: LeaveType.Holiday,
+      },
+    ];
+    const result = getLeaveDataBounds([{ entries, yearAllowances: [] }]);
+    expect(result.min).toEqual({ year: 2024, month: 11 }); // December 2024
+  });
+
+  it("returns the end of the latest year allowance as max", () => {
+    const allowances: YearAllowance[] = [
+      { year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+      { year: 2027, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+    ];
+    const result = getLeaveDataBounds([{ entries: [], yearAllowances: allowances }]);
+    // End of year 2027 (holidayStartMonth=1) → December 31 2027 → month index 11
+    expect(result.max).toEqual({ year: 2027, month: 11 });
+  });
+
+  it("handles an April-start allowance year correctly for max", () => {
+    const allowances: YearAllowance[] = [
+      { year: 2026, company: "Acme", holidayStartMonth: 4, core: 25, bought: 0, carried: 0 },
+    ];
+    const result = getLeaveDataBounds([{ entries: [], yearAllowances: allowances }]);
+    // yearAllowanceDates(2026, 4) → endDate = 2027-03-31 → month index 2 (March)
+    expect(result.max).toEqual({ year: 2027, month: 2 });
+  });
+
+  it("aggregates data across multiple users", () => {
+    const user1 = {
+      entries: [
+        {
+          id: "e1",
+          startDate: "2024-11-01",
+          endDate: "2024-11-05",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+      ],
+      yearAllowances: [
+        { year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+      ],
+    };
+    const user2 = {
+      entries: [],
+      yearAllowances: [
+        { year: 2027, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+      ],
+    };
+    const result = getLeaveDataBounds([user1, user2]);
+    expect(result.min).toEqual({ year: 2024, month: 10 }); // November 2024
+    expect(result.max).toEqual({ year: 2027, month: 11 }); // December 2027
+  });
+
+  it("returns min = max when max would be before min", () => {
+    // If somehow max is earlier than min (edge case), max is clamped to min
+    jest.setSystemTime(new Date("2026-08-15"));
+    const result = getLeaveDataBounds([{ entries: [], yearAllowances: [] }]);
+    expect(result.min.year).toEqual(result.max.year);
+    expect(result.min.month).toEqual(result.max.month);
+  });
+
+  it("falls back to current month for min when no entries exist", () => {
+    const allowances: YearAllowance[] = [
+      { year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+    ];
+    const result = getLeaveDataBounds([{ entries: [], yearAllowances: allowances }]);
+    expect(result.min).toEqual({ year: 2026, month: 2 }); // March 2026 (today)
   });
 });
