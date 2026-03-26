@@ -10,7 +10,7 @@ import {
   SICK_LEAVE_CARD_COLORS,
   getCalendarEntryClass,
 } from "@/variables/colours";
-import { MONTH_NAMES_LONG, DAY_NAMES_SHORT } from "@/variables/calendar";
+import { DAY_NAMES_SHORT } from "@/variables/calendar";
 import {
   getDaysInMonth,
   getFirstDayOfMonth,
@@ -19,9 +19,11 @@ import {
   toIsoDate,
   countEntryDays,
   getEntryDuration,
+  getLeaveDataBounds,
 } from "@/utils/dateHelpers";
 import { SICK_LEAVE_ENABLED } from "@/utils/features";
-import { ChevronLeft, ChevronRight, Pencil, Trash2, X } from "lucide-react";
+import { Pencil, Trash2, X, ChevronLeft, ChevronRight } from "lucide-react";
+import MonthYearPicker from "@/components/molecules/MonthYearPicker";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -118,6 +120,9 @@ export default function CalendarView({
   const [isMobileSheet, setIsMobileSheet] = useState(false);
   const calendarRef = useRef<HTMLDivElement>(null);
 
+  // Compute min/max picker bounds from the user's leave data
+  const { min: pickerMin, max: pickerMax } = getLeaveDataBounds([user]);
+
   // Detect mobile layout to switch between bottom sheet and floating popover
   useEffect(() => {
     function checkMobile() {
@@ -148,6 +153,31 @@ export default function CalendarView({
     }
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [popover]);
+
+  const atMin =
+    calendarYear < pickerMin.year ||
+    (calendarYear === pickerMin.year && calendarMonth <= pickerMin.month);
+  const atMax =
+    calendarYear > pickerMax.year ||
+    (calendarYear === pickerMax.year && calendarMonth >= pickerMax.month);
+
+  function prevMonth() {
+    if (calendarMonth === 0) {
+      setCalendarMonth(11);
+      setCalendarYear((y) => y - 1);
+    } else {
+      setCalendarMonth((m) => m - 1);
+    }
+  }
+
+  function nextMonth() {
+    if (calendarMonth === 11) {
+      setCalendarMonth(0);
+      setCalendarYear((y) => y + 1);
+    } else {
+      setCalendarMonth((m) => m + 1);
+    }
+  }
 
   function handleCellClick(entry: LeaveEntry, cellEl: HTMLElement) {
     if (popover?.entry.id === entry.id) {
@@ -359,17 +389,28 @@ export default function CalendarView({
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={prevMonth}
-          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer"
+          disabled={atMin}
+          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
           aria-label="Previous month"
         >
           <ChevronLeft size={18} />
         </button>
-        <h3 className="font-bold text-gray-800">
-          {MONTH_NAMES_LONG[calendarMonth]} {calendarYear}
-        </h3>
+        <MonthYearPicker
+          year={calendarYear}
+          month={calendarMonth}
+          onChange={(y, m) => {
+            setCalendarYear(y);
+            setCalendarMonth(m);
+          }}
+          minYear={pickerMin.year}
+          minMonth={pickerMin.month}
+          maxYear={pickerMax.year}
+          maxMonth={pickerMax.month}
+        />
         <button
           onClick={nextMonth}
-          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer"
+          disabled={atMax}
+          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
           aria-label="Next month"
         >
           <ChevronRight size={18} />
@@ -529,24 +570,6 @@ export default function CalendarView({
       )}
     </div>
   );
-
-  function prevMonth() {
-    if (calendarMonth === 0) {
-      setCalendarMonth(11);
-      setCalendarYear((year) => year - 1);
-    } else {
-      setCalendarMonth((month) => month - 1);
-    }
-  }
-
-  function nextMonth() {
-    if (calendarMonth === 11) {
-      setCalendarMonth(0);
-      setCalendarYear((year) => year + 1);
-    } else {
-      setCalendarMonth((month) => month + 1);
-    }
-  }
 }
 
 interface PopoverState {

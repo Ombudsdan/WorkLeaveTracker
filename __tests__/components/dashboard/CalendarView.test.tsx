@@ -33,6 +33,33 @@ const alice: PublicUser = {
   entries: [],
 };
 
+/** Alice with a past entry (2025) and two allowances — enables prior-year navigation */
+const aliceWithHistory: PublicUser = {
+  ...alice,
+  yearAllowances: [
+    { year: 2025, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+    { year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+  ],
+  entries: [
+    {
+      id: "e-hist",
+      startDate: "2025-06-01",
+      endDate: "2025-06-05",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+    },
+  ],
+};
+
+/** Alice with a future allowance (2027) — enables next-year navigation */
+const aliceWithFuture: PublicUser = {
+  ...alice,
+  yearAllowances: [
+    { year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+    { year: 2027, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+  ],
+};
+
 /** Helper to wrap a date string into the BankHolidayEntry shape expected by the component */
 function bh(date: string, title = "Bank Holiday"): BankHolidayEntry {
   return { date, title };
@@ -41,40 +68,68 @@ function bh(date: string, title = "Bank Holiday"): BankHolidayEntry {
 describe("CalendarView — header and navigation", () => {
   it("renders the current month and year initially", () => {
     render(<CalendarView user={alice} bankHolidays={[]} />);
-    expect(screen.getByRole("heading", { name: /March 2026/i })).toBeInTheDocument();
+    // The month/year is now a clickable button (MonthYearPicker)
+    expect(screen.getByRole("button", { name: /March 2026.*open month-year picker/i })).toBeInTheDocument();
   });
 
-  it("navigates to the previous month when the ‹ button is clicked", async () => {
+  it("opens the picker when the label is clicked", async () => {
     const user = setup();
     render(<CalendarView user={alice} bankHolidays={[]} />);
-    await user.click(screen.getByRole("button", { name: "Previous month" }));
-    expect(screen.getByRole("heading", { name: /February 2026/i })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /March 2026.*open month-year picker/i }));
+    expect(screen.getByRole("dialog", { name: "Month-year picker" })).toBeInTheDocument();
   });
 
-  it("navigates to the next month when the › button is clicked", async () => {
+  it("selects a month within the same year", async () => {
     const user = setup();
     render(<CalendarView user={alice} bankHolidays={[]} />);
-    await user.click(screen.getByRole("button", { name: "Next month" }));
-    expect(screen.getByRole("heading", { name: /April 2026/i })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /March 2026.*open month-year picker/i }));
+    await user.click(screen.getByRole("button", { name: "April 2026" }));
+    expect(screen.getByRole("button", { name: /April 2026.*open month-year picker/i })).toBeInTheDocument();
   });
 
-  it("wraps from January to December (previous) correctly", async () => {
+  it("navigates to a prior year via the picker year navigation", async () => {
     const user = setup();
-    // Navigate back from March → February → January → December
-    render(<CalendarView user={alice} bankHolidays={[]} />);
-    const prev = screen.getByRole("button", { name: "Previous month" });
-    await user.click(prev); // Feb
-    await user.click(prev); // Jan
-    await user.click(prev); // Dec 2025
-    expect(screen.getByRole("heading", { name: /December 2025/i })).toBeInTheDocument();
+    render(<CalendarView user={aliceWithHistory} bankHolidays={[]} />);
+    await user.click(screen.getByRole("button", { name: /March 2026.*open month-year picker/i }));
+    // "Previous year" is enabled because aliceWithHistory has 2025 data
+    await user.click(screen.getByRole("button", { name: "Previous year" }));
+    expect(screen.getByRole("dialog")).toHaveTextContent("2025");
+    await user.click(screen.getByRole("button", { name: "September 2025" }));
+    expect(screen.getByRole("button", { name: /September 2025.*open month-year picker/i })).toBeInTheDocument();
   });
 
-  it("wraps from December to January (next) correctly", async () => {
+  it("navigates to the next year via the picker year navigation", async () => {
     jest.setSystemTime(new Date("2026-12-01"));
     const user = setup();
+    render(<CalendarView user={aliceWithFuture} bankHolidays={[]} />);
+    await user.click(screen.getByRole("button", { name: /December 2026.*open month-year picker/i }));
+    // "Next year" is enabled because aliceWithFuture has a 2027 allowance
+    await user.click(screen.getByRole("button", { name: "Next year" }));
+    expect(screen.getByRole("dialog")).toHaveTextContent("2027");
+    await user.click(screen.getByRole("button", { name: "January 2027" }));
+    expect(screen.getByRole("button", { name: /January 2027.*open month-year picker/i })).toBeInTheDocument();
+  });
+
+  it("navigates to the next month via the Next month chevron", async () => {
+    const user = setup();
     render(<CalendarView user={alice} bankHolidays={[]} />);
     await user.click(screen.getByRole("button", { name: "Next month" }));
-    expect(screen.getByRole("heading", { name: /January 2027/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /April 2026.*open month-year picker/i })).toBeInTheDocument();
+  });
+
+  it("navigates to the previous month via the Previous month chevron", async () => {
+    const user = setup();
+    render(<CalendarView user={aliceWithHistory} bankHolidays={[]} />);
+    await user.click(screen.getByRole("button", { name: "Previous month" }));
+    expect(screen.getByRole("button", { name: /February 2026.*open month-year picker/i })).toBeInTheDocument();
+  });
+
+  it("wraps from January to December of the previous year via chevron", async () => {
+    jest.setSystemTime(new Date("2026-01-15"));
+    const user = setup();
+    render(<CalendarView user={aliceWithHistory} bankHolidays={[]} />);
+    await user.click(screen.getByRole("button", { name: "Previous month" }));
+    expect(screen.getByRole("button", { name: /December 2025.*open month-year picker/i })).toBeInTheDocument();
   });
 });
 

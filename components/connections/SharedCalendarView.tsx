@@ -2,18 +2,19 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import type { PublicUser, BankHolidayEntry, LeaveEntry } from "@/types";
 import { LeaveStatus, LeaveType, LeaveDuration } from "@/types";
-import { MONTH_NAMES_LONG } from "@/variables/calendar";
 import {
   getDaysInMonth,
   getEntriesForDate,
   toIsoDate,
   getEntryDuration,
   countEntryDays,
+  getLeaveDataBounds,
 } from "@/utils/dateHelpers";
 import { findClashes } from "@/utils/clashFinder";
 import { STATUS_COLORS, SICK_LEAVE_CARD_COLORS } from "@/variables/colours";
 import CalendarView from "@/components/dashboard/CalendarView";
-import { ChevronLeft, ChevronRight, Calendar, X, Pencil, Trash2 } from "lucide-react";
+import { Calendar, X, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import MonthYearPicker from "@/components/molecules/MonthYearPicker";
 
 interface SharedCalendarViewProps {
   /** The signed-in user, always shown as the first row */
@@ -89,6 +90,18 @@ export default function SharedCalendarView({
   const daysInMonth = getDaysInMonth(calYear, calMonth);
   const bhDates = useMemo(() => bankHolidays.map((bh) => bh.date), [bankHolidays]);
 
+  /** All rows: current user first, then pinned users */
+  const allUsers = useMemo<PublicUser[]>(
+    () => [currentUser, ...pinnedUsers],
+    [currentUser, pinnedUsers]
+  );
+
+  // Compute min/max picker bounds from all visible users' leave data
+  const { min: pickerMin, max: pickerMax } = useMemo(
+    () => getLeaveDataBounds(allUsers),
+    [allUsers]
+  );
+
   // Detect mobile layout to switch between bottom sheet and floating popover
   useEffect(() => {
     function checkMobile() {
@@ -111,6 +124,11 @@ export default function SharedCalendarView({
     }
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [popover]);
+
+  const atMin =
+    calYear < pickerMin.year || (calYear === pickerMin.year && calMonth <= pickerMin.month);
+  const atMax =
+    calYear > pickerMax.year || (calYear === pickerMax.year && calMonth >= pickerMax.month);
 
   function prevMonth() {
     if (calMonth === 0) {
@@ -156,12 +174,6 @@ export default function SharedCalendarView({
       return `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
     });
   }, [calYear, calMonth, daysInMonth]);
-
-  /** All rows: current user first, then pinned users */
-  const allUsers = useMemo<PublicUser[]>(
-    () => [currentUser, ...pinnedUsers],
-    [currentUser, pinnedUsers]
-  );
 
   /** Set of dates in this month where 2+ users clash */
   const clashDates = useMemo<Set<string>>(() => {
@@ -236,17 +248,28 @@ export default function SharedCalendarView({
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={prevMonth}
-          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer"
+          disabled={atMin}
+          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
           aria-label="Previous month"
         >
           <ChevronLeft size={18} />
         </button>
-        <h3 className="font-bold text-gray-800">
-          {MONTH_NAMES_LONG[calMonth]} {calYear}
-        </h3>
+        <MonthYearPicker
+          year={calYear}
+          month={calMonth}
+          onChange={(y, m) => {
+            setCalYear(y);
+            setCalMonth(m);
+          }}
+          minYear={pickerMin.year}
+          minMonth={pickerMin.month}
+          maxYear={pickerMax.year}
+          maxMonth={pickerMax.month}
+        />
         <button
           onClick={nextMonth}
-          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer"
+          disabled={atMax}
+          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
           aria-label="Next month"
         >
           <ChevronRight size={18} />

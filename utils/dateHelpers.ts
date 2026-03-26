@@ -184,6 +184,68 @@ export function getEntryDuration(entry: LeaveEntry): LeaveDuration {
   return LeaveDuration.Full;
 }
 
+/** A month/year bound used by the MonthYearPicker component. */
+export interface MonthYear {
+  year: number;
+  /** 0-indexed month (0 = January, 11 = December) */
+  month: number;
+}
+
+/**
+ * Compute the earliest and latest month/year bounds across a set of users'
+ * leave data.
+ *
+ * - `min`: month/year of the earliest leave-entry `startDate` across all users.
+ *   Falls back to the current month when no entries exist.
+ * - `max`: month/year of the end date of the latest configured `YearAllowance`
+ *   across all users.  Falls back to the current month when no allowances exist.
+ *
+ * Guarantees `max >= min`: if the computed max is earlier than the computed min,
+ * max is set equal to min.
+ */
+export function getLeaveDataBounds(
+  users: { entries: LeaveEntry[]; yearAllowances: YearAllowance[] }[]
+): { min: MonthYear; max: MonthYear } {
+  const today = new Date();
+  const todayMY: MonthYear = { year: today.getFullYear(), month: today.getMonth() };
+
+  let minDateStr: string | null = null;
+  let maxEndDateStr: string | null = null;
+
+  for (const user of users) {
+    for (const entry of user.entries) {
+      if (!minDateStr || entry.startDate < minDateStr) {
+        minDateStr = entry.startDate;
+      }
+    }
+    for (const ya of user.yearAllowances) {
+      const sm = ya.holidayStartMonth ?? 1;
+      const { endDate } = yearAllowanceDates(ya.year, sm);
+      if (!maxEndDateStr || endDate > maxEndDateStr) {
+        maxEndDateStr = endDate;
+      }
+    }
+  }
+
+  const min: MonthYear = minDateStr
+    ? {
+        year: parseInt(minDateStr.slice(0, 4), 10),
+        month: parseInt(minDateStr.slice(5, 7), 10) - 1,
+      }
+    : todayMY;
+
+  const max: MonthYear = maxEndDateStr
+    ? {
+        year: parseInt(maxEndDateStr.slice(0, 4), 10),
+        month: parseInt(maxEndDateStr.slice(5, 7), 10) - 1,
+      }
+    : todayMY;
+
+  const maxIsBeforeMin =
+    max.year < min.year || (max.year === min.year && max.month < min.month);
+  return { min, max: maxIsBeforeMin ? { ...min } : max };
+}
+
 /**
  * Count the number of days an entry consumes, respecting half-days.
  * Half-day entries always count as 0.5 regardless of the date range.
