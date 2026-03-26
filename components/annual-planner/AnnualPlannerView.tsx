@@ -5,7 +5,8 @@ import { LeaveType, LeaveDuration } from "@/types";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { STATUS_COLORS, SICK_LEAVE_CARD_COLORS } from "@/variables/colours";
 import { MONTH_NAMES_LONG } from "@/variables/calendar";
-import { calcMonthlyLeaveBreakdown } from "@/utils/leaveCalc";
+import { calcMonthlyLeaveBreakdown, calcLeaveSummary } from "@/utils/leaveCalc";
+import { BankHolidayHandling } from "@/types";
 import {
   getActiveYearAllowance,
   formatYearWindow,
@@ -65,6 +66,15 @@ export default function AnnualPlannerView({ user, bankHolidays }: AnnualPlannerV
     () => calcMonthlyLeaveBreakdown(user, bankHolidayDates, effectiveYa ?? undefined),
     [user, bankHolidayDates, effectiveYa]
   );
+
+  // Year-level summary derived from the same utility as the Dashboard's SummaryCard,
+  // ensuring the two views always agree on totals.
+  const yearlySummary = useMemo(
+    () => calcLeaveSummary(user, bankHolidayDates, effectiveYa ?? undefined),
+    [user, bankHolidayDates, effectiveYa]
+  );
+  const deductBankHolidays =
+    effectiveYa?.bankHolidayHandling === BankHolidayHandling.Deduct;
 
   // The scale denominator is the maximum totalCombined across all months (minimum 1)
   const maxDays = useMemo(
@@ -162,6 +172,52 @@ export default function AnnualPlannerView({ user, bankHolidays }: AnnualPlannerV
               maxDays={maxDays}
             />
           ))}
+        </div>
+      </div>
+
+      {/* ── Year totals summary ────────────────────────────────── */}
+      {/* Derived from calcLeaveSummary — the same function used by the Dashboard
+          SummaryCard — so the two views always show consistent totals. */}
+      <div className="bg-white rounded-2xl shadow p-5" data-testid="year-summary">
+        <h2 className="font-semibold text-gray-800 text-sm mb-3">Year Summary</h2>
+        <div className="space-y-1.5">
+          <div className="flex justify-between text-xs text-gray-600">
+            <span>Total Entitlement</span>
+            <span className="font-medium text-gray-800">{yearlySummary.total} days</span>
+          </div>
+          {deductBankHolidays && yearlySummary.bankHolidaysOnWorkingDays > 0 && (
+            <div className="flex justify-between text-xs text-gray-600">
+              <span>Bank holidays on working days</span>
+              <span>−{yearlySummary.bankHolidaysOnWorkingDays}</span>
+            </div>
+          )}
+          {!deductBankHolidays && yearlySummary.bankHolidaysOnWorkingDays > 0 && (
+            <div className="flex justify-between text-xs text-gray-600">
+              <span>Bank holidays on working days</span>
+              <span className="text-gray-500">{yearlySummary.bankHolidaysOnWorkingDays}</span>
+            </div>
+          )}
+          <div className="flex justify-between text-xs text-gray-600">
+            <span>Approved</span>
+            <span>−{yearlySummary.approved}</span>
+          </div>
+          <div className="flex justify-between text-xs text-gray-600">
+            <span>Requested</span>
+            <span>−{yearlySummary.requested}</span>
+          </div>
+          <div className="flex justify-between text-xs text-gray-600">
+            <span>Planned</span>
+            <span>−{yearlySummary.planned}</span>
+          </div>
+          <hr className="border-gray-100" />
+          <div className="flex justify-between text-sm font-semibold">
+            <span className={yearlySummary.remaining < 0 ? "text-red-600" : "text-gray-800"}>
+              Remaining
+            </span>
+            <span className={yearlySummary.remaining < 0 ? "text-red-600" : "text-gray-800"}>
+              {yearlySummary.remaining} days
+            </span>
+          </div>
         </div>
       </div>
 

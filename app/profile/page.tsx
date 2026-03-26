@@ -148,12 +148,23 @@ export default function ProfilePage() {
 
   // Derive "past leave" data from state up here — before any conditional returns — so
   // that useMemo is always called unconditionally (Rules of Hooks).
+
+  // ISO string for today — used for timezone-safe date comparisons
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  // Include periods whose end date has passed AND the active period if it contains
+  // any entries that have already finished (endDate < today).
   const pastPeriods = [...yearAllowances]
     .sort((a, b) => b.year - a.year || (a.active === false ? -1 : 1))
     .filter((ya) => {
-      const periodEnd = new Date(ya.year + 1, (ya.holidayStartMonth ?? 1) - 1, 1);
-      periodEnd.setDate(periodEnd.getDate() - 1);
-      return periodEnd < new Date();
+      const sm = ya.holidayStartMonth ?? 1;
+      const smPadded = String(sm).padStart(2, "0");
+      const periodEndStr = `${ya.year + 1}-${smPadded}-01`; // exclusive
+      // Period has fully ended
+      if (periodEndStr <= todayStr) return true;
+      // Active/future period — include only if it has entries that have already ended
+      const periodStartStr = `${ya.year}-${smPadded}-01`;
+      return entries.some((e) => e.endDate < todayStr && e.endDate >= periodStartStr && e.startDate < periodEndStr);
     });
 
   const selectedPeriodYa = pastPeriods.find(
@@ -163,15 +174,15 @@ export default function ProfilePage() {
   const pastLeaveEntries = useMemo(() => {
     if (!selectedPeriodYa) return [];
     const sm = selectedPeriodYa.holidayStartMonth ?? 1;
-    const start = new Date(selectedPeriodYa.year, sm - 1, 1);
-    const end = new Date(selectedPeriodYa.year + 1, sm - 1, 1);
-    end.setDate(end.getDate() - 1);
-    return entries.filter((e) => {
-      const es = new Date(e.startDate);
-      const ee = new Date(e.endDate);
-      return ee >= start && es <= end;
-    });
-  }, [entries, selectedPeriodYa]);
+    const smPadded = String(sm).padStart(2, "0");
+    const periodStartStr = `${selectedPeriodYa.year}-${smPadded}-01`;
+    const periodEndStr = `${selectedPeriodYa.year + 1}-${smPadded}-01`; // exclusive
+    // Only show entries whose end date is before today (truly past) and that
+    // fall within the selected period window.
+    return entries.filter(
+      (e) => e.endDate < todayStr && e.endDate >= periodStartStr && e.startDate < periodEndStr
+    );
+  }, [entries, selectedPeriodYa, todayStr]);
 
   if (status === "loading" || loading) {
     return <LoadingSpinner />;
