@@ -231,16 +231,9 @@ function DashboardContent() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
-          {/* Left column: annual planner */}
+          {/* Left column: stats + annual planner */}
           <div
             className={`lg:col-span-2 space-y-4 ${mobileView === "list" ? "block" : "hidden"} lg:block`}
-          >
-            <MicroAnnualPlanner user={displayUser} bankHolidays={bankHolidays} />
-          </div>
-
-          {/* Centre column (widest): summary card + main calendar */}
-          <div
-            className={`lg:col-span-3 space-y-4 ${mobileView === "calendar" ? "block" : "hidden"} lg:block`}
           >
             <SummaryCard
               user={displayUser}
@@ -254,6 +247,13 @@ function DashboardContent() {
                     }
               }
             />
+            <MicroAnnualPlanner user={displayUser} bankHolidays={bankHolidays} />
+          </div>
+
+          {/* Centre column (widest): main calendar */}
+          <div
+            className={`lg:col-span-3 space-y-4 ${mobileView === "calendar" ? "block" : "hidden"} lg:block`}
+          >
             <CalendarView
               user={displayUser}
               bankHolidays={bankHolidays}
