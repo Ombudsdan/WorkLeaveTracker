@@ -12,8 +12,8 @@ export interface LeaveCardProps {
   bankHolidays: BankHolidayEntry[];
   /** When true, shows edit and delete action buttons */
   isOwnProfile: boolean;
-  onEdit: (entry: LeaveEntry) => void;
-  onDelete: (id: string) => void;
+  onEdit?: (entry: LeaveEntry) => void;
+  onDelete?: (id: string) => void;
 }
 
 function formatDateRange(startDate: string, endDate: string): string {
@@ -68,14 +68,14 @@ export default function LeaveCard({
         {isOwnProfile && (
           <div className="flex gap-1 shrink-0">
             <button
-              onClick={() => onEdit(entry)}
+              onClick={() => onEdit?.(entry)}
               aria-label="Edit"
               className="p-2 sm:p-0.5 hover:opacity-70 cursor-pointer rounded"
             >
               <Pencil className="w-4 h-4 sm:w-3 sm:h-3" />
             </button>
             <button
-              onClick={() => onDelete(entry.id)}
+              onClick={() => onDelete?.(entry.id)}
               aria-label="Delete"
               className="p-2 sm:p-0.5 hover:opacity-70 text-red-600 cursor-pointer rounded"
             >

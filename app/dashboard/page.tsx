@@ -1,8 +1,9 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Eye, ArrowLeft } from "lucide-react";
 import type { PublicUser, LeaveEntry, BankHolidayEntry } from "@/types";
 import NavBar from "@/components/NavBar";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -27,11 +28,13 @@ const DASHBOARD_RETRY_DELAY_MS = 400;
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [currentUser, setCurrentUser] = useState<PublicUser | null>(null);
   const [allUsers, setAllUsers] = useState<PublicUser[]>([]);
   const [activeProfileUser, setActiveProfileUser] = useState<PublicUser | null>(null);
   const [isReadOnly, setIsReadOnly] = useState(false);
+  const [viewedUser, setViewedUser] = useState<PublicUser | null>(null);
   const [bankHolidays, setBankHolidays] = useState<BankHolidayEntry[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [addModalInitialDate, setAddModalInitialDate] = useState<string | undefined>(undefined);
@@ -135,7 +138,7 @@ export default function DashboardPage() {
     );
   }
 
-  const allowanceWarning = getYearAllowanceWarning(currentUser);
+  const allowanceWarning = !isReadOnly ? getYearAllowanceWarning(currentUser) : null;
   /** The year we need to configure if the warning is visible */
   const nextAllowanceYear = (() => {
     const activeYa = getActiveYearAllowance(currentUser.yearAllowances);
@@ -149,11 +152,39 @@ export default function DashboardPage() {
   const pinnedIds = currentUser.profile.pinnedUserIds ?? [];
   const pinnedUsers = allUsers.filter((u) => pinnedIds.includes(u.id));
 
+  // When viewing a connection's dashboard in read-only mode, show their data;
+  // otherwise show the logged-in user's own data.
+  const displayUser = isReadOnly && viewedUser ? viewedUser : currentUser;
+
   return (
     <div className="min-h-screen bg-gray-50">
       <NavBar activePage="dashboard" pendingRequestCount={pendingConnectionRequests} />
 
       <main className="max-w-6xl mx-auto py-6 px-4">
+        {isReadOnly && viewedUser && (
+          <div
+            className="mb-4 bg-amber-50 border border-amber-300 text-amber-900 rounded-xl px-4 py-3 text-sm flex items-center gap-3"
+            data-testid="readonly-banner"
+          >
+            <Eye size={16} className="text-amber-600 shrink-0" aria-hidden="true" />
+            <span className="flex-1">
+              You are viewing{" "}
+              <span className="font-semibold">
+                {viewedUser.profile.firstName} {viewedUser.profile.lastName}
+              </span>
+              &apos;s Leave Tracker{" "}
+              <span className="font-semibold">(Read-Only)</span>
+            </span>
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-1 text-xs font-medium text-amber-800 bg-amber-100 hover:bg-amber-200 px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0"
+            >
+              <ArrowLeft size={12} aria-hidden="true" />
+              Back to my Dashboard
+            </Link>
+          </div>
+        )}
+
         {allowanceWarning && (
           <div className="mb-4 bg-amber-50 border border-amber-300 text-amber-800 rounded-xl px-4 py-3 text-sm flex items-start gap-2">
             <span className="text-amber-500 text-lg leading-none mt-0.5">⚠</span>
@@ -165,15 +196,6 @@ export default function DashboardPage() {
               >
                 Configure now
               </button>
-            </span>
-          </div>
-        )}
-
-        {isReadOnly && activeProfileUser && (
-          <div className="mb-4 bg-indigo-50 border border-indigo-300 text-indigo-800 rounded-xl px-4 py-3 text-sm font-medium flex items-center gap-2">
-            <span className="text-indigo-500 text-lg leading-none">👁</span>
-            <span>
-              Viewing {activeProfileUser.profile.firstName} {activeProfileUser.profile.lastName}&apos;s Dashboard
             </span>
           </div>
         )}
@@ -209,14 +231,14 @@ export default function DashboardPage() {
           <div
             className={`lg:col-span-2 space-y-4 ${mobileView === "list" ? "block" : "hidden"} lg:block`}
           >
-            <MiniCalendar user={currentUser} bankHolidays={bankHolidays} />
-            <MicroAnnualPlanner user={currentUser} bankHolidays={bankHolidays} />
+            <MiniCalendar user={displayUser} bankHolidays={bankHolidays} />
+            <MicroAnnualPlanner user={displayUser} bankHolidays={bankHolidays} />
             <LeaveList
-              user={currentUser}
+              user={displayUser}
               bankHolidays={bankHolidays}
-              isOwnProfile={true}
-              onEdit={setEditingEntry}
-              onDelete={handleDeleteEntry}
+              isOwnProfile={!isReadOnly}
+              onEdit={isReadOnly ? undefined : setEditingEntry}
+              onDelete={isReadOnly ? undefined : handleDeleteEntry}
             />
             {!isReadOnly && (
               <div className="bg-white rounded-xl shadow border border-gray-100 p-4">
@@ -241,12 +263,25 @@ export default function DashboardPage() {
                 ) : (
                   <ul className="space-y-1.5">
                     {pinnedUsers.map((u) => (
-                      <li key={u.id} className="flex items-center gap-2 text-xs text-gray-700">
-                        <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-[9px] font-bold flex items-center justify-center shrink-0">
-                          {u.profile.firstName.charAt(0)}
-                          {u.profile.lastName.charAt(0)}
+                      <li
+                        key={u.id}
+                        className="flex items-center justify-between gap-2 text-xs text-gray-700"
+                      >
+                        <span className="flex items-center gap-2 min-w-0">
+                          <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-[9px] font-bold flex items-center justify-center shrink-0">
+                            {u.profile.firstName.charAt(0)}
+                            {u.profile.lastName.charAt(0)}
+                          </span>
+                          <span className="truncate">
+                            {u.profile.firstName} {u.profile.lastName}
+                          </span>
                         </span>
-                        {u.profile.firstName} {u.profile.lastName}
+                        <Link
+                          href={`/dashboard?userId=${u.id}`}
+                          className="shrink-0 text-[10px] font-medium text-indigo-600 hover:text-indigo-800 hover:underline"
+                        >
+                          View Dashboard
+                        </Link>
                       </li>
                     ))}
                   </ul>
@@ -260,7 +295,7 @@ export default function DashboardPage() {
             className={`lg:col-span-3 space-y-4 ${mobileView === "calendar" ? "block" : "hidden"} lg:block`}
           >
             <SummaryCard
-              user={currentUser}
+              user={displayUser}
               bankHolidays={bankHolidays}
               onAddLeave={
                 isReadOnly
@@ -272,15 +307,19 @@ export default function DashboardPage() {
               }
             />
             <CalendarView
-              user={currentUser}
+              user={displayUser}
               bankHolidays={bankHolidays}
-              isOwnProfile={true}
-              onAdd={(date) => {
-                setAddModalInitialDate(date);
-                setShowAddModal(true);
-              }}
-              onEdit={setEditingEntry}
-              onDelete={handleDeleteEntry}
+              isOwnProfile={!isReadOnly}
+              onAdd={
+                isReadOnly
+                  ? undefined
+                  : (date) => {
+                      setAddModalInitialDate(date);
+                      setShowAddModal(true);
+                    }
+              }
+              onEdit={isReadOnly ? undefined : setEditingEntry}
+              onDelete={isReadOnly ? undefined : handleDeleteEntry}
             />
           </div>
         </div>
@@ -346,6 +385,21 @@ export default function DashboardPage() {
       }
       setCurrentUser(me);
       setActiveProfileUser(me);
+
+      // Read-only mode: triggered when viewing a connection's dashboard via ?userId=
+      // Only allow viewing users who are in the current user's connections list.
+      const viewUserId = searchParams?.get("userId");
+      if (viewUserId && viewUserId !== me.id) {
+        const pinnedIds = me.profile.pinnedUserIds ?? [];
+        if (pinnedIds.includes(viewUserId)) {
+          const viewed = users.find((u) => u.id === viewUserId);
+          if (viewed) {
+            setViewedUser(viewed);
+            setIsReadOnly(true);
+          }
+        }
+      }
+
       return "found";
     }
     return "not_found";
