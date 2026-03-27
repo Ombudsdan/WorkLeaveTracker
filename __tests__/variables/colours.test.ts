@@ -22,12 +22,12 @@ describe("STATUS_COLORS", () => {
     });
   });
 
-  it("contains yellow classes for Planned", () => {
-    expect(STATUS_COLORS[LeaveStatus.Planned]).toContain("yellow");
+  it("contains blue classes for Planned", () => {
+    expect(STATUS_COLORS[LeaveStatus.Planned]).toContain("blue");
   });
 
-  it("contains blue classes for Requested", () => {
-    expect(STATUS_COLORS[LeaveStatus.Requested]).toContain("blue");
+  it("contains yellow classes for Requested", () => {
+    expect(STATUS_COLORS[LeaveStatus.Requested]).toContain("yellow");
   });
 
   it("contains green classes for Approved", () => {
@@ -42,12 +42,12 @@ describe("STATUS_DOT", () => {
     });
   });
 
-  it("contains yellow for Planned dot", () => {
-    expect(STATUS_DOT[LeaveStatus.Planned]).toContain("yellow");
+  it("contains blue for Planned dot", () => {
+    expect(STATUS_DOT[LeaveStatus.Planned]).toContain("blue");
   });
 
-  it("contains blue for Requested dot", () => {
-    expect(STATUS_DOT[LeaveStatus.Requested]).toContain("blue");
+  it("contains yellow for Requested dot", () => {
+    expect(STATUS_DOT[LeaveStatus.Requested]).toContain("yellow");
   });
 
   it("contains green for Approved dot", () => {
@@ -62,12 +62,12 @@ describe("CALENDAR_COLORS", () => {
     });
   });
 
-  it("contains yellow for Planned calendar cell", () => {
-    expect(CALENDAR_COLORS[LeaveStatus.Planned]).toContain("yellow");
+  it("contains blue for Planned calendar cell", () => {
+    expect(CALENDAR_COLORS[LeaveStatus.Planned]).toContain("blue");
   });
 
-  it("contains blue for Requested calendar cell", () => {
-    expect(CALENDAR_COLORS[LeaveStatus.Requested]).toContain("blue");
+  it("contains yellow for Requested calendar cell", () => {
+    expect(CALENDAR_COLORS[LeaveStatus.Requested]).toContain("yellow");
   });
 
   it("contains green for Approved calendar cell", () => {

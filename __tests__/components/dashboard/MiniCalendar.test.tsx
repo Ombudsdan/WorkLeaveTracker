@@ -260,11 +260,11 @@ describe("MiniCalendar — month navigation", () => {
 });
 
 describe("MiniCalendar — bank holidays", () => {
-  it("renders bank holidays with the purple bg-purple-100 style", () => {
+  it("renders bank holidays with the purple bg-purple-200 style", () => {
     render(<MiniCalendar user={alice} bankHolidays={[{ date: "2026-03-16", title: "Good Friday" }]} />);
     const bhDot = screen.getByTestId("bank-holiday-dot");
     expect(bhDot).toBeInTheDocument();
-    expect(bhDot.className).toContain("bg-purple-100");
+    expect(bhDot.className).toContain("bg-purple-200");
   });
 
   it("shows the day number inside the bank holiday dot", () => {

@@ -147,8 +147,8 @@ export default function AnnualPlannerView({ user, bankHolidays }: AnnualPlannerV
         <div className="flex flex-wrap gap-3 mb-4 mt-2">
           {[
             { label: "Approved", color: "bg-green-300" },
-            { label: "Requested", color: "bg-blue-300" },
-            { label: "Planned", color: "bg-yellow-300" },
+            { label: "Requested", color: "bg-yellow-300" },
+            { label: "Planned", color: "bg-blue-300" },
             { label: "Bank Holidays", color: "bg-gray-400" },
           ].map(({ label, color }) => (
             <span key={label} className="flex items-center gap-1 text-xs text-gray-600">

@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Eye, ArrowLeft } from "lucide-react";
+import { Eye, ArrowLeft, Users } from "lucide-react";
 import type { PublicUser, LeaveEntry, BankHolidayEntry } from "@/types";
 import NavBar from "@/components/NavBar";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -129,7 +129,7 @@ function DashboardContent() {
     return (
       <div className="min-h-screen bg-gray-50">
         <NavBar activePage="dashboard" />
-        <main className="max-w-6xl mx-auto py-6 px-4">
+        <main className="w-full py-6 px-6">
           <div className="bg-amber-50 border border-amber-300 text-amber-800 rounded-xl px-4 py-3 text-sm">
             Your profile could not be loaded. Please{" "}
             <button
@@ -143,8 +143,7 @@ function DashboardContent() {
         </main>
       </div>
     );
-  }
-
+  } 
   const allowanceWarning = !isReadOnly ? getYearAllowanceWarning(currentUser) : null;
   /** The year we need to configure if the warning is visible */
   const nextAllowanceYear = (() => {
@@ -167,7 +166,7 @@ function DashboardContent() {
     <div className="min-h-screen bg-gray-50">
       <NavBar activePage="dashboard" pendingRequestCount={pendingConnectionRequests} />
 
-      <main className="max-w-6xl mx-auto py-6 px-4">
+      <main className="w-full py-6 px-6">
         {isReadOnly && viewedUser && (
           <div
             className="mb-4 bg-amber-50 border border-amber-300 text-amber-900 rounded-xl px-4 py-3 text-sm flex items-center gap-3"
@@ -233,8 +232,8 @@ function DashboardContent() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          {/* Left column: mini-calendar, annual planner, leave list, connections */}
+        <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
+          {/* Left column: mini-calendar, annual planner, leave list */}
           <div
             className={`lg:col-span-2 space-y-4 ${mobileView === "list" ? "block" : "hidden"} lg:block`}
           >
@@ -247,6 +246,45 @@ function DashboardContent() {
               onEdit={isReadOnly ? undefined : setEditingEntry}
               onDelete={isReadOnly ? undefined : handleDeleteEntry}
             />
+          </div>
+
+          {/* Centre column (widest): summary card + main calendar */}
+          <div
+            className={`lg:col-span-3 space-y-4 ${mobileView === "calendar" ? "block" : "hidden"} lg:block`}
+          >
+            <SummaryCard
+              user={displayUser}
+              bankHolidays={bankHolidays}
+              onAddLeave={
+                isReadOnly
+                  ? undefined
+                  : () => {
+                      setAddModalInitialDate(undefined);
+                      setShowAddModal(true);
+                    }
+              }
+            />
+            <CalendarView
+              user={displayUser}
+              bankHolidays={bankHolidays}
+              isOwnProfile={!isReadOnly}
+              onAdd={
+                isReadOnly
+                  ? undefined
+                  : (date) => {
+                      setAddModalInitialDate(date);
+                      setShowAddModal(true);
+                    }
+              }
+              onEdit={isReadOnly ? undefined : setEditingEntry}
+              onDelete={isReadOnly ? undefined : handleDeleteEntry}
+            />
+          </div>
+
+          {/* Right column: connections widget */}
+          <div
+            className={`lg:col-span-2 space-y-4 ${mobileView === "list" ? "block" : "hidden"} lg:block`}
+          >
             {!isReadOnly && (
               <div className="bg-white rounded-xl shadow border border-gray-100 p-4">
                 <div className="flex items-center justify-between mb-2">
@@ -261,6 +299,7 @@ function DashboardContent() {
                       href="/connections"
                       className="inline-flex items-center gap-1 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition-colors"
                     >
+                      <Users size={14} aria-hidden="true" />
                       Manage
                     </Link>
                   </div>
@@ -295,39 +334,6 @@ function DashboardContent() {
                 )}
               </div>
             )}
-          </div>
-
-          {/* Right column: summary card + main calendar */}
-          <div
-            className={`lg:col-span-3 space-y-4 ${mobileView === "calendar" ? "block" : "hidden"} lg:block`}
-          >
-            <SummaryCard
-              user={displayUser}
-              bankHolidays={bankHolidays}
-              onAddLeave={
-                isReadOnly
-                  ? undefined
-                  : () => {
-                      setAddModalInitialDate(undefined);
-                      setShowAddModal(true);
-                    }
-              }
-            />
-            <CalendarView
-              user={displayUser}
-              bankHolidays={bankHolidays}
-              isOwnProfile={!isReadOnly}
-              onAdd={
-                isReadOnly
-                  ? undefined
-                  : (date) => {
-                      setAddModalInitialDate(date);
-                      setShowAddModal(true);
-                    }
-              }
-              onEdit={isReadOnly ? undefined : setEditingEntry}
-              onDelete={isReadOnly ? undefined : handleDeleteEntry}
-            />
           </div>
         </div>
       </main>

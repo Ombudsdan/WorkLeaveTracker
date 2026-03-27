@@ -131,7 +131,7 @@ describe("MicroAnnualPlanner — leave coloring", () => {
     const marchRow = screen.getByTestId("month-row-Mar");
     const blueBoxes = within(marchRow)
       .getAllByTestId("day-box")
-      .filter((el) => el.className.includes("bg-blue-400"));
+      .filter((el) => el.className.includes("bg-yellow-300"));
     expect(blueBoxes).toHaveLength(1);
   });
 
@@ -152,7 +152,7 @@ describe("MicroAnnualPlanner — leave coloring", () => {
     const marchRow = screen.getByTestId("month-row-Mar");
     const yellowBoxes = within(marchRow)
       .getAllByTestId("day-box")
-      .filter((el) => el.className.includes("bg-yellow-300"));
+      .filter((el) => el.className.includes("bg-blue-400"));
     expect(yellowBoxes).toHaveLength(1);
   });
 
@@ -178,15 +178,15 @@ describe("MicroAnnualPlanner — leave coloring", () => {
     expect(greenBoxes).toHaveLength(0);
   });
 
-  it("marks bank holiday boxes with the bank-holiday purple colour (bg-purple-100)", () => {
+  it("marks bank holiday boxes with the bank-holiday purple colour (bg-purple-300)", () => {
     render(
       <MicroAnnualPlanner user={alice} bankHolidays={[{ date: "2026-03-16", title: "Test BH" }]} />
     );
     const marchRow = screen.getByTestId("month-row-Mar");
-    // Day 16 is a bank holiday → should use bg-purple-100
+    // Day 16 is a bank holiday → should use bg-purple-300
     const boxes = within(marchRow).getAllByTestId("day-box");
     const day16Box = boxes[15]; // 0-indexed: day 16 is index 15
-    expect(day16Box.className).toContain("bg-purple-100");
+    expect(day16Box.className).toContain("bg-purple-300");
   });
 });
 

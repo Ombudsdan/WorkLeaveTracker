@@ -200,7 +200,7 @@ describe("CalendarView — leave entry display", () => {
       ],
     };
     const { container } = render(<CalendarView user={userWithEntry} bankHolidays={[]} />);
-    expect(container.querySelector(".bg-yellow-200")).toBeInTheDocument();
+    expect(container.querySelector(".bg-blue-200")).toBeInTheDocument();
   });
 
   it("applies the requested colour class to a cell covered by a requested entry", () => {
@@ -217,15 +217,15 @@ describe("CalendarView — leave entry display", () => {
       ],
     };
     const { container } = render(<CalendarView user={userWithEntry} bankHolidays={[]} />);
-    expect(container.querySelector(".bg-blue-200")).toBeInTheDocument();
+    expect(container.querySelector(".bg-yellow-200")).toBeInTheDocument();
   });
 });
 
 describe("CalendarView — bank holiday indicator", () => {
   it("applies the bank holiday class to a bank holiday cell with no entry", () => {
     const { container } = render(<CalendarView user={alice} bankHolidays={[bh("2026-03-02")]} />);
-    // bg-purple-100 is CALENDAR_CELL_BANK_HOLIDAY
-    expect(container.querySelector(".bg-purple-100")).toBeInTheDocument();
+    // bg-purple-200 is CALENDAR_CELL_BANK_HOLIDAY
+    expect(container.querySelector(".bg-purple-200")).toBeInTheDocument();
   });
 
   it("shows the bank holiday name on a bank holiday cell with no entry", () => {
@@ -380,9 +380,9 @@ describe("CalendarView — overlapping leave entries", () => {
       ],
     };
     const { container } = render(<CalendarView user={userWithOverlap} bankHolidays={[]} />);
-    // Both green-200 (approved) and yellow-200 (planned) should appear
+    // Both green-200 (approved) and blue-200 (planned) should appear
     expect(container.querySelector(".bg-green-200")).toBeInTheDocument();
-    expect(container.querySelector(".bg-yellow-200")).toBeInTheDocument();
+    expect(container.querySelector(".bg-blue-200")).toBeInTheDocument();
   });
 
   it("shows only the first two entries when three overlap on the same day", () => {
@@ -413,12 +413,12 @@ describe("CalendarView — overlapping leave entries", () => {
       ],
     };
     const { container } = render(<CalendarView user={userWithThree} bankHolidays={[]} />);
-    // The legend always has one bg-blue-200 span.  A requested entry in the calendar
+    // The legend always has one bg-yellow-200 span.  A requested entry in the calendar
     // would add a second one.  With capping at 2 the requested entry is not rendered
     // so there should only be the one legend swatch.
-    const blueElements = container.querySelectorAll(".bg-blue-200");
-    // Only the legend swatch (1) — no calendar cell for the third entry
-    expect(blueElements.length).toBe(1);
+    const yellowElements = container.querySelectorAll(".bg-yellow-200");
+    // Only the legend swatch (1) — no calendar cell for the capped requested entry
+    expect(yellowElements.length).toBe(1);
   });
 });
 

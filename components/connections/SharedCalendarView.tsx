@@ -42,8 +42,8 @@ interface PopoverState {
 /** Tiny colour map for leave status within this component */
 const CELL_CLASS: Record<LeaveStatus, string> = {
   [LeaveStatus.Approved]: "bg-green-300",
-  [LeaveStatus.Requested]: "bg-blue-300",
-  [LeaveStatus.Planned]: "bg-yellow-200",
+  [LeaveStatus.Requested]: "bg-yellow-300",
+  [LeaveStatus.Planned]: "bg-blue-200",
 };
 
 /** Return initials from a first + last name */
@@ -202,7 +202,7 @@ export default function SharedCalendarView({
       /* c8 ignore next */
       bgClass = CELL_CLASS[topEntry.status] ?? "bg-white";
     } else if (isBH) {
-      bgClass = "bg-purple-100";
+      bgClass = "bg-purple-200";
     }
 
     // Empty cells in the current user's row are clickable to add leave
@@ -348,13 +348,13 @@ export default function SharedCalendarView({
           <span className="w-3 h-3 rounded bg-green-300" /> Approved
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded bg-blue-300" /> Requested
+          <span className="w-3 h-3 rounded bg-yellow-300" /> Requested
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded bg-yellow-200" /> Planned
+          <span className="w-3 h-3 rounded bg-blue-200" /> Planned
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded bg-purple-100" /> Bank Holiday
+          <span className="w-3 h-3 rounded bg-purple-200" /> Bank Holiday
         </span>
       </div>
 

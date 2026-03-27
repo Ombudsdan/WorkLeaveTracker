@@ -88,22 +88,22 @@ describe("HalfDonutChart — status colours", () => {
     expect(usedPath.getAttribute("stroke")).toBe("#86efac");
   });
 
-  it("uses the Requested colour (blue-300) for Requested status", () => {
+  it("uses the Requested colour (yellow-300) for Requested status", () => {
     const { container } = render(
       <HalfDonutChart total={25} used={10} status={LeaveStatus.Requested} />
     );
     const paths = container.querySelectorAll("path");
     const usedPath = paths[1];
-    expect(usedPath.getAttribute("stroke")).toBe("#93c5fd");
+    expect(usedPath.getAttribute("stroke")).toBe("#fde047");
   });
 
-  it("uses the Planned colour (yellow-300) for Planned status", () => {
+  it("uses the Planned colour (blue-300) for Planned status", () => {
     const { container } = render(
       <HalfDonutChart total={25} used={10} status={LeaveStatus.Planned} />
     );
     const paths = container.querySelectorAll("path");
     const usedPath = paths[1];
-    expect(usedPath.getAttribute("stroke")).toBe("#fde047");
+    expect(usedPath.getAttribute("stroke")).toBe("#93c5fd");
   });
 });
 
