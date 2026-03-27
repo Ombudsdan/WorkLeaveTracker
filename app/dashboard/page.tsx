@@ -108,10 +108,13 @@ function DashboardContent() {
     return () => {
       cancelled = true;
     };
-    // applyUserData is defined later in this component and depends on stable
-    // setter refs and router; adding it would trigger re-runs on every render
+    // applyUserData is defined later in the component body via function hoisting
+    // and references stable setter refs; omitting it from the dep array is
+    // intentional to avoid re-running the effect on every render.
+    // searchParams IS included so that URL changes (?userId=xxx or back to
+    // /dashboard) immediately re-run initDashboard and update read-only state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, session]);
+  }, [status, session, searchParams]);
 
   if (status === "loading" || loading) {
     return <LoadingSpinner />;
@@ -389,6 +392,13 @@ function DashboardContent() {
       }
       setCurrentUser(me);
       setActiveProfileUser(me);
+
+      // Always reset read-only state before applying the new URL's userId so
+      // that navigating back to /dashboard (no userId) clears the banner and
+      // navigating from one connection's dashboard to another picks up the
+      // correct viewed user rather than keeping the previous one.
+      setIsReadOnly(false);
+      setViewedUser(null);
 
       // Read-only mode: triggered when viewing a connection's dashboard via ?userId=
       // Only allow viewing users who are in the current user's connections list.
