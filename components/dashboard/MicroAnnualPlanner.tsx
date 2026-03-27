@@ -31,8 +31,18 @@ const BOX_COLORS: Record<LeaveStatus, string> = {
 };
 
 const MONTH_ABBREV = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
 ];
 
 const MAX_DAYS_IN_MONTH = 31;
@@ -232,7 +242,9 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
                     }
                     data-testid="day-box"
                     className={boxClass}
-                    onClick={isClickable ? (ev) => handleDayClick(day, ev.currentTarget) : undefined}
+                    onClick={
+                      isClickable ? (ev) => handleDayClick(day, ev.currentTarget) : undefined
+                    }
                   />
                 );
               })}
@@ -294,7 +306,9 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
           {/* Leave entry */}
           {popover.status && popover.leaveEntry && (
             <>
-              <div className={`inline-flex items-center px-1.5 py-0.5 rounded font-semibold mb-2 border text-[10px] ${STATUS_COLORS[popover.status]}`}>
+              <div
+                className={`inline-flex items-center px-1.5 py-0.5 rounded font-semibold mb-2 border text-[10px] ${STATUS_COLORS[popover.status]}`}
+              >
                 {popover.status.charAt(0).toUpperCase() + popover.status.slice(1)}
               </div>
               <p className="font-medium text-gray-800 mb-1 pr-4">
@@ -304,7 +318,11 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
                 {formatDateRange(popover.leaveEntry.startDate, popover.leaveEntry.endDate)}
               </p>
               <p className="text-gray-500">
-                {getDurationLabel(popover.leaveEntry, user.profile.nonWorkingDays, bankHolidayDates)}
+                {getDurationLabel(
+                  popover.leaveEntry,
+                  user.profile.nonWorkingDays,
+                  bankHolidayDates
+                )}
               </p>
             </>
           )}

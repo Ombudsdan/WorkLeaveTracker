@@ -179,7 +179,8 @@ describe("MiniCalendar — leave days show colored dots", () => {
     render(<MiniCalendar user={userMulti} bankHolidays={[]} />);
     const dots = screen.getAllByTestId("leave-dot");
     expect(dots).toHaveLength(1);
-    expect(dots[0]).toHaveAttribute("aria-label", expect.stringContaining("approved"));  });
+    expect(dots[0]).toHaveAttribute("aria-label", expect.stringContaining("approved"));
+  });
 
   it("does not show dots for entries outside the current month", () => {
     const userOtherMonth: PublicUser = {
@@ -252,30 +253,34 @@ describe("MiniCalendar — month navigation", () => {
   it("opens the MonthYearPicker when the label is clicked", async () => {
     const user = setup();
     render(<MiniCalendar user={alice} bankHolidays={[]} />);
-    await user.click(
-      screen.getByRole("button", { name: /March 2026.*open month-year picker/i })
-    );
+    await user.click(screen.getByRole("button", { name: /March 2026.*open month-year picker/i }));
     expect(screen.getByRole("dialog", { name: "Month-year picker" })).toBeInTheDocument();
   });
 });
 
 describe("MiniCalendar — bank holidays", () => {
   it("renders bank holidays with the purple bg-purple-300 style", () => {
-    render(<MiniCalendar user={alice} bankHolidays={[{ date: "2026-03-16", title: "Good Friday" }]} />);
+    render(
+      <MiniCalendar user={alice} bankHolidays={[{ date: "2026-03-16", title: "Good Friday" }]} />
+    );
     const bhDot = screen.getByTestId("bank-holiday-dot");
     expect(bhDot).toBeInTheDocument();
     expect(bhDot.className).toContain("bg-purple-300");
   });
 
   it("shows the day number inside the bank holiday dot", () => {
-    render(<MiniCalendar user={alice} bankHolidays={[{ date: "2026-03-16", title: "Good Friday" }]} />);
+    render(
+      <MiniCalendar user={alice} bankHolidays={[{ date: "2026-03-16", title: "Good Friday" }]} />
+    );
     const bhDot = screen.getByTestId("bank-holiday-dot");
     expect(bhDot.textContent).toBe("16");
   });
 
   it("shows a popover with the bank holiday name when clicked", async () => {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
-    render(<MiniCalendar user={alice} bankHolidays={[{ date: "2026-03-16", title: "Good Friday" }]} />);
+    render(
+      <MiniCalendar user={alice} bankHolidays={[{ date: "2026-03-16", title: "Good Friday" }]} />
+    );
     await user.click(screen.getByTestId("bank-holiday-dot"));
     const popover = screen.getByRole("tooltip");
     expect(popover).toBeInTheDocument();
@@ -451,7 +456,9 @@ describe("MiniCalendar — popover matches CalendarView style", () => {
 
   it("bank holiday popover shows a 'Bank Holiday' badge", async () => {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
-    render(<MiniCalendar user={alice} bankHolidays={[{ date: "2026-03-17", title: "St Patrick" }]} />);
+    render(
+      <MiniCalendar user={alice} bankHolidays={[{ date: "2026-03-17", title: "St Patrick" }]} />
+    );
     const bh = screen.getAllByTestId("bank-holiday-dot");
     await user.click(bh[0]);
     const tooltip = screen.getByRole("tooltip");

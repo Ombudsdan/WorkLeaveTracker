@@ -210,9 +210,7 @@ describe("ConnectionsPanel — pending requests", () => {
       />
     );
     expect(screen.getByText(/awaiting approval/i)).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /revoke request to bob/i })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /revoke request to bob/i })).toBeInTheDocument();
   });
 });
 

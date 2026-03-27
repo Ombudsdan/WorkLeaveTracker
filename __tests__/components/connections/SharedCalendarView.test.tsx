@@ -624,4 +624,3 @@ describe("SharedCalendarView — leave entry popover", () => {
     expect(screen.queryByRole("button", { name: "Delete" })).not.toBeInTheDocument();
   });
 });
-

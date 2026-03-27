@@ -42,7 +42,20 @@ describe("MicroAnnualPlanner — basic rendering", () => {
 
   it("renders month abbreviations Jan through Dec for a Jan-start year", () => {
     render(<MicroAnnualPlanner user={alice} bankHolidays={[]} />);
-    const abbrevs = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const abbrevs = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
     abbrevs.forEach((abbr) => {
       expect(screen.getByText(abbr)).toBeInTheDocument();
     });
@@ -333,7 +346,9 @@ describe("MicroAnnualPlanner — popover matches CalendarView style", () => {
   it("shows a status badge in the popover", async () => {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
     const { within } = await import("@testing-library/react");
-    render(<MicroAnnualPlanner user={aliceWithLeave as import("@/types").PublicUser} bankHolidays={[]} />);
+    render(
+      <MicroAnnualPlanner user={aliceWithLeave as import("@/types").PublicUser} bankHolidays={[]} />
+    );
     const marchRow = screen.getByTestId("month-row-Mar");
     const boxes = within(marchRow).getAllByTestId("day-box");
     await user.click(boxes[8]);
@@ -344,7 +359,9 @@ describe("MicroAnnualPlanner — popover matches CalendarView style", () => {
   it("shows the date range in the popover", async () => {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
     const { within } = await import("@testing-library/react");
-    render(<MicroAnnualPlanner user={aliceWithLeave as import("@/types").PublicUser} bankHolidays={[]} />);
+    render(
+      <MicroAnnualPlanner user={aliceWithLeave as import("@/types").PublicUser} bankHolidays={[]} />
+    );
     const marchRow = screen.getByTestId("month-row-Mar");
     const boxes = within(marchRow).getAllByTestId("day-box");
     await user.click(boxes[8]);

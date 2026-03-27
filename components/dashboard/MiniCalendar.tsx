@@ -54,9 +54,7 @@ interface PopoverInfo {
 /** Return the highest-priority entry from an array */
 function bestEntry(entries: LeaveEntry[]): LeaveEntry | null {
   if (entries.length === 0) return null;
-  return entries.reduce((a, b) =>
-    STATUS_PRIORITY[a.status] <= STATUS_PRIORITY[b.status] ? a : b
-  );
+  return entries.reduce((a, b) => (STATUS_PRIORITY[a.status] <= STATUS_PRIORITY[b.status] ? a : b));
 }
 
 /**
@@ -136,17 +134,12 @@ export default function MiniCalendar({ user, bankHolidays }: MiniCalendarProps) 
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   const bankHolidayDates = useMemo(() => bankHolidays.map((bh) => bh.date), [bankHolidays]);
 
-  const { min: pickerMin, max: pickerMax } = useMemo(
-    () => getLeaveDataBounds([user]),
-    [user]
-  );
+  const { min: pickerMin, max: pickerMax } = useMemo(() => getLeaveDataBounds([user]), [user]);
 
   const atMin =
-    calYear < pickerMin.year ||
-    (calYear === pickerMin.year && calMonth <= pickerMin.month);
+    calYear < pickerMin.year || (calYear === pickerMin.year && calMonth <= pickerMin.month);
   const atMax =
-    calYear > pickerMax.year ||
-    (calYear === pickerMax.year && calMonth >= pickerMax.month);
+    calYear > pickerMax.year || (calYear === pickerMax.year && calMonth >= pickerMax.month);
 
   const bhMap = useMemo<Map<string, string>>(() => {
     const m = new Map<string, string>();
@@ -179,10 +172,7 @@ export default function MiniCalendar({ user, bankHolidays }: MiniCalendarProps) 
     }
 
     const relevantEntries = user.entries.filter(
-      (e) =>
-        e.type === LeaveType.Holiday &&
-        e.endDate >= monthStart &&
-        e.startDate <= monthEnd
+      (e) => e.type === LeaveType.Holiday && e.endDate >= monthStart && e.startDate <= monthEnd
     );
 
     for (let d = 1; d <= daysInMonth; d++) {
@@ -438,8 +428,14 @@ export default function MiniCalendar({ user, bankHolidays }: MiniCalendarProps) 
 
           {/* Primary leave entry (full-day or AM half) */}
           {popover.topEntry && (
-            <div className={popover.bottomEntry && popover.bottomEntry !== popover.topEntry ? "mb-3" : ""}>
-              <div className={`inline-flex items-center px-1.5 py-0.5 rounded font-semibold mb-2 border text-[10px] ${STATUS_COLORS[popover.topEntry.status]}`}>
+            <div
+              className={
+                popover.bottomEntry && popover.bottomEntry !== popover.topEntry ? "mb-3" : ""
+              }
+            >
+              <div
+                className={`inline-flex items-center px-1.5 py-0.5 rounded font-semibold mb-2 border text-[10px] ${STATUS_COLORS[popover.topEntry.status]}`}
+              >
                 {popover.topEntry.status.charAt(0).toUpperCase() + popover.topEntry.status.slice(1)}
               </div>
               <p className="font-medium text-gray-800 mb-1 pr-4">
@@ -457,8 +453,11 @@ export default function MiniCalendar({ user, bankHolidays }: MiniCalendarProps) 
           {/* Bottom-half PM entry (only when different from top) */}
           {popover.bottomEntry && popover.bottomEntry !== popover.topEntry && (
             <div className="border-t border-gray-100 pt-2 mt-1">
-              <div className={`inline-flex items-center px-1.5 py-0.5 rounded font-semibold mb-2 border text-[10px] ${STATUS_COLORS[popover.bottomEntry.status]}`}>
-                {popover.bottomEntry.status.charAt(0).toUpperCase() + popover.bottomEntry.status.slice(1)}
+              <div
+                className={`inline-flex items-center px-1.5 py-0.5 rounded font-semibold mb-2 border text-[10px] ${STATUS_COLORS[popover.bottomEntry.status]}`}
+              >
+                {popover.bottomEntry.status.charAt(0).toUpperCase() +
+                  popover.bottomEntry.status.slice(1)}
               </div>
               <p className="font-medium text-gray-800 mb-1 pr-4">
                 {getEntryLabel(popover.bottomEntry)}
@@ -467,7 +466,11 @@ export default function MiniCalendar({ user, bankHolidays }: MiniCalendarProps) 
                 {formatDateRange(popover.bottomEntry.startDate, popover.bottomEntry.endDate)}
               </p>
               <p className="text-gray-500">
-                {getDurationLabel(popover.bottomEntry, user.profile.nonWorkingDays, bankHolidayDates)}
+                {getDurationLabel(
+                  popover.bottomEntry,
+                  user.profile.nonWorkingDays,
+                  bankHolidayDates
+                )}
               </p>
             </div>
           )}

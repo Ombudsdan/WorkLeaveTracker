@@ -143,7 +143,7 @@ function DashboardContent() {
         </main>
       </div>
     );
-  } 
+  }
   const allowanceWarning = !isReadOnly ? getYearAllowanceWarning(currentUser) : null;
   /** The year we need to configure if the warning is visible */
   const nextAllowanceYear = (() => {
@@ -178,8 +178,7 @@ function DashboardContent() {
               <span className="font-semibold">
                 {viewedUser.profile.firstName} {viewedUser.profile.lastName}
               </span>
-              &apos;s Leave Tracker{" "}
-              <span className="font-semibold">(Read-Only)</span>
+              &apos;s Leave Tracker <span className="font-semibold">(Read-Only)</span>
             </span>
             <Link
               href="/dashboard"
