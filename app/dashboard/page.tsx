@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -25,7 +25,11 @@ import type { YearAllowance } from "@/types";
 /** How long to wait before retrying initDashboard when the user record is not found. */
 const DASHBOARD_RETRY_DELAY_MS = 400;
 
-export default function DashboardPage() {
+/**
+ * Inner component that uses useSearchParams() — must live inside a Suspense
+ * boundary so Next.js can statically render the outer shell at build time.
+ */
+function DashboardContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -462,4 +466,17 @@ function getYearAllowanceWarning(user: PublicUser): string | null {
   }
 
   return null;
+}
+
+/**
+ * Default page export — wraps DashboardContent in a Suspense boundary so that
+ * the useSearchParams() call inside DashboardContent doesn't force the entire
+ * page to opt out of static rendering at build time.
+ */
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <DashboardContent />
+    </Suspense>
+  );
 }
