@@ -217,15 +217,16 @@ describe("CalendarView — leave entry display", () => {
       ],
     };
     const { container } = render(<CalendarView user={userWithEntry} bankHolidays={[]} />);
-    expect(container.querySelector(".bg-yellow-200")).toBeInTheDocument();
+    expect(container.querySelector(".bg-yellow-200")).not.toBeInTheDocument();
+    expect(container.querySelector(".bg-orange-200")).toBeInTheDocument();
   });
 });
 
 describe("CalendarView — bank holiday indicator", () => {
   it("applies the bank holiday class to a bank holiday cell with no entry", () => {
     const { container } = render(<CalendarView user={alice} bankHolidays={[bh("2026-03-02")]} />);
-    // bg-purple-200 is CALENDAR_CELL_BANK_HOLIDAY
-    expect(container.querySelector(".bg-purple-200")).toBeInTheDocument();
+    // bg-purple-300 is CALENDAR_CELL_BANK_HOLIDAY
+    expect(container.querySelector(".bg-purple-300")).toBeInTheDocument();
   });
 
   it("shows the bank holiday name on a bank holiday cell with no entry", () => {
@@ -413,12 +414,12 @@ describe("CalendarView — overlapping leave entries", () => {
       ],
     };
     const { container } = render(<CalendarView user={userWithThree} bankHolidays={[]} />);
-    // The legend always has one bg-yellow-200 span.  A requested entry in the calendar
+    // The legend always has one bg-orange-200 span.  A requested entry in the calendar
     // would add a second one.  With capping at 2 the requested entry is not rendered
     // so there should only be the one legend swatch.
-    const yellowElements = container.querySelectorAll(".bg-yellow-200");
+    const orangeElements = container.querySelectorAll(".bg-orange-200");
     // Only the legend swatch (1) — no calendar cell for the capped requested entry
-    expect(yellowElements.length).toBe(1);
+    expect(orangeElements.length).toBe(1);
   });
 });
 

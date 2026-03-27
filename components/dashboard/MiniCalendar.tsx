@@ -360,7 +360,7 @@ export default function MiniCalendar({ user, bankHolidays }: MiniCalendarProps) 
                 onClick={(ev) => handleCellClick(cell, ev.currentTarget as HTMLElement)}
               >
                 <span
-                  className={`w-5 h-5 rounded-full inline-flex items-center justify-center text-[10px] select-none bg-purple-200 text-purple-800 cursor-pointer font-medium ${todayRing}`}
+                  className={`w-5 h-5 rounded-full inline-flex items-center justify-center text-[10px] select-none bg-purple-300 text-purple-900 cursor-pointer font-medium ${todayRing}`}
                   title={cell.bankHolidayTitle ?? cell.dateStr ?? undefined}
                   data-testid="bank-holiday-dot"
                   aria-label={cell.bankHolidayTitle ?? `Bank holiday on ${cell.dateStr}`}
@@ -396,7 +396,7 @@ export default function MiniCalendar({ user, bankHolidays }: MiniCalendarProps) 
           Approved
         </span>
         <span className="flex items-center gap-1 text-xs text-gray-500">
-          <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" />
+          <span className="w-2 h-2 rounded-full bg-orange-400 inline-block" />
           Requested
         </span>
         <span className="flex items-center gap-1 text-xs text-gray-500">
@@ -404,7 +404,7 @@ export default function MiniCalendar({ user, bankHolidays }: MiniCalendarProps) 
           Planned
         </span>
         <span className="flex items-center gap-1 text-xs text-gray-500">
-          <span className="w-2 h-2 rounded-full bg-purple-200 border border-purple-400 inline-block" />
+          <span className="w-2 h-2 rounded-full bg-purple-300 border border-purple-500 inline-block" />
           Bank Holiday
         </span>
       </div>
@@ -428,7 +428,7 @@ export default function MiniCalendar({ user, bankHolidays }: MiniCalendarProps) 
           {/* Bank holiday with no leave */}
           {popover.bankHolidayTitle && !popover.topEntry && !popover.bottomEntry && (
             <>
-              <div className="inline-flex items-center px-1.5 py-0.5 rounded font-semibold mb-2 border text-[10px] bg-purple-200 text-purple-800 border-purple-400">
+              <div className="inline-flex items-center px-1.5 py-0.5 rounded font-semibold mb-2 border text-[10px] bg-purple-300 text-purple-900 border-purple-500">
                 Bank Holiday
               </div>
               <p className="font-medium text-gray-800 mb-1 pr-4">{popover.bankHolidayTitle}</p>

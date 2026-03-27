@@ -241,7 +241,7 @@ export default function CalendarView({
           <div className="h-full flex flex-col items-center justify-center">
             <span>{day}</span>
             {isBankHoliday && (
-              <span className="text-purple-600 text-[8px] leading-none truncate w-full text-center px-0.5">
+              <span className="text-purple-800 text-[8px] leading-none truncate w-full text-center px-0.5">
                 {bankHolidayName ?? "BH"}
               </span>
             )}
@@ -440,7 +440,7 @@ export default function CalendarView({
           <span className="w-3 h-3 rounded bg-green-200" /> Approved
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded bg-yellow-200" /> Requested
+          <span className="w-3 h-3 rounded bg-orange-200" /> Requested
         </span>
         <span className="flex items-center gap-1">
           <span className="w-3 h-3 rounded bg-blue-200" /> Planned
@@ -451,7 +451,7 @@ export default function CalendarView({
           </span>
         )}
         <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded bg-purple-200" /> Bank Holiday
+          <span className="w-3 h-3 rounded bg-purple-300" /> Bank Holiday
         </span>
         <span className="flex items-center gap-1">
           <span className="w-3 h-3 rounded bg-gray-100" /> Non-Working

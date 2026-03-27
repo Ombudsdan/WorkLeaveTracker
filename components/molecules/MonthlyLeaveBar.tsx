@@ -74,7 +74,7 @@ export default function MonthlyLeaveBar({
           )}
           {requested > 0 && (
             <div
-              className="bg-yellow-300 h-full"
+              className="bg-orange-300 h-full"
               style={{ width: pct(requested) }}
               title={`Requested: ${requested}d`}
             />

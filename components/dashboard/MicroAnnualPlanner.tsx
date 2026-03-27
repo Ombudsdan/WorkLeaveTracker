@@ -26,7 +26,7 @@ const STATUS_PRIORITY: Record<LeaveStatus, number> = {
 
 const BOX_COLORS: Record<LeaveStatus, string> = {
   [LeaveStatus.Approved]: "bg-green-400",
-  [LeaveStatus.Requested]: "bg-yellow-300",
+  [LeaveStatus.Requested]: "bg-orange-300",
   [LeaveStatus.Planned]: "bg-blue-400",
 };
 
@@ -216,7 +216,7 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
                 const isClickable = day.status !== null || day.isBankHoliday;
                 const boxClass = `h-3 flex-1 rounded-[1px] ${
                   day.isBankHoliday
-                    ? "bg-purple-300 cursor-pointer"
+                    ? "bg-purple-400 cursor-pointer"
                     : day.isWeekend
                       ? "bg-gray-300"
                       : day.status !== null
@@ -251,7 +251,7 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
           Approved
         </span>
         <span className="flex items-center gap-1 text-xs text-gray-500">
-          <span className="w-2.5 h-2.5 rounded-[1px] bg-yellow-300 inline-block" />
+          <span className="w-2.5 h-2.5 rounded-[1px] bg-orange-300 inline-block" />
           Requested
         </span>
         <span className="flex items-center gap-1 text-xs text-gray-500">
@@ -259,7 +259,7 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
           Planned
         </span>
         <span className="flex items-center gap-1 text-xs text-gray-500">
-          <span className="w-2.5 h-2.5 rounded-[1px] bg-purple-300 border border-purple-400 inline-block" />
+          <span className="w-2.5 h-2.5 rounded-[1px] bg-purple-400 border border-purple-500 inline-block" />
           Bank Holiday
         </span>
       </div>
@@ -283,7 +283,7 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
           {/* Bank holiday */}
           {popover.bankHolidayTitle && !popover.status && (
             <>
-              <div className="inline-flex items-center px-1.5 py-0.5 rounded font-semibold mb-2 border text-[10px] bg-purple-200 text-purple-800 border-purple-400">
+              <div className="inline-flex items-center px-1.5 py-0.5 rounded font-semibold mb-2 border text-[10px] bg-purple-300 text-purple-900 border-purple-500">
                 Bank Holiday
               </div>
               <p className="font-medium text-gray-800 mb-1 pr-4">{popover.bankHolidayTitle}</p>

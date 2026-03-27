@@ -111,7 +111,7 @@ describe("MonthlyLeaveBar — segments", () => {
     expect(container.querySelector(".bg-green-300")).not.toBeInTheDocument();
   });
 
-  it("renders the requested (yellow) segment when requested > 0", () => {
+  it("renders the requested (orange) segment when requested > 0", () => {
     const { container } = render(
       <MonthlyLeaveBar
         monthName="September"
@@ -122,7 +122,7 @@ describe("MonthlyLeaveBar — segments", () => {
         maxDays={10}
       />
     );
-    expect(container.querySelector(".bg-yellow-300")).toBeInTheDocument();
+    expect(container.querySelector(".bg-orange-300")).toBeInTheDocument();
   });
 
   it("does not render the requested segment when requested is 0", () => {
@@ -136,7 +136,7 @@ describe("MonthlyLeaveBar — segments", () => {
         maxDays={10}
       />
     );
-    expect(container.querySelector(".bg-yellow-300")).not.toBeInTheDocument();
+    expect(container.querySelector(".bg-orange-300")).not.toBeInTheDocument();
   });
 
   it("renders the planned (blue) segment when planned > 0", () => {
@@ -207,7 +207,7 @@ describe("MonthlyLeaveBar — segments", () => {
       />
     );
     expect(container.querySelector(".bg-green-300")).toBeInTheDocument();
-    expect(container.querySelector(".bg-yellow-300")).toBeInTheDocument();
+    expect(container.querySelector(".bg-orange-300")).toBeInTheDocument();
     expect(container.querySelector(".bg-blue-300")).toBeInTheDocument();
     expect(container.querySelector(".bg-gray-400")).toBeInTheDocument();
   });
