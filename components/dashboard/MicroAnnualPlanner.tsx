@@ -27,7 +27,7 @@ const STATUS_PRIORITY: Record<LeaveStatus, number> = {
 const BOX_COLORS: Record<LeaveStatus, string> = {
   [LeaveStatus.Approved]: "bg-green-400",
   [LeaveStatus.Requested]: "bg-orange-300",
-  [LeaveStatus.Planned]: "bg-blue-400",
+  [LeaveStatus.Planned]: "bg-yellow-200",
 };
 
 const MONTH_ABBREV = [
@@ -255,7 +255,7 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
           Requested
         </span>
         <span className="flex items-center gap-1 text-xs text-gray-500">
-          <span className="w-2.5 h-2.5 rounded-[1px] bg-blue-400 inline-block" />
+          <span className="w-2.5 h-2.5 rounded-[1px] bg-yellow-200 inline-block" />
           Planned
         </span>
         <span className="flex items-center gap-1 text-xs text-gray-500">

@@ -93,7 +93,7 @@ describe("MonthlyLeaveBar — segments", () => {
         maxDays={10}
       />
     );
-    const greenDiv = container.querySelector(".bg-green-300");
+    const greenDiv = container.querySelector(".bg-green-400");
     expect(greenDiv).toBeInTheDocument();
   });
 
@@ -108,7 +108,7 @@ describe("MonthlyLeaveBar — segments", () => {
         maxDays={10}
       />
     );
-    expect(container.querySelector(".bg-green-300")).not.toBeInTheDocument();
+    expect(container.querySelector(".bg-green-400")).not.toBeInTheDocument();
   });
 
   it("renders the requested (orange) segment when requested > 0", () => {
@@ -139,7 +139,7 @@ describe("MonthlyLeaveBar — segments", () => {
     expect(container.querySelector(".bg-orange-300")).not.toBeInTheDocument();
   });
 
-  it("renders the planned (blue) segment when planned > 0", () => {
+  it("renders the planned (yellow) segment when planned > 0", () => {
     const { container } = render(
       <MonthlyLeaveBar
         monthName="November"
@@ -150,7 +150,7 @@ describe("MonthlyLeaveBar — segments", () => {
         maxDays={10}
       />
     );
-    expect(container.querySelector(".bg-blue-300")).toBeInTheDocument();
+    expect(container.querySelector(".bg-yellow-200")).toBeInTheDocument();
   });
 
   it("does not render the planned segment when planned is 0", () => {
@@ -164,7 +164,7 @@ describe("MonthlyLeaveBar — segments", () => {
         maxDays={10}
       />
     );
-    expect(container.querySelector(".bg-blue-300")).not.toBeInTheDocument();
+    expect(container.querySelector(".bg-yellow-200")).not.toBeInTheDocument();
   });
 
   it("renders the bank holidays (grey) segment when bankHolidays > 0", () => {
@@ -206,9 +206,9 @@ describe("MonthlyLeaveBar — segments", () => {
         maxDays={10}
       />
     );
-    expect(container.querySelector(".bg-green-300")).toBeInTheDocument();
+    expect(container.querySelector(".bg-green-400")).toBeInTheDocument();
     expect(container.querySelector(".bg-orange-300")).toBeInTheDocument();
-    expect(container.querySelector(".bg-blue-300")).toBeInTheDocument();
+    expect(container.querySelector(".bg-yellow-200")).toBeInTheDocument();
     expect(container.querySelector(".bg-gray-400")).toBeInTheDocument();
   });
 });
@@ -226,7 +226,7 @@ describe("MonthlyLeaveBar — segment widths", () => {
         maxDays={10}
       />
     );
-    const greenDiv = container.querySelector(".bg-green-300") as HTMLElement;
+    const greenDiv = container.querySelector(".bg-green-400") as HTMLElement;
     expect(greenDiv.style.width).toBe("50%");
   });
 
@@ -242,7 +242,7 @@ describe("MonthlyLeaveBar — segment widths", () => {
         maxDays={10}
       />
     );
-    const greenDiv = container.querySelector(".bg-green-300") as HTMLElement;
+    const greenDiv = container.querySelector(".bg-green-400") as HTMLElement;
     expect(greenDiv.style.width).toBe("100%");
   });
 });
@@ -350,7 +350,7 @@ describe("MonthlyLeaveBar — chart scale (nearest 5, upwards)", () => {
         maxDays={9}
       />
     );
-    const greenDiv = container.querySelector(".bg-green-300") as HTMLElement;
+    const greenDiv = container.querySelector(".bg-green-400") as HTMLElement;
     expect(greenDiv.style.width).toBe("50%");
   });
 });

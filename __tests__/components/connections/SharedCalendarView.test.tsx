@@ -370,7 +370,7 @@ describe("SharedCalendarView — leave cell colouring", () => {
     const { container } = render(
       <SharedCalendarView currentUser={aliceWithLeave} pinnedUsers={[]} bankHolidays={[]} />
     );
-    const greenCells = container.querySelectorAll("td.bg-green-300");
+    const greenCells = container.querySelectorAll("td.bg-green-400");
     expect(greenCells.length).toBeGreaterThan(0);
   });
 
@@ -412,7 +412,7 @@ describe("SharedCalendarView — leave cell colouring", () => {
     const { container } = render(
       <SharedCalendarView currentUser={aliceWithLeave} pinnedUsers={[]} bankHolidays={[]} />
     );
-    const yellowCells = container.querySelectorAll("td.bg-blue-200");
+    const yellowCells = container.querySelectorAll("td.bg-yellow-200");
     expect(yellowCells.length).toBeGreaterThan(0);
   });
 
@@ -420,7 +420,7 @@ describe("SharedCalendarView — leave cell colouring", () => {
     const { container } = render(
       <SharedCalendarView currentUser={alice} pinnedUsers={[]} bankHolidays={[bh("2026-03-20")]} />
     );
-    const purpleCells = container.querySelectorAll("td.bg-purple-300");
+    const purpleCells = container.querySelectorAll("td.bg-purple-400");
     expect(purpleCells.length).toBeGreaterThan(0);
   });
 });

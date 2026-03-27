@@ -182,8 +182,8 @@ describe("CalendarView — leave entry display", () => {
       ],
     };
     const { container } = render(<CalendarView user={userWithEntry} bankHolidays={[]} />);
-    // bg-green-200 is the CALENDAR_COLORS class for Approved
-    expect(container.querySelector(".bg-green-200")).toBeInTheDocument();
+    // bg-green-400 is the CALENDAR_COLORS class for Approved
+    expect(container.querySelector(".bg-green-400")).toBeInTheDocument();
   });
 
   it("applies the planned colour class to a cell covered by a planned entry", () => {
@@ -200,7 +200,7 @@ describe("CalendarView — leave entry display", () => {
       ],
     };
     const { container } = render(<CalendarView user={userWithEntry} bankHolidays={[]} />);
-    expect(container.querySelector(".bg-blue-200")).toBeInTheDocument();
+    expect(container.querySelector(".bg-yellow-200")).toBeInTheDocument();
   });
 
   it("applies the requested colour class to a cell covered by a requested entry", () => {
@@ -217,16 +217,15 @@ describe("CalendarView — leave entry display", () => {
       ],
     };
     const { container } = render(<CalendarView user={userWithEntry} bankHolidays={[]} />);
-    expect(container.querySelector(".bg-yellow-200")).not.toBeInTheDocument();
-    expect(container.querySelector(".bg-orange-200")).toBeInTheDocument();
+    expect(container.querySelector(".bg-orange-300")).toBeInTheDocument();
   });
 });
 
 describe("CalendarView — bank holiday indicator", () => {
   it("applies the bank holiday class to a bank holiday cell with no entry", () => {
     const { container } = render(<CalendarView user={alice} bankHolidays={[bh("2026-03-02")]} />);
-    // bg-purple-300 is CALENDAR_CELL_BANK_HOLIDAY
-    expect(container.querySelector(".bg-purple-300")).toBeInTheDocument();
+    // bg-purple-400 is CALENDAR_CELL_BANK_HOLIDAY
+    expect(container.querySelector(".bg-purple-400")).toBeInTheDocument();
   });
 
   it("shows the bank holiday name on a bank holiday cell with no entry", () => {
@@ -279,7 +278,7 @@ describe("CalendarView — bank holiday indicator", () => {
       <CalendarView user={userWithEntry} bankHolidays={[bh("2026-03-02")]} />
     );
     // Leave colour is shown (bank holiday + leave cell shows leave colour)
-    expect(container.querySelector(".bg-green-200")).toBeInTheDocument();
+    expect(container.querySelector(".bg-green-400")).toBeInTheDocument();
   });
 });
 
@@ -328,11 +327,11 @@ describe("CalendarView — non-working day display", () => {
       ],
     };
     const { container } = render(<CalendarView user={userWithEntry} bankHolidays={[]} />);
-    // The Sunday cell (day 8) should be bg-gray-100 (NWD), not bg-green-200 (approved)
+    // The Sunday cell (day 8) should be bg-gray-100 (NWD), not bg-green-400 (approved)
     // At least one gray-100 cell must be present (the Sunday)
     expect(container.querySelector(".bg-gray-100")).toBeInTheDocument();
     // The leave colour can still appear for working-day cells in the range
-    expect(container.querySelector(".bg-green-200")).toBeInTheDocument();
+    expect(container.querySelector(".bg-green-400")).toBeInTheDocument();
   });
 });
 
@@ -382,8 +381,8 @@ describe("CalendarView — overlapping leave entries", () => {
     };
     const { container } = render(<CalendarView user={userWithOverlap} bankHolidays={[]} />);
     // Both green-200 (approved) and blue-200 (planned) should appear
-    expect(container.querySelector(".bg-green-200")).toBeInTheDocument();
-    expect(container.querySelector(".bg-blue-200")).toBeInTheDocument();
+    expect(container.querySelector(".bg-green-400")).toBeInTheDocument();
+    expect(container.querySelector(".bg-yellow-200")).toBeInTheDocument();
   });
 
   it("shows only the first two entries when three overlap on the same day", () => {
@@ -414,10 +413,10 @@ describe("CalendarView — overlapping leave entries", () => {
       ],
     };
     const { container } = render(<CalendarView user={userWithThree} bankHolidays={[]} />);
-    // The legend always has one bg-orange-200 span.  A requested entry in the calendar
+    // The legend always has one bg-orange-300 span.  A requested entry in the calendar
     // would add a second one.  With capping at 2 the requested entry is not rendered
     // so there should only be the one legend swatch.
-    const orangeElements = container.querySelectorAll(".bg-orange-200");
+    const orangeElements = container.querySelectorAll(".bg-orange-300");
     // Only the legend swatch (1) — no calendar cell for the capped requested entry
     expect(orangeElements.length).toBe(1);
   });
@@ -979,7 +978,7 @@ describe("CalendarView — getCellLayout: b is AM or PM, a is not", () => {
     expect(screen.getByText("AM (AM)")).toBeInTheDocument();
     expect(screen.getByText("Full")).toBeInTheDocument();
     // AM entry should be rendered (visible in the split cell)
-    expect(container.querySelector(".bg-green-200")).toBeInTheDocument();
+    expect(container.querySelector(".bg-green-400")).toBeInTheDocument();
   });
 
   it("places entry b (PM) on bottom when b is PM and a is full-day", () => {
@@ -1007,7 +1006,7 @@ describe("CalendarView — getCellLayout: b is AM or PM, a is not", () => {
     );
     expect(screen.getByText("PM2 (PM)")).toBeInTheDocument();
     expect(screen.getByText("Full2")).toBeInTheDocument();
-    expect(container.querySelector(".bg-green-200")).toBeInTheDocument();
+    expect(container.querySelector(".bg-green-400")).toBeInTheDocument();
   });
 });
 

@@ -233,12 +233,51 @@ function DashboardContent() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
-          {/* Left column: mini-calendar, annual planner, connections */}
+          {/* Left column: mini-calendar, annual planner */}
           <div
             className={`lg:col-span-2 space-y-4 ${mobileView === "list" ? "block" : "hidden"} lg:block`}
           >
             <MiniCalendar user={displayUser} bankHolidays={bankHolidays} />
             <MicroAnnualPlanner user={displayUser} bankHolidays={bankHolidays} />
+          </div>
+
+          {/* Centre column (widest): summary card + main calendar */}
+          <div
+            className={`lg:col-span-3 space-y-4 ${mobileView === "calendar" ? "block" : "hidden"} lg:block`}
+          >
+            <SummaryCard
+              user={displayUser}
+              bankHolidays={bankHolidays}
+              onAddLeave={
+                isReadOnly
+                  ? undefined
+                  : () => {
+                      setAddModalInitialDate(undefined);
+                      setShowAddModal(true);
+                    }
+              }
+            />
+            <CalendarView
+              user={displayUser}
+              bankHolidays={bankHolidays}
+              isOwnProfile={!isReadOnly}
+              onAdd={
+                isReadOnly
+                  ? undefined
+                  : (date) => {
+                      setAddModalInitialDate(date);
+                      setShowAddModal(true);
+                    }
+              }
+              onEdit={isReadOnly ? undefined : setEditingEntry}
+              onDelete={isReadOnly ? undefined : handleDeleteEntry}
+            />
+          </div>
+
+          {/* Right column: connections widget (top) + upcoming leave list */}
+          <div
+            className={`lg:col-span-2 space-y-4 ${mobileView === "list" ? "block" : "hidden"} lg:block`}
+          >
             {!isReadOnly && (
               <div className="bg-white rounded-xl shadow border border-gray-100 p-4">
                 <div className="flex items-center justify-between mb-2">
@@ -288,45 +327,6 @@ function DashboardContent() {
                 )}
               </div>
             )}
-          </div>
-
-          {/* Centre column (widest): summary card + main calendar */}
-          <div
-            className={`lg:col-span-3 space-y-4 ${mobileView === "calendar" ? "block" : "hidden"} lg:block`}
-          >
-            <SummaryCard
-              user={displayUser}
-              bankHolidays={bankHolidays}
-              onAddLeave={
-                isReadOnly
-                  ? undefined
-                  : () => {
-                      setAddModalInitialDate(undefined);
-                      setShowAddModal(true);
-                    }
-              }
-            />
-            <CalendarView
-              user={displayUser}
-              bankHolidays={bankHolidays}
-              isOwnProfile={!isReadOnly}
-              onAdd={
-                isReadOnly
-                  ? undefined
-                  : (date) => {
-                      setAddModalInitialDate(date);
-                      setShowAddModal(true);
-                    }
-              }
-              onEdit={isReadOnly ? undefined : setEditingEntry}
-              onDelete={isReadOnly ? undefined : handleDeleteEntry}
-            />
-          </div>
-
-          {/* Right column: upcoming leave list */}
-          <div
-            className={`lg:col-span-2 space-y-4 ${mobileView === "list" ? "block" : "hidden"} lg:block`}
-          >
             <LeaveList
               user={displayUser}
               bankHolidays={bankHolidays}

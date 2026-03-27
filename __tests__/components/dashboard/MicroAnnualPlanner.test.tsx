@@ -152,7 +152,7 @@ describe("MicroAnnualPlanner — leave coloring", () => {
     const marchRow = screen.getByTestId("month-row-Mar");
     const yellowBoxes = within(marchRow)
       .getAllByTestId("day-box")
-      .filter((el) => el.className.includes("bg-blue-400"));
+      .filter((el) => el.className.includes("bg-yellow-200"));
     expect(yellowBoxes).toHaveLength(1);
   });
 

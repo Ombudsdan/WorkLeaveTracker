@@ -38,7 +38,7 @@ describe("StatusBadge — colour classes", () => {
 
   it("applies yellow classes for Planned", () => {
     const { container } = render(<StatusBadge status={LeaveStatus.Planned} />);
-    expect(container.firstChild).toHaveClass("bg-blue-100", "text-blue-800");
+    expect(container.firstChild).toHaveClass("bg-yellow-100", "text-yellow-800");
   });
 
   it("applies red classes when isSick=true", () => {
