@@ -78,14 +78,14 @@ describe("AnnualPlannerView — bar chart", () => {
     expect(screen.getAllByText("Approved").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Requested").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Planned").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("Bank Holidays")).toBeInTheDocument();
+    expect(screen.getByText("Bank Holiday")).toBeInTheDocument();
   });
 
-  it("uses mid-grey (bg-gray-400) for the Bank Holidays legend swatch", () => {
+  it("uses purple (bg-purple-300) for the Bank Holiday legend swatch", () => {
     const { container } = render(<AnnualPlannerView user={baseUser} bankHolidays={[]} />);
-    // The legend swatch for Bank Holidays should use bg-gray-400, NOT bg-purple-300
-    expect(container.querySelector(".bg-gray-400")).toBeInTheDocument();
-    expect(container.querySelector(".bg-purple-300")).not.toBeInTheDocument();
+    // The legend swatch for Bank Holiday should use bg-purple-300, matching all other views
+    expect(container.querySelector(".bg-purple-300")).toBeInTheDocument();
+    expect(container.querySelector(".bg-gray-400")).not.toBeInTheDocument();
   });
 });
 

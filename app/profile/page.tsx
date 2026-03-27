@@ -321,7 +321,7 @@ export default function ProfilePage() {
                     onClick={() => toggleWorkingDay(index)}
                     className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium border transition ${
                       workingDays.includes(index)
-                        ? "bg-green-100 border-green-400 text-green-700"
+                        ? "bg-green-100 border-green-300 text-green-700"
                         : "bg-gray-100 border-gray-300 text-gray-400"
                     }`}
                     aria-pressed={workingDays.includes(index)}

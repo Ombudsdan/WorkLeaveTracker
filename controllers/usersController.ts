@@ -70,6 +70,18 @@ export const usersController = {
     return { ok: false, error: json.error ?? "Registration failed" };
   },
 
+  /** Cancel a pending connection request that was sent to another user. */
+  async cancelPinRequest(targetUserId: string): Promise<{ ok: boolean; error?: string }> {
+    const res = await fetch("/api/users/pin-request", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ targetUserId }),
+    });
+    if (res.ok) return { ok: true };
+    const json = await res.json();
+    return { ok: false, error: json.error ?? "Failed to cancel request" };
+  },
+
   /** Send a connection request to another user. */
   async sendPinRequest(targetUserId: string): Promise<{ ok: boolean; error?: string }> {
     const res = await fetch("/api/users/pin-request", {

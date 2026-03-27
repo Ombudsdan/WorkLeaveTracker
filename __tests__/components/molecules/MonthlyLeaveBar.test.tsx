@@ -111,7 +111,7 @@ describe("MonthlyLeaveBar — segments", () => {
     expect(container.querySelector(".bg-green-300")).not.toBeInTheDocument();
   });
 
-  it("renders the requested (blue) segment when requested > 0", () => {
+  it("renders the requested (orange) segment when requested > 0", () => {
     const { container } = render(
       <MonthlyLeaveBar
         monthName="September"
@@ -122,7 +122,7 @@ describe("MonthlyLeaveBar — segments", () => {
         maxDays={10}
       />
     );
-    expect(container.querySelector(".bg-blue-300")).toBeInTheDocument();
+    expect(container.querySelector(".bg-orange-200")).toBeInTheDocument();
   });
 
   it("does not render the requested segment when requested is 0", () => {
@@ -136,7 +136,7 @@ describe("MonthlyLeaveBar — segments", () => {
         maxDays={10}
       />
     );
-    expect(container.querySelector(".bg-blue-300")).not.toBeInTheDocument();
+    expect(container.querySelector(".bg-orange-200")).not.toBeInTheDocument();
   });
 
   it("renders the planned (yellow) segment when planned > 0", () => {
@@ -150,7 +150,7 @@ describe("MonthlyLeaveBar — segments", () => {
         maxDays={10}
       />
     );
-    expect(container.querySelector(".bg-yellow-300")).toBeInTheDocument();
+    expect(container.querySelector(".bg-yellow-200")).toBeInTheDocument();
   });
 
   it("does not render the planned segment when planned is 0", () => {
@@ -164,10 +164,10 @@ describe("MonthlyLeaveBar — segments", () => {
         maxDays={10}
       />
     );
-    expect(container.querySelector(".bg-yellow-300")).not.toBeInTheDocument();
+    expect(container.querySelector(".bg-yellow-200")).not.toBeInTheDocument();
   });
 
-  it("renders the bank holidays (grey) segment when bankHolidays > 0", () => {
+  it("renders the bank holidays (purple) segment when bankHolidays > 0", () => {
     const { container } = render(
       <MonthlyLeaveBar
         monthName="February"
@@ -178,7 +178,7 @@ describe("MonthlyLeaveBar — segments", () => {
         maxDays={10}
       />
     );
-    expect(container.querySelector(".bg-gray-400")).toBeInTheDocument();
+    expect(container.querySelector(".bg-purple-300")).toBeInTheDocument();
   });
 
   it("does not render the bank holidays segment when bankHolidays is 0", () => {
@@ -192,7 +192,7 @@ describe("MonthlyLeaveBar — segments", () => {
         maxDays={10}
       />
     );
-    expect(container.querySelector(".bg-gray-400")).not.toBeInTheDocument();
+    expect(container.querySelector(".bg-purple-300")).not.toBeInTheDocument();
   });
 
   it("renders all four segments when all values are > 0", () => {
@@ -207,9 +207,9 @@ describe("MonthlyLeaveBar — segments", () => {
       />
     );
     expect(container.querySelector(".bg-green-300")).toBeInTheDocument();
-    expect(container.querySelector(".bg-blue-300")).toBeInTheDocument();
-    expect(container.querySelector(".bg-yellow-300")).toBeInTheDocument();
-    expect(container.querySelector(".bg-gray-400")).toBeInTheDocument();
+    expect(container.querySelector(".bg-orange-200")).toBeInTheDocument();
+    expect(container.querySelector(".bg-yellow-200")).toBeInTheDocument();
+    expect(container.querySelector(".bg-purple-300")).toBeInTheDocument();
   });
 });
 

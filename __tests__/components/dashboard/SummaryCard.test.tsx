@@ -266,7 +266,7 @@ describe("SummaryCard — breakdown layout", () => {
       />
     );
     await user.click(screen.getByRole("button", { name: /view breakdown/i }));
-    const row = screen.getByText("Bank holidays on working days").closest("div");
+    const row = screen.getByText("Bank Hols").closest("div");
     expect(row?.querySelector("span:last-child")?.textContent).toBe("−1");
   });
 
@@ -358,7 +358,7 @@ describe("SummaryCard — breakdown layout", () => {
     expect(remainingRow?.textContent).toContain("25");
   });
 
-  it("shows 'Total Deductions' row at the bottom of the breakdown", async () => {
+  it("shows 'Deductions' total at the top of the breakdown", async () => {
     const user = setup();
     const userWithEntries: PublicUser = {
       ...alice,
@@ -374,7 +374,7 @@ describe("SummaryCard — breakdown layout", () => {
     };
     render(<SummaryCard user={userWithEntries} bankHolidays={[]} />);
     await user.click(screen.getByRole("button", { name: /view breakdown/i }));
-    const row = screen.getByText("Total Deductions").closest("div");
+    const row = screen.getByText("Deductions").closest("div");
     expect(row?.className).toContain("font-bold");
     // 3 approved days, 0 BH, 0 requested, 0 planned → total deductions = 3
     expect(row?.querySelector("span:last-child")?.textContent).toBe("−3");
@@ -536,7 +536,7 @@ describe("SummaryCard — bank holidays on working days in breakdown", () => {
       />
     );
     await user.click(screen.getByRole("button", { name: /view breakdown/i }));
-    expect(screen.getByText("Bank holidays on working days")).toBeInTheDocument();
+    expect(screen.getByText("Bank Hols")).toBeInTheDocument();
   });
 
   it("does NOT show 'Bank holidays on working days' row when handling is not Deduct", async () => {
@@ -546,7 +546,7 @@ describe("SummaryCard — bank holidays on working days in breakdown", () => {
       <SummaryCard user={alice} bankHolidays={[{ date: "2026-01-01", title: "New Year's Day" }]} />
     );
     await user.click(screen.getByRole("button", { name: /view breakdown/i }));
-    expect(screen.queryByText("Bank holidays on working days")).toBeNull();
+    expect(screen.queryByText("Bank Hols")).toBeNull();
   });
 
   it("shows −0 when no bank holidays fall on working days (Deduct mode)", async () => {
@@ -559,7 +559,7 @@ describe("SummaryCard — bank holidays on working days in breakdown", () => {
       />
     );
     await user.click(screen.getByRole("button", { name: /view breakdown/i }));
-    const row = screen.getByText("Bank holidays on working days").closest("div");
+    const row = screen.getByText("Bank Hols").closest("div");
     expect(row?.querySelector("span:last-child")?.textContent).toBe("−0");
   });
 
@@ -576,7 +576,7 @@ describe("SummaryCard — bank holidays on working days in breakdown", () => {
       />
     );
     await user.click(screen.getByRole("button", { name: /view breakdown/i }));
-    const row = screen.getByText("Bank holidays on working days").closest("div");
+    const row = screen.getByText("Bank Hols").closest("div");
     expect(row?.querySelector("span:last-child")?.textContent).toBe("−2");
   });
 });
@@ -692,5 +692,26 @@ describe("SummaryCard — leave window selector", () => {
     // The new user has only one allowance → no select, shows 30 remaining
     const svg = document.querySelector("svg");
     expect(svg?.textContent).toContain("30");
+  });
+});
+
+describe("SummaryCard — Add Leave button", () => {
+  it("shows 'Add Leave' button when onAddLeave is provided", () => {
+    const handler = jest.fn();
+    render(<SummaryCard user={alice} bankHolidays={[]} onAddLeave={handler} />);
+    expect(screen.getByRole("button", { name: /add leave/i })).toBeInTheDocument();
+  });
+
+  it("does not show 'Add Leave' button when onAddLeave is omitted", () => {
+    render(<SummaryCard user={alice} bankHolidays={[]} />);
+    expect(screen.queryByRole("button", { name: /add leave/i })).toBeNull();
+  });
+
+  it("calls onAddLeave when the Add Leave button is clicked", async () => {
+    const user = setup();
+    const handler = jest.fn();
+    render(<SummaryCard user={alice} bankHolidays={[]} onAddLeave={handler} />);
+    await user.click(screen.getByRole("button", { name: /add leave/i }));
+    expect(handler).toHaveBeenCalledTimes(1);
   });
 });

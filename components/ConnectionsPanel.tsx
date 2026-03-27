@@ -78,6 +78,16 @@ export default function ConnectionsPanel({
     await refreshUsers();
   }
 
+  async function handleCancelRequest(targetId: string) {
+    setActionError("");
+    const result = await usersController.cancelPinRequest(targetId);
+    if (!result.ok) {
+      setActionError(result.error ?? "Failed to cancel request.");
+      return;
+    }
+    await refreshUsers();
+  }
+
   async function handleUnpin(userId: string) {
     setActionError("");
     const result = await usersController.disconnect(userId);
@@ -214,7 +224,14 @@ export default function ConnectionsPanel({
                   {u.profile.firstName} {u.profile.lastName}
                   <span className="ml-1 text-gray-400 text-xs">({u.profile.email})</span>
                 </span>
-                <span className="text-xs text-amber-600 font-medium">Pending</span>
+                <button
+                  onClick={() => handleCancelRequest(u.id)}
+                  className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 ml-3 cursor-pointer font-medium"
+                  aria-label={`Revoke request to ${u.profile.firstName}`}
+                >
+                  <X size={12} />
+                  Revoke Request
+                </button>
               </li>
             ))}
           </ul>

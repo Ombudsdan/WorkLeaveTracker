@@ -7,8 +7,8 @@ interface LeaveListProps {
   user: PublicUser;
   bankHolidays: BankHolidayEntry[];
   isOwnProfile: boolean;
-  onEdit: (entry: LeaveEntry) => void;
-  onDelete: (id: string) => void;
+  onEdit?: (entry: LeaveEntry) => void;
+  onDelete?: (id: string) => void;
 }
 
 /** Find the YearAllowance whose window contains the given ISO date string */

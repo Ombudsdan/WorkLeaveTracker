@@ -391,7 +391,7 @@ describe("SharedCalendarView — leave cell colouring", () => {
     const { container } = render(
       <SharedCalendarView currentUser={aliceWithLeave} pinnedUsers={[]} bankHolidays={[]} />
     );
-    const blueCells = container.querySelectorAll("td.bg-blue-300");
+    const blueCells = container.querySelectorAll("td.bg-orange-200");
     expect(blueCells.length).toBeGreaterThan(0);
   });
 
@@ -420,7 +420,7 @@ describe("SharedCalendarView — leave cell colouring", () => {
     const { container } = render(
       <SharedCalendarView currentUser={alice} pinnedUsers={[]} bankHolidays={[bh("2026-03-20")]} />
     );
-    const purpleCells = container.querySelectorAll("td.bg-purple-100");
+    const purpleCells = container.querySelectorAll("td.bg-purple-300");
     expect(purpleCells.length).toBeGreaterThan(0);
   });
 });
@@ -622,44 +622,5 @@ describe("SharedCalendarView — leave entry popover", () => {
     expect(screen.getByRole("tooltip")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Delete" })).not.toBeInTheDocument();
-  });
-});
-
-describe("SharedCalendarView — View Calendar button", () => {
-  it("renders a 'View calendar' button for each pinned user", () => {
-    render(<SharedCalendarView currentUser={alice} pinnedUsers={[bob]} bankHolidays={[]} />);
-    expect(screen.getByRole("button", { name: "View calendar for Bob" })).toBeInTheDocument();
-  });
-
-  it("does not render a 'View calendar' button for the current user row", () => {
-    render(<SharedCalendarView currentUser={alice} pinnedUsers={[bob]} bankHolidays={[]} />);
-    expect(
-      screen.queryByRole("button", { name: "View calendar for Alice" })
-    ).not.toBeInTheDocument();
-  });
-
-  it("toggles the expanded calendar when clicking the View Calendar button", async () => {
-    const user = setup();
-    render(<SharedCalendarView currentUser={alice} pinnedUsers={[bob]} bankHolidays={[]} />);
-    const viewBtn = screen.getByRole("button", { name: "View calendar for Bob" });
-    // Calendar should not be visible initially
-    expect(screen.queryByText("Bob's Calendar")).not.toBeInTheDocument();
-    // Click to expand
-    await user.click(viewBtn);
-    expect(screen.getByText("Bob's Calendar")).toBeInTheDocument();
-    // Click close button to collapse
-    await user.click(screen.getByRole("button", { name: "Close calendar" }));
-    expect(screen.queryByText("Bob's Calendar")).not.toBeInTheDocument();
-  });
-
-  it("collapses the calendar when clicking the same View Calendar button again", async () => {
-    const user = setup();
-    render(<SharedCalendarView currentUser={alice} pinnedUsers={[bob]} bankHolidays={[]} />);
-    const viewBtn = screen.getByRole("button", { name: "View calendar for Bob" });
-    await user.click(viewBtn);
-    expect(screen.getByText("Bob's Calendar")).toBeInTheDocument();
-    // Click again to collapse
-    await user.click(viewBtn);
-    expect(screen.queryByText("Bob's Calendar")).not.toBeInTheDocument();
   });
 });

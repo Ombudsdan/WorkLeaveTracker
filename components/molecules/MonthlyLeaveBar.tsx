@@ -74,21 +74,21 @@ export default function MonthlyLeaveBar({
           )}
           {requested > 0 && (
             <div
-              className="bg-blue-300 h-full"
+              className="bg-orange-200 h-full"
               style={{ width: pct(requested) }}
               title={`Requested: ${requested}d`}
             />
           )}
           {planned > 0 && (
             <div
-              className="bg-yellow-300 h-full"
+              className="bg-yellow-200 h-full"
               style={{ width: pct(planned) }}
               title={`Planned: ${planned}d`}
             />
           )}
           {bankHolidays > 0 && (
             <div
-              className="bg-gray-400 h-full"
+              className="bg-purple-300 h-full"
               style={{ width: pct(bankHolidays) }}
               title={`Bank Holidays: ${bankHolidays}`}
             />
