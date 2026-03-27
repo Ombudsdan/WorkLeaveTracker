@@ -12,8 +12,7 @@ import {
 } from "@/utils/dateHelpers";
 import { findClashes } from "@/utils/clashFinder";
 import { STATUS_COLORS, SICK_LEAVE_CARD_COLORS } from "@/variables/colours";
-import CalendarView from "@/components/dashboard/CalendarView";
-import { Calendar, X, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import MonthYearPicker from "@/components/molecules/MonthYearPicker";
 
 interface SharedCalendarViewProps {
@@ -42,8 +41,8 @@ interface PopoverState {
 
 /** Tiny colour map for leave status within this component */
 const CELL_CLASS: Record<LeaveStatus, string> = {
-  [LeaveStatus.Approved]: "bg-green-300",
-  [LeaveStatus.Requested]: "bg-blue-300",
+  [LeaveStatus.Approved]: "bg-green-400",
+  [LeaveStatus.Requested]: "bg-orange-300",
   [LeaveStatus.Planned]: "bg-yellow-200",
 };
 
@@ -83,7 +82,6 @@ export default function SharedCalendarView({
   const [calMonth, setCalMonth] = useState(today.getMonth());
   const [popover, setPopover] = useState<PopoverState | null>(null);
   const [isMobileSheet, setIsMobileSheet] = useState(false);
-  const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const todayStr = toIsoDate(today);
@@ -204,7 +202,7 @@ export default function SharedCalendarView({
       /* c8 ignore next */
       bgClass = CELL_CLASS[topEntry.status] ?? "bg-white";
     } else if (isBH) {
-      bgClass = "bg-purple-100";
+      bgClass = "bg-purple-400";
     }
 
     // Empty cells in the current user's row are clickable to add leave
@@ -333,20 +331,6 @@ export default function SharedCalendarView({
                       {initials(user.profile.firstName, user.profile.lastName)}
                     </span>
                     <span className="truncate">{idx === 0 ? "You" : user.profile.firstName}</span>
-                    {idx > 0 && (
-                      <button
-                        onClick={() =>
-                          setExpandedUserId(expandedUserId === user.id ? null : user.id)
-                        }
-                        className={`p-0.5 rounded hover:bg-gray-100 cursor-pointer shrink-0 ${
-                          expandedUserId === user.id ? "text-indigo-600" : "text-gray-400"
-                        }`}
-                        aria-label={`View calendar for ${user.profile.firstName}`}
-                        title={`View calendar for ${user.profile.firstName}`}
-                      >
-                        <Calendar size={12} />
-                      </button>
-                    )}
                   </span>
                 </td>
 
@@ -361,42 +345,18 @@ export default function SharedCalendarView({
       {/* Legend */}
       <div className="flex flex-wrap gap-3 mt-4 text-xs text-gray-500">
         <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded bg-green-300" /> Approved
+          <span className="w-3 h-3 rounded bg-green-400" /> Approved
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded bg-blue-300" /> Requested
+          <span className="w-3 h-3 rounded bg-orange-300" /> Requested
         </span>
         <span className="flex items-center gap-1">
           <span className="w-3 h-3 rounded bg-yellow-200" /> Planned
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded bg-purple-100" /> Bank Holiday
+          <span className="w-3 h-3 rounded bg-purple-400" /> Bank Holiday
         </span>
       </div>
-
-      {/* Expanded full calendar for a connection */}
-      {expandedUserId &&
-        (() => {
-          const expandedUser = allUsers.find((u) => u.id === expandedUserId);
-          if (!expandedUser) return null;
-          return (
-            <div className="mt-6 border-t border-gray-100 pt-4">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-medium text-gray-700 text-sm">
-                  {expandedUser.profile.firstName}&apos;s Calendar
-                </h4>
-                <button
-                  onClick={() => setExpandedUserId(null)}
-                  className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 cursor-pointer"
-                  aria-label="Close calendar"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-              <CalendarView user={expandedUser} bankHolidays={bankHolidays} isOwnProfile={false} />
-            </div>
-          );
-        })()}
 
       {/* Mobile backdrop — tap outside the sheet to dismiss */}
       {popover && isMobileSheet && (

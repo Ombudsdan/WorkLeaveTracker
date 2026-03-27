@@ -125,7 +125,7 @@ export default function ConnectionsPage() {
         )}
 
         {activeTab === "manage" && (
-          <div className="max-w-2xl">
+          <div className="max-w-2xl mx-auto">
             <ConnectionsPanel
               currentUser={currentUser}
               allUsers={allUsers}
