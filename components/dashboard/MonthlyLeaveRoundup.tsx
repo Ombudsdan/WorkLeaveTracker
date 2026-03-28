@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import type { PublicUser, BankHolidayEntry, LeaveEntry } from "@/types";
 import { LeaveStatus, LeaveType, LeaveDuration } from "@/types";
 import { STATUS_COLORS } from "@/variables/colours";
@@ -11,7 +11,16 @@ import {
   countEntryDays,
 } from "@/utils/dateHelpers";
 import { X } from "lucide-react";
-import { LeaveKey, LEAVE_KEY_ITEMS_BASE } from "@/components/atoms/LeaveKey";
+import {
+  LeaveKey,
+  LEAVE_KEY_APPROVED,
+  LEAVE_KEY_REQUESTED,
+  LEAVE_KEY_PLANNED,
+  LEAVE_KEY_BANK_HOLIDAY,
+  LEAVE_KEY_BANK_HOLIDAY_NWD,
+  NON_WORKING_BH_STRIPE_STYLE,
+  type LeaveKeyItem,
+} from "@/components/atoms/LeaveKey";
 
 export interface MonthlyLeaveRoundupProps {
   user: PublicUser;
@@ -48,6 +57,8 @@ interface Segment {
   entry?: LeaveEntry;
   isBankHoliday?: boolean;
   bankHolidayTitle?: string;
+  /** true when this bank holiday falls on a non-working day (shown with stripes) */
+  isNonWorkingDay?: boolean;
 }
 
 interface MonthData {
@@ -129,6 +140,11 @@ export default function MonthlyLeaveRoundup({ user, bankHolidays }: MonthlyLeave
         !user.profile.nonWorkingDays.includes(new Date(d).getDay())
     );
 
+    // All bank holidays in the year (for visual display including non-working day ones).
+    const allYearBankHolidays = bankHolidayDates.filter(
+      (d) => d >= yearStartStr && d < yearEndStr
+    );
+
     const bhMap = new Map(bankHolidays.map((bh) => [bh.date, bh.title]));
 
     const monthDataList: MonthData[] = [];
@@ -144,10 +160,11 @@ export default function MonthlyLeaveRoundup({ user, bankHolidays }: MonthlyLeave
 
       const segments: Segment[] = [];
 
-      const monthBankHolidays = relevantBankHolidays.filter(
+      const monthBankHolidays = allYearBankHolidays.filter(
         (d) => d >= monthStartStr && d <= monthEndStr
       );
       for (const bhDate of monthBankHolidays) {
+        const isNonWorkingDay = user.profile.nonWorkingDays.includes(new Date(bhDate).getDay());
         segments.push({
           id: `bh-${bhDate}`,
           startDate: bhDate,
@@ -155,6 +172,7 @@ export default function MonthlyLeaveRoundup({ user, bankHolidays }: MonthlyLeave
           days: 1,
           isBankHoliday: true,
           bankHolidayTitle: bhMap.get(bhDate) ?? "Bank Holiday",
+          isNonWorkingDay,
         });
       }
 
@@ -239,6 +257,16 @@ export default function MonthlyLeaveRoundup({ user, bankHolidays }: MonthlyLeave
 
   const hasMultipleYears = availableYas.length > 1;
 
+  // Build legend key items — only include categories present in the data
+  const allSegs = months.flatMap((m) => m.segments);
+  const keyItems: LeaveKeyItem[] = [
+    ...(allSegs.some((s) => s.status === LeaveStatus.Approved) ? [LEAVE_KEY_APPROVED] : []),
+    ...(allSegs.some((s) => s.status === LeaveStatus.Requested) ? [LEAVE_KEY_REQUESTED] : []),
+    ...(allSegs.some((s) => s.status === LeaveStatus.Planned) ? [LEAVE_KEY_PLANNED] : []),
+    ...(allSegs.some((s) => s.isBankHoliday && !s.isNonWorkingDay) ? [LEAVE_KEY_BANK_HOLIDAY] : []),
+    ...(allSegs.some((s) => s.isBankHoliday && s.isNonWorkingDay) ? [LEAVE_KEY_BANK_HOLIDAY_NWD] : []),
+  ];
+
   return (
     <div
       ref={containerRef}
@@ -246,12 +274,12 @@ export default function MonthlyLeaveRoundup({ user, bankHolidays }: MonthlyLeave
       data-testid="monthly-leave-roundup"
     >
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-gray-700">Monthly Overview</h2>
+        <h2 className="text-sm font-semibold text-gray-700">Overview</h2>
         {hasMultipleYears ? (
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="text-xs text-gray-600 border border-gray-200 rounded-md px-1.5 py-0.5 bg-white cursor-pointer"
+            className="text-xs text-gray-600 border border-gray-200 rounded-md px-2 py-1 bg-white cursor-pointer"
             aria-label="Select year"
           >
             {availableYas.map((ya) => (
@@ -286,17 +314,22 @@ export default function MonthlyLeaveRoundup({ user, bankHolidays }: MonthlyLeave
                 <div className="absolute inset-0 flex">
                   {monthData.segments.flatMap((seg, idx) => {
                     const prevSeg = idx > 0 ? monthData.segments[idx - 1] : null;
-                    const needsSeparator =
-                      prevSeg !== null &&
-                      !prevSeg.isBankHoliday &&
-                      !seg.isBankHoliday &&
-                      prevSeg.status === seg.status;
+                    // Insert a 1px separator between every pair of consecutive segments
+                    // for clear visual separation of all leave types and bank holidays.
+                    const needsSeparator = prevSeg !== null;
 
                     const segColorClass = seg.isBankHoliday
                       ? "bg-purple-300"
                       : seg.status
                         ? STATUS_BAR_COLORS[seg.status]
                         : "bg-gray-200";
+
+                    const segStyle: React.CSSProperties = {
+                      width: pct(seg.days),
+                      ...(seg.isBankHoliday && seg.isNonWorkingDay
+                        ? NON_WORKING_BH_STRIPE_STYLE
+                        : {}),
+                    };
 
                     const elements = [];
                     if (needsSeparator) {
@@ -308,7 +341,7 @@ export default function MonthlyLeaveRoundup({ user, bankHolidays }: MonthlyLeave
                       <div
                         key={seg.id}
                         className={`${segColorClass} h-full cursor-pointer hover:brightness-95 transition-[filter] shrink-0`}
-                        style={{ width: pct(seg.days) }}
+                        style={segStyle}
                         onClick={(ev) => handleSegmentClick(seg, ev.currentTarget)}
                         title={
                           seg.isBankHoliday
@@ -328,7 +361,7 @@ export default function MonthlyLeaveRoundup({ user, bankHolidays }: MonthlyLeave
         })}
       </div>
 
-      <LeaveKey className="mt-3" items={LEAVE_KEY_ITEMS_BASE} />
+      <LeaveKey className="mt-3" items={keyItems} />
 
       {popover && (
         <div

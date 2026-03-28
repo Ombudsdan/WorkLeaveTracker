@@ -66,9 +66,9 @@ describe("MicroAnnualPlanner — basic rendering", () => {
     expect(screen.queryByRole("link", { name: /full planner/i })).toBeNull();
   });
 
-  it("shows 'Annual Overview' as the heading", () => {
+  it("shows 'Annual Calendar' as the heading", () => {
     render(<MicroAnnualPlanner user={alice} bankHolidays={[]} />);
-    expect(screen.getByText("Annual Overview")).toBeInTheDocument();
+    expect(screen.getByText("Annual Calendar")).toBeInTheDocument();
   });
 
   it("renders the legend with Approved, Requested, Planned", () => {
@@ -248,6 +248,62 @@ describe("MicroAnnualPlanner — legend", () => {
   it("shows the Bank Holiday entry in the legend", () => {
     render(<MicroAnnualPlanner user={alice} bankHolidays={[]} />);
     expect(screen.getByText("Bank Holiday")).toBeInTheDocument();
+  });
+
+  it("does NOT show 'Bank Holiday (non-working day)' when no BH falls on a NWD", () => {
+    // March 16, 2026 = Monday — a working day for Alice (nonWorkingDays=[0,6])
+    render(
+      <MicroAnnualPlanner
+        user={alice}
+        bankHolidays={[{ date: "2026-03-16", title: "Working-day BH" }]}
+      />
+    );
+    expect(screen.queryByText("Bank Holiday (non-working day)")).not.toBeInTheDocument();
+  });
+
+  it("shows 'Bank Holiday (non-working day)' in legend when a BH falls on a NWD", () => {
+    // March 1, 2026 = Sunday — a non-working day for Alice (nonWorkingDays=[0,6])
+    render(
+      <MicroAnnualPlanner
+        user={alice}
+        bankHolidays={[{ date: "2026-03-01", title: "NWD BH" }]}
+      />
+    );
+    expect(screen.getByText("Bank Holiday (non-working day)")).toBeInTheDocument();
+  });
+});
+
+describe("MicroAnnualPlanner — bank holiday on non-working day stripe", () => {
+  it("applies the diagonal stripe style to a BH box that falls on a non-working day", () => {
+    // March 1, 2026 = Sunday — non-working for Alice (nonWorkingDays=[0,6])
+    render(
+      <MicroAnnualPlanner
+        user={alice}
+        bankHolidays={[{ date: "2026-03-01", title: "NWD BH" }]}
+      />
+    );
+    const marchRow = screen.getByTestId("month-row-Mar");
+    const boxes = within(marchRow).getAllByTestId("day-box");
+    // Day 1 = index 0 → NWD bank holiday → must have stripe backgroundImage
+    const day1Box = boxes[0] as HTMLElement;
+    expect(day1Box.className).toContain("bg-purple-300");
+    expect(day1Box.style.backgroundImage).toContain("repeating-linear-gradient");
+  });
+
+  it("does NOT apply the stripe to a BH box on a working day", () => {
+    // March 16, 2026 = Monday — working day for Alice (nonWorkingDays=[0,6])
+    render(
+      <MicroAnnualPlanner
+        user={alice}
+        bankHolidays={[{ date: "2026-03-16", title: "Working-day BH" }]}
+      />
+    );
+    const marchRow = screen.getByTestId("month-row-Mar");
+    const boxes = within(marchRow).getAllByTestId("day-box");
+    // Day 16 = index 15 → working-day BH → purple but NO stripe
+    const day16Box = boxes[15] as HTMLElement;
+    expect(day16Box.className).toContain("bg-purple-300");
+    expect(day16Box.style.backgroundImage).toBe("");
   });
 });
 

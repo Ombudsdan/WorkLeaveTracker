@@ -1,5 +1,7 @@
 "use client";
 
+import { NON_WORKING_BH_STRIPE_STYLE } from "@/components/atoms/LeaveKey";
+
 export interface MonthlyLeaveBarProps {
   /** Short month name displayed to the left of the bar (e.g. "January") */
   monthName: string;
@@ -11,6 +13,8 @@ export interface MonthlyLeaveBarProps {
   planned: number;
   /** Bank holidays that fall on a working day in this month */
   bankHolidays: number;
+  /** Bank holidays that fall on a non-working day in this month (shown striped) */
+  bankHolidaysNonWorking?: number;
   /**
    * The maximum `totalCombined` across all months.  The bar chart rounds this
    * up to the nearest 5 (minimum 5) to produce the `chartScale`, which is the
@@ -36,9 +40,10 @@ export default function MonthlyLeaveBar({
   requested,
   planned,
   bankHolidays,
+  bankHolidaysNonWorking = 0,
   maxDays,
 }: MonthlyLeaveBarProps) {
-  const totalCombined = approved + requested + planned + bankHolidays;
+  const totalCombined = approved + requested + planned + bankHolidays + bankHolidaysNonWorking;
 
   // Round up to the nearest 5 (minimum 5) — the full-width scale denominator
   const chartScale = Math.max(Math.ceil(maxDays / 5) * 5, 5);
@@ -48,7 +53,7 @@ export default function MonthlyLeaveBar({
   }
 
   return (
-    <div className="flex items-center gap-3 py-1.5" data-testid="monthly-leave-bar">
+    <div className="flex items-center gap-3 py-0.5" data-testid="monthly-leave-bar">
       {/* Month name */}
       <span className="w-24 text-sm font-medium text-gray-700 shrink-0">{monthName}</span>
 
@@ -61,7 +66,7 @@ export default function MonthlyLeaveBar({
       <div
         className="flex-1 relative h-5 rounded-sm overflow-hidden bg-gray-100"
         role="img"
-        aria-label={`${monthName}: ${approved} approved, ${requested} requested, ${planned} planned, ${bankHolidays} bank holidays`}
+        aria-label={`${monthName}: ${approved} approved, ${requested} requested, ${planned} planned, ${bankHolidays} bank holidays, ${bankHolidaysNonWorking} bank holidays on non-working days`}
       >
         {/* Coloured fill segments */}
         <div className="absolute inset-0 flex">
@@ -91,6 +96,13 @@ export default function MonthlyLeaveBar({
               className="bg-purple-300 h-full"
               style={{ width: pct(bankHolidays) }}
               title={`Bank Holidays: ${bankHolidays}`}
+            />
+          )}
+          {bankHolidaysNonWorking > 0 && (
+            <div
+              className="bg-purple-300 h-full"
+              style={{ width: pct(bankHolidaysNonWorking), ...NON_WORKING_BH_STRIPE_STYLE }}
+              title={`Bank Holidays (non-working day): ${bankHolidaysNonWorking}`}
             />
           )}
         </div>

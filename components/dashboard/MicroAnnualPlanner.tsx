@@ -11,7 +11,12 @@ import {
   countEntryDays,
 } from "@/utils/dateHelpers";
 import { X } from "lucide-react";
-import { LeaveKey, LEAVE_KEY_ITEMS_BASE } from "@/components/atoms/LeaveKey";
+import {
+  LeaveKey,
+  LEAVE_KEY_ITEMS_BASE,
+  LEAVE_KEY_BANK_HOLIDAY_NWD,
+  NON_WORKING_BH_STRIPE_STYLE,
+} from "@/components/atoms/LeaveKey";
 
 export interface MicroAnnualPlannerProps {
   user: PublicUser;
@@ -192,6 +197,13 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
     });
   }, [activeYa, user.entries, user.profile.nonWorkingDays, bankHolidays]);
 
+  // True when at least one bank holiday in this period falls on a non-working day —
+  // used to conditionally show the NWD key item in the legend.
+  const hasBhOnNwd = useMemo(
+    () => rows.some((row) => row.days.some((day) => day.isBankHoliday && day.isWeekend)),
+    [rows]
+  );
+
   useEffect(() => {
     if (!popover) return;
     function handleOutside(e: MouseEvent) {
@@ -233,7 +245,7 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
       data-testid="micro-annual-planner"
     >
       <div className="flex items-center justify-between mb-1">
-        <h2 className="text-sm font-semibold text-gray-700">Annual Overview</h2>
+        <h2 className="text-sm font-semibold text-gray-700">Annual Calendar</h2>
       </div>
       {/* Leave period subtitle */}
       <p className="text-xs text-gray-400 mb-3" data-testid="annual-planner-subtitle">
@@ -253,11 +265,14 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
                 const isClickable = day.allLeaveEntries.length > 0 || day.isBankHoliday;
 
                 // Compute box style for half-day diagonal display
-                let boxClassName = "h-3 flex-1 rounded-[1px]";
+                let boxClassName = "h-5 flex-1 rounded-[1px]";
                 let boxStyle: React.CSSProperties | undefined;
 
                 if (day.isBankHoliday) {
                   boxClassName += " bg-purple-300 cursor-pointer";
+                  if (day.isWeekend) {
+                    boxStyle = NON_WORKING_BH_STRIPE_STYLE;
+                  }
                 } else if (day.isWeekend) {
                   boxClassName += " bg-gray-300";
                 } else if (day.isFullDay && day.status !== null) {
@@ -309,7 +324,10 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
       </div>
 
       {/* Legend */}
-      <LeaveKey className="mt-3" items={LEAVE_KEY_ITEMS_BASE} />
+      <LeaveKey
+        className="mt-3"
+        items={hasBhOnNwd ? [...LEAVE_KEY_ITEMS_BASE, LEAVE_KEY_BANK_HOLIDAY_NWD] : LEAVE_KEY_ITEMS_BASE}
+      />
 
       {/* Popover — styled to match CalendarView */}
       {popover && (

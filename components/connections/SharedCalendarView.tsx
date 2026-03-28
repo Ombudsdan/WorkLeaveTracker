@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import type { PublicUser, BankHolidayEntry, LeaveEntry } from "@/types";
 import { LeaveStatus, LeaveType, LeaveDuration } from "@/types";
 import {
@@ -14,7 +14,16 @@ import { findClashes } from "@/utils/clashFinder";
 import { STATUS_COLORS, SICK_LEAVE_CARD_COLORS } from "@/variables/colours";
 import { X, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import MonthYearPicker from "@/components/molecules/MonthYearPicker";
-import { LeaveKey, LEAVE_KEY_ITEMS_BASE } from "@/components/atoms/LeaveKey";
+import {
+  LeaveKey,
+  LEAVE_KEY_APPROVED,
+  LEAVE_KEY_REQUESTED,
+  LEAVE_KEY_PLANNED,
+  LEAVE_KEY_BANK_HOLIDAY,
+  LEAVE_KEY_BANK_HOLIDAY_NWD,
+  NON_WORKING_BH_STRIPE_STYLE,
+  type LeaveKeyItem,
+} from "@/components/atoms/LeaveKey";
 
 interface SharedCalendarViewProps {
   /** The signed-in user, always shown as the first row */
@@ -187,6 +196,47 @@ export default function SharedCalendarView({
     return new Set(clashes.map((c) => c.date));
   }, [allUsers, dayStrings]);
 
+  /**
+   * Compute which legend key items are actually represented in the current
+   * month's calendar cells.  Only items with visible cells are included so
+   * the legend stays compact and relevant.
+   */
+  const keyItems = useMemo<LeaveKeyItem[]>(() => {
+    let hasApproved = false;
+    let hasRequested = false;
+    let hasPlanned = false;
+    let hasBankHoliday = false;
+    let hasBankHolidayNWD = false;
+
+    for (const dateStr of dayStrings) {
+      const isBH = bhDates.includes(dateStr);
+      for (const user of allUsers) {
+        const isNWD = user.profile.nonWorkingDays.includes(new Date(dateStr).getDay());
+        const entries = getEntriesForDate(dateStr, user.entries).filter(
+          (e) => e.type !== LeaveType.Sick
+        );
+        const topEntry = entries[0] ?? null;
+
+        if (topEntry) {
+          if (topEntry.status === LeaveStatus.Approved) hasApproved = true;
+          else if (topEntry.status === LeaveStatus.Requested) hasRequested = true;
+          else if (topEntry.status === LeaveStatus.Planned) hasPlanned = true;
+        } else if (isBH) {
+          if (isNWD) hasBankHolidayNWD = true;
+          else hasBankHoliday = true;
+        }
+      }
+    }
+
+    return [
+      ...(hasApproved ? [LEAVE_KEY_APPROVED] : []),
+      ...(hasRequested ? [LEAVE_KEY_REQUESTED] : []),
+      ...(hasPlanned ? [LEAVE_KEY_PLANNED] : []),
+      ...(hasBankHoliday ? [LEAVE_KEY_BANK_HOLIDAY] : []),
+      ...(hasBankHolidayNWD ? [LEAVE_KEY_BANK_HOLIDAY_NWD] : []),
+    ];
+  }, [dayStrings, allUsers, bhDates]);
+
   /** Render a single cell for one user on one day */
   function renderUserCell(user: PublicUser, dateStr: string, isCurrentUser: boolean) {
     const isBH = bhDates.includes(dateStr);
@@ -201,11 +251,16 @@ export default function SharedCalendarView({
     const isNWD = user.profile.nonWorkingDays.includes(new Date(dateStr).getDay());
 
     let bgClass = "bg-white";
+    let cellStyle: React.CSSProperties | undefined;
     if (topEntry) {
       /* c8 ignore next */
       bgClass = CELL_CLASS[topEntry.status] ?? "bg-white";
     } else if (isBH) {
       bgClass = "bg-purple-300";
+      if (isNWD) {
+        // Bank holiday on a non-working day: overlay diagonal grey stripes on purple
+        cellStyle = NON_WORKING_BH_STRIPE_STYLE;
+      }
     } else if (isNWD) {
       bgClass = "bg-gray-300";
     }
@@ -223,6 +278,7 @@ export default function SharedCalendarView({
               ? "cursor-pointer hover:ring-2 hover:ring-inset hover:ring-indigo-300"
               : ""
         }`}
+        style={cellStyle}
         title={
           topEntry ? `${topEntry.status}: ${topEntry.startDate} – ${topEntry.endDate}` : undefined
         }
@@ -248,35 +304,39 @@ export default function SharedCalendarView({
   return (
     <div ref={containerRef} className="bg-white rounded-2xl shadow p-5 relative">
       {/* Month navigation */}
-      <div className="flex items-center justify-between mb-4">
-        <button
-          onClick={prevMonth}
-          disabled={atMin}
-          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-          aria-label="Previous month"
-        >
-          <ChevronLeft size={18} />
-        </button>
-        <MonthYearPicker
-          year={calYear}
-          month={calMonth}
-          onChange={(y, m) => {
-            setCalYear(y);
-            setCalMonth(m);
-          }}
-          minYear={pickerMin.year}
-          minMonth={pickerMin.month}
-          maxYear={pickerMax.year}
-          maxMonth={pickerMax.month}
-        />
-        <button
-          onClick={nextMonth}
-          disabled={atMax}
-          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-          aria-label="Next month"
-        >
-          <ChevronRight size={18} />
-        </button>
+      <div className="flex items-center mb-4">
+        <div className="flex-1" aria-hidden="true" />
+        <div className="flex items-center gap-1">
+          <button
+            onClick={prevMonth}
+            disabled={atMin}
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+            aria-label="Previous month"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <MonthYearPicker
+            year={calYear}
+            month={calMonth}
+            onChange={(y, m) => {
+              setCalYear(y);
+              setCalMonth(m);
+            }}
+            minYear={pickerMin.year}
+            minMonth={pickerMin.month}
+            maxYear={pickerMax.year}
+            maxMonth={pickerMax.month}
+          />
+          <button
+            onClick={nextMonth}
+            disabled={atMax}
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+            aria-label="Next month"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+        <div className="flex-1" aria-hidden="true" />
       </div>
 
       {/* Scrollable calendar table */}
@@ -347,8 +407,8 @@ export default function SharedCalendarView({
         </table>
       </div>
 
-      {/* Legend */}
-      <LeaveKey className="mt-4" items={LEAVE_KEY_ITEMS_BASE} />
+      {/* Legend — only shows items that are actually visible in the current month */}
+      <LeaveKey className="mt-4" items={keyItems} />
 
       {/* Mobile backdrop — tap outside the sheet to dismiss */}
       {popover && isMobileSheet && (
