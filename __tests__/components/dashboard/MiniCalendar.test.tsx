@@ -466,3 +466,135 @@ describe("MiniCalendar — popover matches CalendarView style", () => {
     expect(tooltip.textContent).toContain("St Patrick");
   });
 });
+
+describe("MiniCalendar — popover toggle", () => {
+  const aliceWithLeave: PublicUser = {
+    ...{
+      id: "u1",
+      profile: {
+        firstName: "Alice",
+        lastName: "Smith",
+        email: "alice@example.com",
+        nonWorkingDays: [0, 6],
+      },
+      yearAllowances: [
+        { year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+      ],
+      entries: [],
+    },
+    entries: [
+      {
+        id: "e1",
+        startDate: "2026-03-16",
+        endDate: "2026-03-16",
+        status: LeaveStatus.Approved,
+        type: LeaveType.Holiday,
+      },
+    ],
+  };
+
+  it("clicking the same leave cell twice closes the popover", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    render(<MiniCalendar user={aliceWithLeave} bankHolidays={[]} />);
+    const dot = screen.getAllByTestId("leave-dot")[0];
+    await user.click(dot);
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    await user.click(dot);
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  it("clicking outside the container closes the popover", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    render(
+      <div>
+        <MiniCalendar user={aliceWithLeave} bankHolidays={[]} />
+        <button>Outside</button>
+      </div>
+    );
+    const dot = screen.getAllByTestId("leave-dot")[0];
+    await user.click(dot);
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Outside" }));
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  it("shows a date range for multi-day leave in the popover", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    const userMultiDay: PublicUser = {
+      ...aliceWithLeave,
+      entries: [
+        {
+          id: "e_multi",
+          startDate: "2026-03-16",
+          endDate: "2026-03-20",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    render(<MiniCalendar user={userMultiDay} bankHolidays={[]} />);
+    await user.click(screen.getAllByTestId("leave-dot")[0]);
+    const tooltip = screen.getByRole("tooltip");
+    // Should show the date range
+    expect(tooltip.textContent).toMatch(/16 Mar/);
+    expect(tooltip.textContent).toMatch(/20 Mar/);
+  });
+});
+
+describe("MiniCalendar — month navigation (wrap cases)", () => {
+  it("wraps from January to December of the previous year via Previous month", async () => {
+    jest.setSystemTime(new Date("2026-01-15"));
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    const aliceWithHistory: PublicUser = {
+      id: "u1",
+      profile: {
+        firstName: "Alice",
+        lastName: "Smith",
+        email: "alice@example.com",
+        nonWorkingDays: [0, 6],
+      },
+      yearAllowances: [
+        { year: 2025, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+        { year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+      ],
+      entries: [
+        {
+          id: "eh",
+          startDate: "2025-06-01",
+          endDate: "2025-06-01",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    render(<MiniCalendar user={aliceWithHistory} bankHolidays={[]} />);
+    await user.click(screen.getByRole("button", { name: "Previous month" }));
+    expect(
+      screen.getByRole("button", { name: /December 2025.*open month-year picker/i })
+    ).toBeInTheDocument();
+  });
+
+  it("wraps from December to January of the next year via Next month", async () => {
+    jest.setSystemTime(new Date("2026-12-15"));
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    const aliceWithFuture: PublicUser = {
+      id: "u1",
+      profile: {
+        firstName: "Alice",
+        lastName: "Smith",
+        email: "alice@example.com",
+        nonWorkingDays: [0, 6],
+      },
+      yearAllowances: [
+        { year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+        { year: 2027, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+      ],
+      entries: [],
+    };
+    render(<MiniCalendar user={aliceWithFuture} bankHolidays={[]} />);
+    await user.click(screen.getByRole("button", { name: "Next month" }));
+    expect(
+      screen.getByRole("button", { name: /January 2027.*open month-year picker/i })
+    ).toBeInTheDocument();
+  });
+});

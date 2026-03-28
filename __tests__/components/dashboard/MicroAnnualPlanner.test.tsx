@@ -1,7 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import MicroAnnualPlanner from "@/components/dashboard/MicroAnnualPlanner";
-import { LeaveStatus, LeaveType } from "@/types";
+import { LeaveStatus, LeaveType, LeaveDuration } from "@/types";
 import type { PublicUser } from "@/types";
 
 // Fix date so getActiveYearAllowance picks 2026 allowance deterministically
@@ -61,10 +61,9 @@ describe("MicroAnnualPlanner — basic rendering", () => {
     });
   });
 
-  it("renders a link to the annual planner page", () => {
+  it("does not render a 'Full Planner' link", () => {
     render(<MicroAnnualPlanner user={alice} bankHolidays={[]} />);
-    const link = screen.getByRole("link", { name: /full planner/i });
-    expect(link).toHaveAttribute("href", "/annual-planner");
+    expect(screen.queryByRole("link", { name: /full planner/i })).toBeNull();
   });
 
   it("shows 'Annual Overview' as the heading", () => {
@@ -367,5 +366,190 @@ describe("MicroAnnualPlanner — popover matches CalendarView style", () => {
     await user.click(boxes[8]);
     const tooltip = screen.getByRole("tooltip");
     expect(tooltip.textContent).toContain("9 Mar");
+  });
+});
+
+describe("MicroAnnualPlanner — half-day entries", () => {
+  it("renders a half-day AM box with cursor-pointer (gradient applied)", () => {
+    const userAM: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e_am",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfMorning,
+        },
+      ],
+    };
+    render(<MicroAnnualPlanner user={userAM} bankHolidays={[]} />);
+    const marchRow = screen.getByTestId("month-row-Mar");
+    const boxes = within(marchRow).getAllByTestId("day-box");
+    // Day 9 (Mon) = index 8 → has AM half-day leave → cursor-pointer applied
+    expect(boxes[8].className).toContain("cursor-pointer");
+  });
+
+  it("renders a half-day PM box with cursor-pointer (gradient applied)", () => {
+    const userPM: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e_pm",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfAfternoon,
+        },
+      ],
+    };
+    render(<MicroAnnualPlanner user={userPM} bankHolidays={[]} />);
+    const marchRow = screen.getByTestId("month-row-Mar");
+    const boxes = within(marchRow).getAllByTestId("day-box");
+    expect(boxes[8].className).toContain("cursor-pointer");
+  });
+
+  it("renders a split AM+PM box with cursor-pointer when both fall on same day", () => {
+    const userBoth: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e_am",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfMorning,
+        },
+        {
+          id: "e_pm",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Requested,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfAfternoon,
+        },
+      ],
+    };
+    render(<MicroAnnualPlanner user={userBoth} bankHolidays={[]} />);
+    const marchRow = screen.getByTestId("month-row-Mar");
+    const boxes = within(marchRow).getAllByTestId("day-box");
+    // Day 9 index 8 has both AM and PM entries → cursor-pointer applied
+    expect(boxes[8].className).toContain("cursor-pointer");
+  });
+
+  it("opens a popover showing 'Half day (AM)' for a HalfMorning entry", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    const userAM: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e_am",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfMorning,
+        },
+      ],
+    };
+    render(<MicroAnnualPlanner user={userAM} bankHolidays={[]} />);
+    const marchRow = screen.getByTestId("month-row-Mar");
+    const boxes = within(marchRow).getAllByTestId("day-box");
+    await user.click(boxes[8]);
+    const tooltip = screen.getByRole("tooltip");
+    expect(tooltip.textContent).toContain("Half day (AM)");
+  });
+
+  it("opens a popover showing 'Half day (PM)' for a HalfAfternoon entry", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    const userPM: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e_pm",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfAfternoon,
+        },
+      ],
+    };
+    render(<MicroAnnualPlanner user={userPM} bankHolidays={[]} />);
+    const marchRow = screen.getByTestId("month-row-Mar");
+    const boxes = within(marchRow).getAllByTestId("day-box");
+    await user.click(boxes[8]);
+    const tooltip = screen.getByRole("tooltip");
+    expect(tooltip.textContent).toContain("Half day (PM)");
+  });
+});
+
+describe("MicroAnnualPlanner — popover toggle and close", () => {
+  const aliceWithLeave: PublicUser = {
+    ...alice,
+    entries: [
+      {
+        id: "e1",
+        startDate: "2026-03-09",
+        endDate: "2026-03-09",
+        status: LeaveStatus.Approved,
+        type: LeaveType.Holiday,
+      },
+    ],
+  };
+
+  it("clicking the same box twice closes the popover", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    render(<MicroAnnualPlanner user={aliceWithLeave} bankHolidays={[]} />);
+    const marchRow = screen.getByTestId("month-row-Mar");
+    const boxes = within(marchRow).getAllByTestId("day-box");
+    await user.click(boxes[8]);
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    await user.click(boxes[8]);
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  it("clicking outside the container closes the popover", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    render(
+      <div>
+        <MicroAnnualPlanner user={aliceWithLeave} bankHolidays={[]} />
+        <button>Outside</button>
+      </div>
+    );
+    const marchRow = screen.getByTestId("month-row-Mar");
+    const boxes = within(marchRow).getAllByTestId("day-box");
+    await user.click(boxes[8]);
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Outside" }));
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  it("shows a date range for multi-day leave in the popover", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    const userMultiDay: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e_multi",
+          startDate: "2026-03-09",
+          endDate: "2026-03-13",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    render(<MicroAnnualPlanner user={userMultiDay} bankHolidays={[]} />);
+    const marchRow = screen.getByTestId("month-row-Mar");
+    const boxes = within(marchRow).getAllByTestId("day-box");
+    // Click day 9 (index 8) which is in the multi-day range
+    await user.click(boxes[8]);
+    const tooltip = screen.getByRole("tooltip");
+    // Should show the date range "9 Mar – 13 Mar"
+    expect(tooltip.textContent).toMatch(/9 Mar/);
+    expect(tooltip.textContent).toMatch(/13 Mar/);
   });
 });

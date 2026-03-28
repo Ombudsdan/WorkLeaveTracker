@@ -15,6 +15,7 @@ import AddLeaveModal from "@/components/dashboard/AddLeaveModal";
 import EditLeaveModal from "@/components/dashboard/EditLeaveModal";
 import YearAllowanceModal from "@/components/dashboard/YearAllowanceModal";
 import MicroAnnualPlanner from "@/components/dashboard/MicroAnnualPlanner";
+import MonthlyLeaveRoundup from "@/components/dashboard/MonthlyLeaveRoundup";
 import { usersController } from "@/controllers/usersController";
 import { holidaysController } from "@/controllers/holidaysController";
 import { entriesController } from "@/controllers/entriesController";
@@ -46,6 +47,7 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true);
   /** Mobile-only: which panel is currently visible ("list" | "calendar") */
   const [mobileView, setMobileView] = useState<"list" | "calendar">("list");
+  const [calendarMode, setCalendarMode] = useState<"month" | "year">("month");
 
   // Track whether the user was previously authenticated in this browser tab so
   // we can distinguish a genuine "session expired" event from a first visit.
@@ -247,28 +249,56 @@ function DashboardContent() {
                     }
               }
             />
-            <MicroAnnualPlanner user={displayUser} bankHolidays={bankHolidays} />
+            <MonthlyLeaveRoundup user={displayUser} bankHolidays={bankHolidays} />
           </div>
 
-          {/* Centre column (widest): main calendar */}
+          {/* Centre column (widest): main calendar / annual overview toggle */}
           <div
             className={`lg:col-span-3 space-y-4 ${mobileView === "calendar" ? "block" : "hidden"} lg:block`}
           >
-            <CalendarView
-              user={displayUser}
-              bankHolidays={bankHolidays}
-              isOwnProfile={!isReadOnly}
-              onAdd={
-                isReadOnly
-                  ? undefined
-                  : (date) => {
-                      setAddModalInitialDate(date);
-                      setShowAddModal(true);
-                    }
-              }
-              onEdit={isReadOnly ? undefined : setEditingEntry}
-              onDelete={isReadOnly ? undefined : handleDeleteEntry}
-            />
+            {calendarMode === "month" ? (
+              <CalendarView
+                user={displayUser}
+                bankHolidays={bankHolidays}
+                isOwnProfile={!isReadOnly}
+                onAdd={
+                  isReadOnly
+                    ? undefined
+                    : (date) => {
+                        setAddModalInitialDate(date);
+                        setShowAddModal(true);
+                      }
+                }
+                onEdit={isReadOnly ? undefined : setEditingEntry}
+                onDelete={isReadOnly ? undefined : handleDeleteEntry}
+                headerRight={
+                  <select
+                    value={calendarMode}
+                    onChange={(e) => setCalendarMode(e.target.value as "month" | "year")}
+                    className="text-xs text-gray-600 border border-gray-200 rounded-md px-1.5 py-0.5 bg-white cursor-pointer"
+                    aria-label="Calendar view mode"
+                  >
+                    <option value="month">Month</option>
+                    <option value="year">Year</option>
+                  </select>
+                }
+              />
+            ) : (
+              <div className="relative">
+                <div className="absolute top-4 right-4 z-10">
+                  <select
+                    value={calendarMode}
+                    onChange={(e) => setCalendarMode(e.target.value as "month" | "year")}
+                    className="text-xs text-gray-600 border border-gray-200 rounded-md px-1.5 py-0.5 bg-white cursor-pointer"
+                    aria-label="Calendar view mode"
+                  >
+                    <option value="month">Month</option>
+                    <option value="year">Year</option>
+                  </select>
+                </div>
+                <MicroAnnualPlanner user={displayUser} bankHolidays={bankHolidays} />
+              </div>
+            )}
           </div>
 
           {/* Right column: connections widget (top) + upcoming leave list */}

@@ -198,12 +198,16 @@ export default function SharedCalendarView({
 
     const topEntry = entries[0] ?? null;
 
+    const isNWD = user.profile.nonWorkingDays.includes(new Date(dateStr).getDay());
+
     let bgClass = "bg-white";
     if (topEntry) {
       /* c8 ignore next */
       bgClass = CELL_CLASS[topEntry.status] ?? "bg-white";
     } else if (isBH) {
       bgClass = "bg-purple-300";
+    } else if (isNWD) {
+      bgClass = "bg-gray-300";
     }
 
     // Empty cells in the current user's row are clickable to add leave

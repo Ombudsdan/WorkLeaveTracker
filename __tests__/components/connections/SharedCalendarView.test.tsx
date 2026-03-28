@@ -623,4 +623,175 @@ describe("SharedCalendarView — leave entry popover", () => {
     expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Delete" })).not.toBeInTheDocument();
   });
+
+  it("clicking the same leave cell twice closes the popover (toggle)", async () => {
+    const user = setup();
+    render(<SharedCalendarView currentUser={aliceWithLeave} pinnedUsers={[]} bankHolidays={[]} />);
+    const leaveCell = screen
+      .getAllByRole("cell")
+      .find((el) => el.title === "approved: 2026-03-20 – 2026-03-20");
+    await user.click(leaveCell!);
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    // Click the same cell again to toggle off
+    await user.click(leaveCell!);
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  it("clicking outside the container closes the popover", async () => {
+    const user = setup();
+    render(
+      <div>
+        <SharedCalendarView
+          currentUser={aliceWithLeave}
+          pinnedUsers={[]}
+          bankHolidays={[]}
+        />
+        <button>Outside button</button>
+      </div>
+    );
+    const leaveCell = screen
+      .getAllByRole("cell")
+      .find((el) => el.title === "approved: 2026-03-20 – 2026-03-20");
+    await user.click(leaveCell!);
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Outside button" }));
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  it("clicking Edit button calls onEdit with the entry", async () => {
+    const user = setup();
+    const onEdit = jest.fn();
+    const onDelete = jest.fn();
+    render(
+      <SharedCalendarView
+        currentUser={aliceWithLeave}
+        pinnedUsers={[]}
+        bankHolidays={[]}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />
+    );
+    const leaveCell = screen
+      .getAllByRole("cell")
+      .find((el) => el.title === "approved: 2026-03-20 – 2026-03-20");
+    await user.click(leaveCell!);
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+    expect(onEdit).toHaveBeenCalledWith(aliceWithLeave.entries[0]);
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  it("clicking Delete button calls onDelete with the entry id", async () => {
+    const user = setup();
+    const onEdit = jest.fn();
+    const onDelete = jest.fn();
+    render(
+      <SharedCalendarView
+        currentUser={aliceWithLeave}
+        pinnedUsers={[]}
+        bankHolidays={[]}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />
+    );
+    const leaveCell = screen
+      .getAllByRole("cell")
+      .find((el) => el.title === "approved: 2026-03-20 – 2026-03-20");
+    await user.click(leaveCell!);
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+    expect(onDelete).toHaveBeenCalledWith("e1");
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  it("shows a formatted date range for multi-day leave in the popover", async () => {
+    const user = setup();
+    const aliceMultiDay: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e_multi",
+          startDate: "2026-03-09",
+          endDate: "2026-03-13",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.Full,
+        },
+      ],
+    };
+    render(<SharedCalendarView currentUser={aliceMultiDay} pinnedUsers={[]} bankHolidays={[]} />);
+    const leaveCell = screen
+      .getAllByRole("cell")
+      .find((el) => el.title === "approved: 2026-03-09 – 2026-03-13");
+    await user.click(leaveCell!);
+    const tooltip = screen.getByRole("tooltip");
+    // Should show a date range like "9 Mar – 13 Mar"
+    expect(tooltip.textContent).toMatch(/9 Mar/);
+    expect(tooltip.textContent).toMatch(/13 Mar/);
+  });
+});
+
+describe("SharedCalendarView — month navigation (wrap cases)", () => {
+  it("wraps from December to January of the next year via Next month chevron", async () => {
+    jest.setSystemTime(new Date("2026-12-15"));
+    const user = setup();
+    render(
+      <SharedCalendarView currentUser={aliceWithFuture} pinnedUsers={[]} bankHolidays={[]} />
+    );
+    await user.click(screen.getByRole("button", { name: "Next month" }));
+    expect(
+      screen.getByRole("button", { name: /January 2027.*open month-year picker/i })
+    ).toBeInTheDocument();
+  });
+});
+
+describe("SharedCalendarView — desktop mode popover", () => {
+  const aliceWithLeave: PublicUser = {
+    ...alice,
+    entries: [
+      {
+        id: "e1",
+        startDate: "2026-03-20",
+        endDate: "2026-03-20",
+        status: LeaveStatus.Approved,
+        type: LeaveType.Holiday,
+        duration: LeaveDuration.Full,
+        notes: "Beach trip",
+      },
+    ],
+  };
+
+  it("renders popover with desktop styling when window.innerWidth >= 640", async () => {
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: 1024,
+    });
+    window.dispatchEvent(new Event("resize"));
+
+    const user = setup();
+    render(
+      <SharedCalendarView
+        currentUser={aliceWithLeave}
+        pinnedUsers={[]}
+        bankHolidays={[]}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    const leaveCell = screen
+      .getAllByRole("cell")
+      .find((el) => el.title === "approved: 2026-03-20 – 2026-03-20");
+    await user.click(leaveCell!);
+    const tooltip = screen.getByRole("tooltip");
+    // Desktop mode uses absolute positioning
+    expect(tooltip.className).toContain("absolute");
+    expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument();
+
+    // Restore window.innerWidth to 0 (mobile) for subsequent tests
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: 0,
+    });
+  });
 });

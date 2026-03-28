@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import type { LeaveEntry, PublicUser, BankHolidayEntry } from "@/types";
 import { LeaveStatus, LeaveType, LeaveDuration } from "@/types";
 import {
@@ -121,6 +121,7 @@ export default function CalendarView({
   onAdd,
   onEdit,
   onDelete,
+  headerRight,
 }: CalendarViewProps) {
   const today = new Date();
   const [calendarYear, setCalendarYear] = useState(today.getFullYear());
@@ -394,36 +395,42 @@ export default function CalendarView({
 
   return (
     <div ref={calendarRef} className="bg-white rounded-2xl shadow p-5 relative">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <button
-          onClick={prevMonth}
-          disabled={atMin}
-          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-          aria-label="Previous month"
-        >
-          <ChevronLeft size={18} />
-        </button>
-        <MonthYearPicker
-          year={calendarYear}
-          month={calendarMonth}
-          onChange={(y, m) => {
-            setCalendarYear(y);
-            setCalendarMonth(m);
-          }}
-          minYear={pickerMin.year}
-          minMonth={pickerMin.month}
-          maxYear={pickerMax.year}
-          maxMonth={pickerMax.month}
-        />
-        <button
-          onClick={nextMonth}
-          disabled={atMax}
-          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-          aria-label="Next month"
-        >
-          <ChevronRight size={18} />
-        </button>
+      {/* Header: spacers keep the nav+picker centered; right spacer holds headerRight */}
+      <div className="flex items-center mb-4">
+        <div className="flex-1" aria-hidden="true" />
+        <div className="flex items-center gap-1">
+          <button
+            onClick={prevMonth}
+            disabled={atMin}
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+            aria-label="Previous month"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <MonthYearPicker
+            year={calendarYear}
+            month={calendarMonth}
+            onChange={(y, m) => {
+              setCalendarYear(y);
+              setCalendarMonth(m);
+            }}
+            minYear={pickerMin.year}
+            minMonth={pickerMin.month}
+            maxYear={pickerMax.year}
+            maxMonth={pickerMax.month}
+          />
+          <button
+            onClick={nextMonth}
+            disabled={atMax}
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+            aria-label="Next month"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+        <div className="flex-1 flex justify-end">
+          {headerRight}
+        </div>
       </div>
 
       {/* Day labels */}
@@ -583,4 +590,5 @@ interface CalendarViewProps {
   onAdd?: (date?: string) => void;
   onEdit?: (entry: LeaveEntry) => void;
   onDelete?: (id: string) => void;
+  headerRight?: ReactNode;
 }
