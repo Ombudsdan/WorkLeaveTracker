@@ -88,7 +88,7 @@ export default function MonthlyLeaveBar({
           )}
           {bankHolidays > 0 && (
             <div
-              className="bg-gray-400 h-full"
+              className="bg-purple-300 h-full"
               style={{ width: pct(bankHolidays) }}
               title={`Bank Holidays: ${bankHolidays}`}
             />
