@@ -264,10 +264,7 @@ describe("MicroAnnualPlanner — legend", () => {
   it("shows 'Bank Holiday (non-working day)' in legend when a BH falls on a NWD", () => {
     // March 1, 2026 = Sunday — a non-working day for Alice (nonWorkingDays=[0,6])
     render(
-      <MicroAnnualPlanner
-        user={alice}
-        bankHolidays={[{ date: "2026-03-01", title: "NWD BH" }]}
-      />
+      <MicroAnnualPlanner user={alice} bankHolidays={[{ date: "2026-03-01", title: "NWD BH" }]} />
     );
     expect(screen.getByText("Bank Holiday (non-working day)")).toBeInTheDocument();
   });
@@ -277,10 +274,7 @@ describe("MicroAnnualPlanner — bank holiday on non-working day stripe", () => 
   it("applies the diagonal stripe style to a BH box that falls on a non-working day", () => {
     // March 1, 2026 = Sunday — non-working for Alice (nonWorkingDays=[0,6])
     render(
-      <MicroAnnualPlanner
-        user={alice}
-        bankHolidays={[{ date: "2026-03-01", title: "NWD BH" }]}
-      />
+      <MicroAnnualPlanner user={alice} bankHolidays={[{ date: "2026-03-01", title: "NWD BH" }]} />
     );
     const marchRow = screen.getByTestId("month-row-Mar");
     const boxes = within(marchRow).getAllByTestId("day-box");

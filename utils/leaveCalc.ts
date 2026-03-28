@@ -186,9 +186,7 @@ export function calcMonthlyLeaveBreakdown(
   });
 
   // All bank holidays in the year (working day + non-working day) — for visual display.
-  const allYearBankHolidays = bankHolidays.filter(
-    (d) => d >= yearStartStr && d < yearEndStr
-  );
+  const allYearBankHolidays = bankHolidays.filter((d) => d >= yearStartStr && d < yearEndStr);
 
   const result: MonthlyLeaveData[] = [];
 

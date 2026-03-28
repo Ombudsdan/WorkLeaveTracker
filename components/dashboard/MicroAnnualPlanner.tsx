@@ -326,7 +326,9 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
       {/* Legend */}
       <LeaveKey
         className="mt-3"
-        items={hasBhOnNwd ? [...LEAVE_KEY_ITEMS_BASE, LEAVE_KEY_BANK_HOLIDAY_NWD] : LEAVE_KEY_ITEMS_BASE}
+        items={
+          hasBhOnNwd ? [...LEAVE_KEY_ITEMS_BASE, LEAVE_KEY_BANK_HOLIDAY_NWD] : LEAVE_KEY_ITEMS_BASE
+        }
       />
 
       {/* Popover — styled to match CalendarView */}

@@ -141,9 +141,7 @@ export default function MonthlyLeaveRoundup({ user, bankHolidays }: MonthlyLeave
     );
 
     // All bank holidays in the year (for visual display including non-working day ones).
-    const allYearBankHolidays = bankHolidayDates.filter(
-      (d) => d >= yearStartStr && d < yearEndStr
-    );
+    const allYearBankHolidays = bankHolidayDates.filter((d) => d >= yearStartStr && d < yearEndStr);
 
     const bhMap = new Map(bankHolidays.map((bh) => [bh.date, bh.title]));
 
@@ -264,7 +262,9 @@ export default function MonthlyLeaveRoundup({ user, bankHolidays }: MonthlyLeave
     ...(allSegs.some((s) => s.status === LeaveStatus.Requested) ? [LEAVE_KEY_REQUESTED] : []),
     ...(allSegs.some((s) => s.status === LeaveStatus.Planned) ? [LEAVE_KEY_PLANNED] : []),
     ...(allSegs.some((s) => s.isBankHoliday && !s.isNonWorkingDay) ? [LEAVE_KEY_BANK_HOLIDAY] : []),
-    ...(allSegs.some((s) => s.isBankHoliday && s.isNonWorkingDay) ? [LEAVE_KEY_BANK_HOLIDAY_NWD] : []),
+    ...(allSegs.some((s) => s.isBankHoliday && s.isNonWorkingDay)
+      ? [LEAVE_KEY_BANK_HOLIDAY_NWD]
+      : []),
   ];
 
   return (
