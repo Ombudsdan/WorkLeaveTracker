@@ -12,6 +12,7 @@ import {
   countEntryDays,
 } from "@/utils/dateHelpers";
 import { X, LayoutList } from "lucide-react";
+import { LeaveKey, LEAVE_KEY_ITEMS_BASE } from "@/components/atoms/LeaveKey";
 
 export interface MicroAnnualPlannerProps {
   user: PublicUser;
@@ -257,24 +258,7 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
       </div>
 
       {/* Legend */}
-      <div className="flex gap-3 mt-3 flex-wrap">
-        <span className="flex items-center gap-1 text-xs text-gray-500">
-          <span className="w-2.5 h-2.5 rounded-[1px] bg-green-300 inline-block" />
-          Approved
-        </span>
-        <span className="flex items-center gap-1 text-xs text-gray-500">
-          <span className="w-2.5 h-2.5 rounded-[1px] bg-orange-200 inline-block" />
-          Requested
-        </span>
-        <span className="flex items-center gap-1 text-xs text-gray-500">
-          <span className="w-2.5 h-2.5 rounded-[1px] bg-yellow-200 inline-block" />
-          Planned
-        </span>
-        <span className="flex items-center gap-1 text-xs text-gray-500">
-          <span className="w-2.5 h-2.5 rounded-[1px] bg-purple-300 border border-purple-500 inline-block" />
-          Bank Holiday
-        </span>
-      </div>
+      <LeaveKey className="mt-3" items={LEAVE_KEY_ITEMS_BASE} />
 
       {/* Popover — styled to match CalendarView */}
       {popover && (

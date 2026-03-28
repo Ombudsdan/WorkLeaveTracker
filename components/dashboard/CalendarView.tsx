@@ -24,6 +24,15 @@ import {
 import { SICK_LEAVE_ENABLED } from "@/utils/features";
 import { Pencil, Trash2, X, ChevronLeft, ChevronRight } from "lucide-react";
 import MonthYearPicker from "@/components/molecules/MonthYearPicker";
+import {
+  LeaveKey,
+  LEAVE_KEY_APPROVED,
+  LEAVE_KEY_REQUESTED,
+  LEAVE_KEY_PLANNED,
+  LEAVE_KEY_SICK,
+  LEAVE_KEY_BANK_HOLIDAY,
+  LEAVE_KEY_NON_WORKING,
+} from "@/components/atoms/LeaveKey";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -435,28 +444,17 @@ export default function CalendarView({
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap gap-3 mt-4 text-xs text-gray-500">
-        <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded bg-green-300" /> Approved
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded bg-orange-200" /> Requested
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded bg-yellow-200" /> Planned
-        </span>
-        {SICK_LEAVE_ENABLED && (
-          <span className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded bg-red-200" /> Sick
-          </span>
-        )}
-        <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded bg-purple-300" /> Bank Holiday
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded bg-gray-100" /> Non-Working
-        </span>
-      </div>
+      <LeaveKey
+        className="mt-4"
+        items={[
+          LEAVE_KEY_APPROVED,
+          LEAVE_KEY_REQUESTED,
+          LEAVE_KEY_PLANNED,
+          ...(SICK_LEAVE_ENABLED ? [LEAVE_KEY_SICK] : []),
+          LEAVE_KEY_BANK_HOLIDAY,
+          LEAVE_KEY_NON_WORKING,
+        ]}
+      />
 
       {/* Mobile backdrop — tap outside the sheet to dismiss */}
       {popover && isMobileSheet && (

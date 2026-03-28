@@ -14,6 +14,7 @@ import {
   getEntryDuration,
 } from "@/utils/dateHelpers";
 import MonthlyLeaveBar from "@/components/molecules/MonthlyLeaveBar";
+import { LeaveKey, LEAVE_KEY_ITEMS_BASE } from "@/components/atoms/LeaveKey";
 
 interface AnnualPlannerViewProps {
   user: PublicUser;
@@ -144,19 +145,7 @@ export default function AnnualPlannerView({ user, bankHolidays }: AnnualPlannerV
         </div>
 
         {/* Legend */}
-        <div className="flex flex-wrap gap-3 mb-4 mt-2">
-          {[
-            { label: "Approved", color: "bg-green-300" },
-            { label: "Requested", color: "bg-orange-200" },
-            { label: "Planned", color: "bg-yellow-200" },
-            { label: "Bank Holidays", color: "bg-gray-400" },
-          ].map(({ label, color }) => (
-            <span key={label} className="flex items-center gap-1 text-xs text-gray-600">
-              <span className={`inline-block w-3 h-3 rounded-sm ${color}`} />
-              {label}
-            </span>
-          ))}
-        </div>
+        <LeaveKey className="mb-4 mt-2" items={LEAVE_KEY_ITEMS_BASE} />
 
         {/* One bar per month */}
         <div className="space-y-0.5">

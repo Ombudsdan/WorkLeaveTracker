@@ -14,6 +14,7 @@ import {
 } from "@/utils/dateHelpers";
 import MonthYearPicker from "@/components/molecules/MonthYearPicker";
 import { ChevronLeft, ChevronRight, X, CalendarDays } from "lucide-react";
+import { LeaveKey, LEAVE_KEY_ITEMS_BASE } from "@/components/atoms/LeaveKey";
 
 export interface MiniCalendarProps {
   user: PublicUser;
@@ -380,24 +381,7 @@ export default function MiniCalendar({ user, bankHolidays }: MiniCalendarProps) 
       </div>
 
       {/* Legend */}
-      <div className="flex gap-3 mt-3 flex-wrap">
-        <span className="flex items-center gap-1 text-xs text-gray-500">
-          <span className="w-2 h-2 rounded-full bg-green-300 inline-block" />
-          Approved
-        </span>
-        <span className="flex items-center gap-1 text-xs text-gray-500">
-          <span className="w-2 h-2 rounded-full bg-orange-200 inline-block" />
-          Requested
-        </span>
-        <span className="flex items-center gap-1 text-xs text-gray-500">
-          <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" />
-          Planned
-        </span>
-        <span className="flex items-center gap-1 text-xs text-gray-500">
-          <span className="w-2 h-2 rounded-full bg-purple-300 border border-purple-500 inline-block" />
-          Bank Holiday
-        </span>
-      </div>
+      <LeaveKey className="mt-3" items={LEAVE_KEY_ITEMS_BASE} />
 
       {/* Popover — styled to match CalendarView */}
       {popover && (
