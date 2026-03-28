@@ -270,7 +270,7 @@ export default function LeaveForm({
       {/* Duration */}
       <div>
         <span className="block text-sm font-medium text-gray-600 mb-2">Duration</span>
-        <div className="flex gap-2 flex-wrap">
+        <div className="grid grid-cols-3 gap-2 md:flex md:flex-wrap">
           {DURATION_OPTIONS.map((opt) => (
             <button
               key={opt.value}

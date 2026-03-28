@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Eye, ArrowLeft, Users } from "lucide-react";
+import { Eye, ArrowLeft, Users, Plus } from "lucide-react";
 import type { PublicUser, LeaveEntry, BankHolidayEntry } from "@/types";
 import NavBar from "@/components/NavBar";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -394,6 +394,20 @@ function DashboardContent() {
           onClose={() => setShowAllowanceWarningModal(false)}
           onSave={handleSaveWarningAllowance}
         />
+      )}
+
+      {/* Mobile FAB: fixed Add Leave button, visible only on small screens */}
+      {!isReadOnly && (
+        <button
+          onClick={() => {
+            setAddModalInitialDate(undefined);
+            setShowAddModal(true);
+          }}
+          className="fixed bottom-6 right-6 z-50 flex md:hidden items-center justify-center w-14 h-14 rounded-full bg-indigo-600 text-white shadow-lg hover:bg-indigo-700 transition cursor-pointer"
+          aria-label="Add Leave"
+        >
+          <Plus size={24} />
+        </button>
       )}
     </div>
   );

@@ -252,11 +252,11 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
         {formatYearWindow(activeYa)}
       </p>
 
-      <div className="space-y-1">
+      <div className="flex md:flex-col md:space-y-1 overflow-x-auto snap-x snap-mandatory md:overflow-x-visible">
         {rows.map((row) => (
           <div
             key={`${row.year}-${row.month}`}
-            className="flex items-center gap-1.5"
+            className="snap-start shrink-0 w-full md:w-auto flex items-center gap-1.5"
             data-testid={`month-row-${row.monthLabel}`}
           >
             <span className="text-xs text-gray-500 w-7 shrink-0">{row.monthLabel}</span>

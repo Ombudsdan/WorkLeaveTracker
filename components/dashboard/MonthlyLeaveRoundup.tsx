@@ -306,11 +306,12 @@ export default function MonthlyLeaveRoundup({ user, bankHolidays }: MonthlyLeave
                 {monthData.monthName}
               </span>
 
-              <span className="w-10 text-xs text-gray-500 text-right shrink-0 tabular-nums">
-                {monthData.totalDays > 0 ? `${monthData.totalDays}d` : "–"}
-              </span>
+              <div className="flex-1 flex flex-col md:flex-row md:items-center md:gap-3">
+                <span className="text-xs text-gray-500 md:w-10 md:text-right shrink-0 tabular-nums">
+                  {monthData.totalDays > 0 ? `${monthData.totalDays}d` : "–"}
+                </span>
 
-              <div className="flex-1 relative h-5 rounded-sm overflow-hidden bg-gray-100">
+                <div className="flex-1 relative h-5 rounded-sm overflow-hidden bg-gray-100">
                 <div className="absolute inset-0 flex">
                   {monthData.segments.flatMap((seg, idx) => {
                     const prevSeg = idx > 0 ? monthData.segments[idx - 1] : null;
@@ -354,6 +355,7 @@ export default function MonthlyLeaveRoundup({ user, bankHolidays }: MonthlyLeave
                     );
                     return elements;
                   })}
+                </div>
                 </div>
               </div>
             </div>

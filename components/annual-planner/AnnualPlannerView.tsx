@@ -111,12 +111,14 @@ export default function AnnualPlannerView({ user, bankHolidays }: AnnualPlannerV
 
   // Close all open accordion rows when the displayed year changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setOpenMonths(new Set());
   }, [effectiveYa?.year]);
 
   // Reset the selected window whenever the viewed user changes
   /* c8 ignore next 3 */
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedYear(null);
   }, [user.id]);
 

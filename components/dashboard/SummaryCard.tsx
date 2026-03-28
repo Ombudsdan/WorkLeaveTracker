@@ -23,6 +23,7 @@ export default function SummaryCard({ user, bankHolidays, onAddLeave }: SummaryC
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedYear(null);
   }, [user.id]);
 
@@ -89,7 +90,7 @@ export default function SummaryCard({ user, bankHolidays, onAddLeave }: SummaryC
         {onAddLeave && (
           <button
             onClick={onAddLeave}
-            className="flex items-center gap-1 bg-indigo-600 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition font-medium cursor-pointer shrink-0 ml-2"
+            className="hidden md:flex items-center gap-1 bg-indigo-600 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition font-medium cursor-pointer shrink-0 ml-2"
           >
             <Plus size={12} />
             Add Leave

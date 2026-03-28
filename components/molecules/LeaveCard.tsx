@@ -66,18 +66,18 @@ export default function LeaveCard({
           <span className="opacity-70">({daysLabel})</span>
         </span>
         {isOwnProfile && (
-          <div className="flex gap-1 shrink-0">
+          <div className="flex gap-6 sm:gap-1 shrink-0">
             <button
               onClick={() => onEdit?.(entry)}
               aria-label="Edit"
-              className="p-2 sm:p-0.5 hover:opacity-70 cursor-pointer rounded"
+              className="flex items-center justify-center w-11 h-11 sm:w-auto sm:h-auto sm:p-0.5 hover:opacity-70 cursor-pointer rounded"
             >
               <Pencil className="w-4 h-4 sm:w-3 sm:h-3" />
             </button>
             <button
               onClick={() => onDelete?.(entry.id)}
               aria-label="Delete"
-              className="p-2 sm:p-0.5 hover:opacity-70 text-red-600 cursor-pointer rounded"
+              className="flex items-center justify-center w-11 h-11 sm:w-auto sm:h-auto sm:p-0.5 hover:opacity-70 text-red-600 cursor-pointer rounded"
             >
               <Trash2 className="w-4 h-4 sm:w-3 sm:h-3" />
             </button>
