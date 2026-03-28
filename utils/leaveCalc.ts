@@ -139,7 +139,9 @@ export interface MonthlyLeaveData {
   planned: number;
   /** Bank holidays that fall on a working day in this month */
   bankHolidays: number;
-  /** approved + requested + planned + bankHolidays */
+  /** Bank holidays that fall on a non-working day in this month */
+  bankHolidaysNonWorking: number;
+  /** approved + requested + planned + bankHolidays + bankHolidaysNonWorking */
   totalCombined: number;
   /** Holiday-type entries whose date range overlaps this month */
   entries: LeaveEntry[];
@@ -174,6 +176,7 @@ export function calcMonthlyLeaveBreakdown(
 
   // Reuse the same bank-holiday filter as calcLeaveSummary for consistency.
   // String comparison avoids local-vs-UTC midnight issues (e.g. BST).
+  // Working-day bank holidays are used to exclude days from leave counts.
   const relevantBankHolidays = bankHolidays.filter((d) => {
     return (
       d >= yearStartStr &&
@@ -181,6 +184,11 @@ export function calcMonthlyLeaveBreakdown(
       !user.profile.nonWorkingDays.includes(new Date(d).getDay())
     );
   });
+
+  // All bank holidays in the year (working day + non-working day) — for visual display.
+  const allYearBankHolidays = bankHolidays.filter(
+    (d) => d >= yearStartStr && d < yearEndStr
+  );
 
   const result: MonthlyLeaveData[] = [];
 
@@ -199,10 +207,18 @@ export function calcMonthlyLeaveBreakdown(
     const monthStartStr = `${year}-${monthPadded}-01`;
     const monthEndStr = `${year}-${monthPadded}-${String(lastDayOfMonth).padStart(2, "0")}`;
 
-    // Bank holidays in this month from the year-level relevant set.
+    // Working-day bank holidays in this month (for leave-count exclusion).
     // String comparison: ISO dates sort lexicographically == chronologically.
     const monthBankHolidays = relevantBankHolidays.filter(
       (d) => d >= monthStartStr && d <= monthEndStr
+    );
+
+    // Non-working-day bank holidays in this month (shown with diagonal stripes).
+    const monthBankHolidaysNonWorking = allYearBankHolidays.filter(
+      (d) =>
+        d >= monthStartStr &&
+        d <= monthEndStr &&
+        user.profile.nonWorkingDays.includes(new Date(d).getDay())
     );
 
     let approved = 0;
@@ -247,7 +263,13 @@ export function calcMonthlyLeaveBreakdown(
       requested,
       planned,
       bankHolidays: monthBankHolidays.length,
-      totalCombined: approved + requested + planned + monthBankHolidays.length,
+      bankHolidaysNonWorking: monthBankHolidaysNonWorking.length,
+      totalCombined:
+        approved +
+        requested +
+        planned +
+        monthBankHolidays.length +
+        monthBankHolidaysNonWorking.length,
       entries: monthEntries,
     });
   }

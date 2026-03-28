@@ -378,7 +378,7 @@ describe("MonthlyLeaveRoundup — same-status separator", () => {
     expect(separators.length).toBeGreaterThan(0);
   });
 
-  it("does not render a separator between a bank holiday and a leave segment", () => {
+  it("renders a separator div between a bank holiday and an adjacent leave segment", () => {
     const userBhAndLeave: PublicUser = {
       ...alice,
       entries: [
@@ -398,12 +398,12 @@ describe("MonthlyLeaveRoundup — same-status separator", () => {
       />
     );
     const container = screen.getByTestId("monthly-leave-roundup");
-    // No separator because one is BH and the other is a leave entry
+    // Separator between any two adjacent segments
     const separators = container.querySelectorAll(".w-px.h-full.bg-white");
-    expect(separators.length).toBe(0);
+    expect(separators.length).toBeGreaterThan(0);
   });
 
-  it("does not render a separator between segments with different statuses", () => {
+  it("renders a separator between segments with different statuses", () => {
     const userMixedStatus: PublicUser = {
       ...alice,
       entries: [
@@ -426,7 +426,7 @@ describe("MonthlyLeaveRoundup — same-status separator", () => {
     render(<MonthlyLeaveRoundup user={userMixedStatus} bankHolidays={[]} />);
     const container = screen.getByTestId("monthly-leave-roundup");
     const separators = container.querySelectorAll(".w-px.h-full.bg-white");
-    expect(separators.length).toBe(0);
+    expect(separators.length).toBeGreaterThan(0);
   });
 });
 
@@ -873,7 +873,7 @@ describe("MonthlyLeaveRoundup — April-start holiday year", () => {
 // ─── Non-working-day bank holidays ───────────────────────────────────────────
 
 describe("MonthlyLeaveRoundup — bank holidays on non-working days", () => {
-  it("does not render a BH segment when the BH falls on a non-working day", () => {
+  it("renders a BH segment with diagonal stripe when the BH falls on a non-working day", () => {
     // Alice's nonWorkingDays = [0, 6]; March 1 2026 is a Sunday (dow=0)
     render(
       <MonthlyLeaveRoundup
@@ -882,7 +882,32 @@ describe("MonthlyLeaveRoundup — bank holidays on non-working days", () => {
       />
     );
     const container = screen.getByTestId("monthly-leave-roundup");
-    // No clickable purple segments (legend swatch excluded via cursor-pointer)
-    expect(container.querySelectorAll(".bg-purple-300.cursor-pointer").length).toBe(0);
+    // A clickable purple segment should appear (it's a NWD BH shown with stripes)
+    const purpleSegs = container.querySelectorAll(".bg-purple-300.cursor-pointer");
+    expect(purpleSegs.length).toBe(1);
+    // The segment should have the diagonal stripe background-image applied
+    const segEl = purpleSegs[0] as HTMLElement;
+    expect(segEl.style.backgroundImage).toContain("repeating-linear-gradient");
+  });
+
+  it("renders a NWD BH segment without stripe when on a working day", () => {
+    // 2026-03-02 is a Monday (working day)
+    render(
+      <MonthlyLeaveRoundup
+        user={alice}
+        bankHolidays={[{ date: "2026-03-02", title: "Monday BH" }]}
+      />
+    );
+    const container = screen.getByTestId("monthly-leave-roundup");
+    const purpleSegs = container.querySelectorAll(".bg-purple-300.cursor-pointer");
+    expect(purpleSegs.length).toBe(1);
+    // Working-day BH should NOT have the stripe style
+    const segEl = purpleSegs[0] as HTMLElement;
+    expect(segEl.style.backgroundImage).toBe("");
+  });
+
+  it("shows 'Bank Holiday (non-working day)' in the legend key", () => {
+    render(<MonthlyLeaveRoundup user={alice} bankHolidays={[]} />);
+    expect(screen.getByText("Bank Holiday (non-working day)")).toBeInTheDocument();
   });
 });

@@ -233,7 +233,7 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
       data-testid="micro-annual-planner"
     >
       <div className="flex items-center justify-between mb-1">
-        <h2 className="text-sm font-semibold text-gray-700">Annual Overview</h2>
+        <h2 className="text-sm font-semibold text-gray-700">Annual Calendar</h2>
       </div>
       {/* Leave period subtitle */}
       <p className="text-xs text-gray-400 mb-3" data-testid="annual-planner-subtitle">

@@ -66,9 +66,9 @@ describe("MicroAnnualPlanner — basic rendering", () => {
     expect(screen.queryByRole("link", { name: /full planner/i })).toBeNull();
   });
 
-  it("shows 'Annual Overview' as the heading", () => {
+  it("shows 'Annual Calendar' as the heading", () => {
     render(<MicroAnnualPlanner user={alice} bankHolidays={[]} />);
-    expect(screen.getByText("Annual Overview")).toBeInTheDocument();
+    expect(screen.getByText("Annual Calendar")).toBeInTheDocument();
   });
 
   it("renders the legend with Approved, Requested, Planned", () => {

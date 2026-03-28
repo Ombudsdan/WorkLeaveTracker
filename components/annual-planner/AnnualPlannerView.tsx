@@ -14,7 +14,7 @@ import {
   getEntryDuration,
 } from "@/utils/dateHelpers";
 import MonthlyLeaveBar from "@/components/molecules/MonthlyLeaveBar";
-import { LeaveKey, LEAVE_KEY_ITEMS_BASE } from "@/components/atoms/LeaveKey";
+import { LeaveKey, LEAVE_KEY_ITEMS_OVERVIEW } from "@/components/atoms/LeaveKey";
 
 interface AnnualPlannerViewProps {
   user: PublicUser;
@@ -121,14 +121,14 @@ export default function AnnualPlannerView({ user, bankHolidays }: AnnualPlannerV
       {/* ── Bar chart card ─────────────────────────────────────── */}
       <div className="bg-white rounded-2xl shadow p-5">
         <div className="flex items-center justify-between mb-1">
-          <h2 className="font-semibold text-gray-800 text-sm">Monthly Leave Roundup</h2>
+          <h2 className="font-semibold text-gray-800 text-sm">Annual Calendar</h2>
 
           {/* Leave-period selector: dropdown when multiple windows, plain text otherwise */}
           {visibleAllowances.length > 1 && effectiveYa ? (
             <select
               value={effectiveYa.year}
               onChange={(e) => setSelectedYear(Number(e.target.value))}
-              className="text-xs text-gray-600 border border-gray-200 rounded px-1.5 py-0.5 bg-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-indigo-300"
+              className="text-xs text-gray-600 border border-gray-200 rounded-md px-2 py-1 bg-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-indigo-300"
               aria-label="Select leave window"
             >
               {visibleAllowances.map((ya) => (
@@ -145,7 +145,7 @@ export default function AnnualPlannerView({ user, bankHolidays }: AnnualPlannerV
         </div>
 
         {/* Legend */}
-        <LeaveKey className="mb-4 mt-2" items={LEAVE_KEY_ITEMS_BASE} />
+        <LeaveKey className="mb-4 mt-2" items={LEAVE_KEY_ITEMS_OVERVIEW} />
 
         {/* One bar per month */}
         <div className="space-y-0.5">
@@ -157,6 +157,7 @@ export default function AnnualPlannerView({ user, bankHolidays }: AnnualPlannerV
               requested={m.requested}
               planned={m.planned}
               bankHolidays={m.bankHolidays}
+              bankHolidaysNonWorking={m.bankHolidaysNonWorking}
               maxDays={maxDays}
             />
           ))}

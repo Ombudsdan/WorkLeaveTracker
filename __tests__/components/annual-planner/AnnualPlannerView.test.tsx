@@ -58,9 +58,9 @@ describe("AnnualPlannerView — bar chart", () => {
     expect(screen.getByText("December")).toBeInTheDocument();
   });
 
-  it("renders the 'Monthly Leave Roundup' heading", () => {
+  it("renders the 'Annual Calendar' heading", () => {
     render(<AnnualPlannerView user={baseUser} bankHolidays={[]} />);
-    expect(screen.getByText("Monthly Leave Roundup")).toBeInTheDocument();
+    expect(screen.getByText("Annual Calendar")).toBeInTheDocument();
   });
 
   it("renders the year window label as text when there is only one allowance", () => {
@@ -71,7 +71,7 @@ describe("AnnualPlannerView — bar chart", () => {
     expect(screen.queryByRole("combobox", { name: /select leave window/i })).toBeNull();
   });
 
-  it("renders the colour legend with all four categories", () => {
+  it("renders the colour legend with all five categories (including non-working day BH)", () => {
     render(<AnnualPlannerView user={baseUser} bankHolidays={[]} />);
     // Use getAllByText because "Approved", "Requested", "Planned" also appear in the
     // Year Summary section added for calcLeaveSummary consistency.
@@ -79,6 +79,7 @@ describe("AnnualPlannerView — bar chart", () => {
     expect(screen.getAllByText("Requested").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Planned").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Bank Holiday")).toBeInTheDocument();
+    expect(screen.getByText("Bank Holiday (non-working day)")).toBeInTheDocument();
   });
 
   it("uses purple (bg-purple-300) for the Bank Holiday legend swatch", () => {
