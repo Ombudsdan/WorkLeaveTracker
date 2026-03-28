@@ -36,6 +36,13 @@ const BOX_HEX_COLORS: Record<LeaveStatus, string> = {
   [LeaveStatus.Planned]: "#fef08a",
 };
 
+const GRAY_100_HEX = "#f3f4f6";
+const POPOVER_WIDTH = 208;
+
+function halfDayGradient(topLeft: string, bottomRight: string): string {
+  return `linear-gradient(to bottom right, ${topLeft} calc(50% - 0.5px), white calc(50% - 0.5px), white calc(50% + 0.5px), ${bottomRight} calc(50% + 0.5px))`;
+}
+
 const MONTH_ABBREV = [
   "Jan",
   "Feb",
@@ -206,7 +213,7 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
     const containerRect = containerRef.current?.getBoundingClientRect();
     if (!containerRect) return;
     const top = rect.bottom - containerRect.top + 4;
-    const left = Math.min(rect.left - containerRect.left, containerRect.width - 200);
+    const left = Math.min(rect.left - containerRect.left, containerRect.width - POPOVER_WIDTH);
     setPopover({
       dateStr: day.dateStr,
       leaveEntries: day.allLeaveEntries,
@@ -259,21 +266,15 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
                   const amColor = BOX_HEX_COLORS[day.amEntry.status];
                   const pmColor = BOX_HEX_COLORS[day.pmEntry.status];
                   boxClassName += " cursor-pointer";
-                  boxStyle = {
-                    background: `linear-gradient(to bottom right, ${amColor} calc(50% - 0.5px), white calc(50% - 0.5px), white calc(50% + 0.5px), ${pmColor} calc(50% + 0.5px))`,
-                  };
+                  boxStyle = { background: halfDayGradient(amColor, pmColor) };
                 } else if (day.amEntry) {
                   const amColor = BOX_HEX_COLORS[day.amEntry.status];
                   boxClassName += " cursor-pointer";
-                  boxStyle = {
-                    background: `linear-gradient(to bottom right, ${amColor} calc(50% - 0.5px), white calc(50% - 0.5px), white calc(50% + 0.5px), #f3f4f6 calc(50% + 0.5px))`,
-                  };
+                  boxStyle = { background: halfDayGradient(amColor, GRAY_100_HEX) };
                 } else if (day.pmEntry) {
                   const pmColor = BOX_HEX_COLORS[day.pmEntry.status];
                   boxClassName += " cursor-pointer";
-                  boxStyle = {
-                    background: `linear-gradient(to bottom right, #f3f4f6 calc(50% - 0.5px), white calc(50% - 0.5px), white calc(50% + 0.5px), ${pmColor} calc(50% + 0.5px))`,
-                  };
+                  boxStyle = { background: halfDayGradient(GRAY_100_HEX, pmColor) };
                 } else if (day.status !== null) {
                   boxClassName += ` ${BOX_COLORS[day.status]} cursor-pointer`;
                 } else {

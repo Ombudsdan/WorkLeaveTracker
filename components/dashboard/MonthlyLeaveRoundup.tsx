@@ -55,6 +55,8 @@ interface PopoverInfo {
   left: number;
 }
 
+const POPOVER_WIDTH = 208;
+
 function formatDateRange(startDate: string, endDate: string): string {
   const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" };
   const start = new Date(startDate).toLocaleDateString("en-GB", opts);
@@ -219,7 +221,7 @@ export default function MonthlyLeaveRoundup({ user, bankHolidays }: MonthlyLeave
     const containerRect = containerRef.current?.getBoundingClientRect();
     if (!containerRect) return;
     const top = rect.bottom - containerRect.top + 4;
-    const left = Math.min(rect.left - containerRect.left, containerRect.width - 200);
+    const left = Math.min(rect.left - containerRect.left, containerRect.width - POPOVER_WIDTH);
     setPopover({ segmentId: segment.id, segment, top, left });
   }
 
