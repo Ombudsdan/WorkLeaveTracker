@@ -91,9 +91,7 @@ describe("LeaveKey — labels", () => {
 
 describe("LeaveKey — className", () => {
   it("applies an extra className to the wrapper", () => {
-    const { container } = render(
-      <LeaveKey items={[LEAVE_KEY_APPROVED]} className="mt-4" />
-    );
+    const { container } = render(<LeaveKey items={[LEAVE_KEY_APPROVED]} className="mt-4" />);
     expect(container.querySelector("[data-testid='leave-key']")).toHaveClass("mt-4");
   });
 
@@ -146,9 +144,7 @@ function getSwatches(container: HTMLElement) {
 
 describe("Cross-component key consistency", () => {
   it("CalendarView renders a leave-key with w-3 h-3 rounded swatches", () => {
-    const { container } = render(
-      <CalendarView user={baseUser} bankHolidays={[]} />
-    );
+    const { container } = render(<CalendarView user={baseUser} bankHolidays={[]} />);
     const key = container.querySelector("[data-testid='leave-key']");
     expect(key).toBeInTheDocument();
     const swatches = getSwatches(container);
@@ -161,9 +157,7 @@ describe("Cross-component key consistency", () => {
   });
 
   it("MiniCalendar renders a leave-key with w-3 h-3 rounded swatches", () => {
-    const { container } = render(
-      <MiniCalendar user={baseUser} bankHolidays={[]} />
-    );
+    const { container } = render(<MiniCalendar user={baseUser} bankHolidays={[]} />);
     const key = container.querySelector("[data-testid='leave-key']");
     expect(key).toBeInTheDocument();
     const swatches = getSwatches(container);
@@ -176,9 +170,7 @@ describe("Cross-component key consistency", () => {
   });
 
   it("MicroAnnualPlanner renders a leave-key with w-3 h-3 rounded swatches", () => {
-    const { container } = render(
-      <MicroAnnualPlanner user={baseUser} bankHolidays={[]} />
-    );
+    const { container } = render(<MicroAnnualPlanner user={baseUser} bankHolidays={[]} />);
     const key = container.querySelector("[data-testid='leave-key']");
     expect(key).toBeInTheDocument();
     const swatches = getSwatches(container);
@@ -206,9 +198,7 @@ describe("Cross-component key consistency", () => {
   });
 
   it("AnnualPlannerView renders a leave-key with w-3 h-3 rounded swatches", () => {
-    const { container } = render(
-      <AnnualPlannerView user={baseUser} bankHolidays={[]} />
-    );
+    const { container } = render(<AnnualPlannerView user={baseUser} bankHolidays={[]} />);
     const key = container.querySelector("[data-testid='leave-key']");
     expect(key).toBeInTheDocument();
     const swatches = getSwatches(container);
@@ -225,9 +215,8 @@ describe("Cross-component key consistency", () => {
       render(<CalendarView user={baseUser} bankHolidays={[]} />).container,
       render(<MiniCalendar user={baseUser} bankHolidays={[]} />).container,
       render(<MicroAnnualPlanner user={baseUser} bankHolidays={[]} />).container,
-      render(
-        <SharedCalendarView currentUser={baseUser} pinnedUsers={[]} bankHolidays={[]} />
-      ).container,
+      render(<SharedCalendarView currentUser={baseUser} pinnedUsers={[]} bankHolidays={[]} />)
+        .container,
       render(<AnnualPlannerView user={baseUser} bankHolidays={[]} />).container,
     ];
 
@@ -240,9 +229,7 @@ describe("Cross-component key consistency", () => {
   });
 
   it("AnnualPlannerView shows Bank Holiday (singular) with bg-purple-300, not bg-gray-400", () => {
-    const { container } = render(
-      <AnnualPlannerView user={baseUser} bankHolidays={[]} />
-    );
+    const { container } = render(<AnnualPlannerView user={baseUser} bankHolidays={[]} />);
     expect(screen.getAllByText("Bank Holiday").length).toBeGreaterThan(0);
     expect(container.querySelector(".bg-purple-300")).toBeInTheDocument();
     expect(container.querySelector(".bg-gray-400")).not.toBeInTheDocument();
