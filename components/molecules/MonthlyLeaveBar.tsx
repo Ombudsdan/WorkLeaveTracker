@@ -53,7 +53,7 @@ export default function MonthlyLeaveBar({
   }
 
   return (
-    <div className="flex items-center gap-3 py-1.5" data-testid="monthly-leave-bar">
+    <div className="flex items-center gap-3 py-0.5" data-testid="monthly-leave-bar">
       {/* Month name */}
       <span className="w-24 text-sm font-medium text-gray-700 shrink-0">{monthName}</span>
 
