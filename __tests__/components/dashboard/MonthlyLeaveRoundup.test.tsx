@@ -35,9 +35,9 @@ describe("MonthlyLeaveRoundup — basic rendering", () => {
     expect(screen.getByTestId("monthly-leave-roundup")).toBeInTheDocument();
   });
 
-  it("shows 'Monthly Overview' heading", () => {
+  it("shows 'Overview' heading", () => {
     render(<MonthlyLeaveRoundup user={alice} bankHolidays={[]} />);
-    expect(screen.getByText("Monthly Overview")).toBeInTheDocument();
+    expect(screen.getByText("Overview")).toBeInTheDocument();
   });
 
   it("shows all 12 month names", () => {

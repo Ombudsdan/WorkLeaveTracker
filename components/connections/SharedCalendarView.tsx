@@ -248,35 +248,39 @@ export default function SharedCalendarView({
   return (
     <div ref={containerRef} className="bg-white rounded-2xl shadow p-5 relative">
       {/* Month navigation */}
-      <div className="flex items-center justify-between mb-4">
-        <button
-          onClick={prevMonth}
-          disabled={atMin}
-          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-          aria-label="Previous month"
-        >
-          <ChevronLeft size={18} />
-        </button>
-        <MonthYearPicker
-          year={calYear}
-          month={calMonth}
-          onChange={(y, m) => {
-            setCalYear(y);
-            setCalMonth(m);
-          }}
-          minYear={pickerMin.year}
-          minMonth={pickerMin.month}
-          maxYear={pickerMax.year}
-          maxMonth={pickerMax.month}
-        />
-        <button
-          onClick={nextMonth}
-          disabled={atMax}
-          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-          aria-label="Next month"
-        >
-          <ChevronRight size={18} />
-        </button>
+      <div className="flex items-center mb-4">
+        <div className="flex-1" aria-hidden="true" />
+        <div className="flex items-center gap-1">
+          <button
+            onClick={prevMonth}
+            disabled={atMin}
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+            aria-label="Previous month"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <MonthYearPicker
+            year={calYear}
+            month={calMonth}
+            onChange={(y, m) => {
+              setCalYear(y);
+              setCalMonth(m);
+            }}
+            minYear={pickerMin.year}
+            minMonth={pickerMin.month}
+            maxYear={pickerMax.year}
+            maxMonth={pickerMax.month}
+          />
+          <button
+            onClick={nextMonth}
+            disabled={atMax}
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+            aria-label="Next month"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+        <div className="flex-1" aria-hidden="true" />
       </div>
 
       {/* Scrollable calendar table */}

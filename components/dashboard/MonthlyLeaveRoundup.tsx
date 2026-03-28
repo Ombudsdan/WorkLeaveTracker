@@ -246,12 +246,12 @@ export default function MonthlyLeaveRoundup({ user, bankHolidays }: MonthlyLeave
       data-testid="monthly-leave-roundup"
     >
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-gray-700">Monthly Overview</h2>
+        <h2 className="text-sm font-semibold text-gray-700">Overview</h2>
         {hasMultipleYears ? (
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="text-xs text-gray-600 border border-gray-200 rounded-md px-1.5 py-0.5 bg-white cursor-pointer"
+            className="text-xs text-gray-600 border border-gray-200 rounded-md px-2 py-1 bg-white cursor-pointer"
             aria-label="Select year"
           >
             {availableYas.map((ya) => (
