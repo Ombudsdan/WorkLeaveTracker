@@ -641,11 +641,7 @@ describe("SharedCalendarView — leave entry popover", () => {
     const user = setup();
     render(
       <div>
-        <SharedCalendarView
-          currentUser={aliceWithLeave}
-          pinnedUsers={[]}
-          bankHolidays={[]}
-        />
+        <SharedCalendarView currentUser={aliceWithLeave} pinnedUsers={[]} bankHolidays={[]} />
         <button>Outside button</button>
       </div>
     );
@@ -733,9 +729,7 @@ describe("SharedCalendarView — month navigation (wrap cases)", () => {
   it("wraps from December to January of the next year via Next month chevron", async () => {
     jest.setSystemTime(new Date("2026-12-15"));
     const user = setup();
-    render(
-      <SharedCalendarView currentUser={aliceWithFuture} pinnedUsers={[]} bankHolidays={[]} />
-    );
+    render(<SharedCalendarView currentUser={aliceWithFuture} pinnedUsers={[]} bankHolidays={[]} />);
     await user.click(screen.getByRole("button", { name: "Next month" }));
     expect(
       screen.getByRole("button", { name: /January 2027.*open month-year picker/i })

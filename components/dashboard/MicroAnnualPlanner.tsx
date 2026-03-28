@@ -288,9 +288,7 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
                       day.isBankHoliday
                         ? day.bankHolidayTitle
                         : day.allLeaveEntries.length > 0
-                          ? day.allLeaveEntries
-                              .map((e) => `${e.status}: ${e.startDate}`)
-                              .join(", ")
+                          ? day.allLeaveEntries.map((e) => `${e.status}: ${e.startDate}`).join(", ")
                           : day.dateStr
                     }
                     data-testid="day-box"
@@ -348,9 +346,7 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
               >
                 {entry.status.charAt(0).toUpperCase() + entry.status.slice(1)}
               </div>
-              <p className="font-medium text-gray-800 mb-1 pr-4">
-                {getEntryLabel(entry)}
-              </p>
+              <p className="font-medium text-gray-800 mb-1 pr-4">{getEntryLabel(entry)}</p>
               <p className="text-gray-500 mb-1">
                 {formatDateRange(entry.startDate, entry.endDate)}
               </p>

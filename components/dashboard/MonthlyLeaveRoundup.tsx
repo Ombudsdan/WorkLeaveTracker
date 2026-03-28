@@ -19,8 +19,18 @@ export interface MonthlyLeaveRoundupProps {
 }
 
 const MONTH_NAMES = [
-  "January","February","March","April","May","June",
-  "July","August","September","October","November","December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 const STATUS_BAR_COLORS: Record<LeaveStatus, string> = {
@@ -354,17 +364,13 @@ export default function MonthlyLeaveRoundup({ user, bankHolidays }: MonthlyLeave
               <div
                 className={`inline-flex items-center px-1.5 py-0.5 rounded font-semibold mb-2 border text-[10px] ${STATUS_COLORS[popover.segment.status]}`}
               >
-                {popover.segment.status.charAt(0).toUpperCase() +
-                  popover.segment.status.slice(1)}
+                {popover.segment.status.charAt(0).toUpperCase() + popover.segment.status.slice(1)}
               </div>
               <p className="font-medium text-gray-800 mb-1 pr-4">
                 {getEntryLabel(popover.segment.entry)}
               </p>
               <p className="text-gray-500 mb-1">
-                {formatDateRange(
-                  popover.segment.entry.startDate,
-                  popover.segment.entry.endDate
-                )}
+                {formatDateRange(popover.segment.entry.startDate, popover.segment.entry.endDate)}
               </p>
               <p className="text-gray-500">
                 {getDurationLabel(

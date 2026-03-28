@@ -428,9 +428,7 @@ export default function CalendarView({
             <ChevronRight size={18} />
           </button>
         </div>
-        <div className="flex-1 flex justify-end">
-          {headerRight}
-        </div>
+        <div className="flex-1 flex justify-end">{headerRight}</div>
       </div>
 
       {/* Day labels */}

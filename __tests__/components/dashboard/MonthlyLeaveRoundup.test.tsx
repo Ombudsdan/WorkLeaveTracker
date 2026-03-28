@@ -43,8 +43,18 @@ describe("MonthlyLeaveRoundup — basic rendering", () => {
   it("shows all 12 month names", () => {
     render(<MonthlyLeaveRoundup user={alice} bankHolidays={[]} />);
     const months = [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December",
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
     ];
     months.forEach((m) => expect(screen.getByText(m)).toBeInTheDocument());
   });
@@ -65,9 +75,7 @@ describe("MonthlyLeaveRoundup — basic rendering", () => {
 
   it("returns null when user has no year allowances", () => {
     const noAllowances: PublicUser = { ...alice, yearAllowances: [] };
-    const { container } = render(
-      <MonthlyLeaveRoundup user={noAllowances} bankHolidays={[]} />
-    );
+    const { container } = render(<MonthlyLeaveRoundup user={noAllowances} bankHolidays={[]} />);
     expect(container.firstChild).toBeNull();
   });
 });
@@ -116,8 +124,24 @@ describe("MonthlyLeaveRoundup — deactivated allowances", () => {
     const userWithDeactivated: PublicUser = {
       ...alice,
       yearAllowances: [
-        { year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0, active: true },
-        { year: 2025, company: "OldCo", holidayStartMonth: 1, core: 20, bought: 0, carried: 0, active: false },
+        {
+          year: 2026,
+          company: "Acme",
+          holidayStartMonth: 1,
+          core: 25,
+          bought: 0,
+          carried: 0,
+          active: true,
+        },
+        {
+          year: 2025,
+          company: "OldCo",
+          holidayStartMonth: 1,
+          core: 20,
+          bought: 0,
+          carried: 0,
+          active: false,
+        },
       ],
     };
     render(<MonthlyLeaveRoundup user={userWithDeactivated} bankHolidays={[]} />);
@@ -129,8 +153,24 @@ describe("MonthlyLeaveRoundup — deactivated allowances", () => {
     const userAllDeactivated: PublicUser = {
       ...alice,
       yearAllowances: [
-        { year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0, active: false },
-        { year: 2025, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0, active: false },
+        {
+          year: 2026,
+          company: "Acme",
+          holidayStartMonth: 1,
+          core: 25,
+          bought: 0,
+          carried: 0,
+          active: false,
+        },
+        {
+          year: 2025,
+          company: "Acme",
+          holidayStartMonth: 1,
+          core: 25,
+          bought: 0,
+          carried: 0,
+          active: false,
+        },
       ],
     };
     render(<MonthlyLeaveRoundup user={userAllDeactivated} bankHolidays={[]} />);
@@ -259,7 +299,7 @@ describe("MonthlyLeaveRoundup — segment rendering", () => {
         {
           id: "e5",
           startDate: "2026-03-14", // Saturday
-          endDate: "2026-03-15",   // Sunday
+          endDate: "2026-03-15", // Sunday
           status: LeaveStatus.Approved,
           type: LeaveType.Holiday,
         },
@@ -428,10 +468,7 @@ describe("MonthlyLeaveRoundup — popover for bank holiday", () => {
   it("shows a formatted date in the bank holiday popover", async () => {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
     render(
-      <MonthlyLeaveRoundup
-        user={alice}
-        bankHolidays={[{ date: "2026-03-02", title: "Test BH" }]}
-      />
+      <MonthlyLeaveRoundup user={alice} bankHolidays={[{ date: "2026-03-02", title: "Test BH" }]} />
     );
     const container = screen.getByTestId("monthly-leave-roundup");
     const bhSegment = container.querySelector(".bg-purple-300.cursor-pointer") as HTMLElement;
@@ -822,7 +859,7 @@ describe("MonthlyLeaveRoundup — April-start holiday year", () => {
         user={bobAprilStart}
         bankHolidays={[
           { date: "2025-01-01", title: "New Year" }, // before Apr 2025 window
-          { date: "2025-05-05", title: "May Day" },  // inside window
+          { date: "2025-05-05", title: "May Day" }, // inside window
         ]}
       />
     );
