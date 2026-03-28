@@ -61,10 +61,9 @@ describe("MicroAnnualPlanner — basic rendering", () => {
     });
   });
 
-  it("renders a link to the annual planner page", () => {
+  it("does not render a 'Full Planner' link", () => {
     render(<MicroAnnualPlanner user={alice} bankHolidays={[]} />);
-    const link = screen.getByRole("link", { name: /full planner/i });
-    expect(link).toHaveAttribute("href", "/annual-planner");
+    expect(screen.queryByRole("link", { name: /full planner/i })).toBeNull();
   });
 
   it("shows 'Annual Overview' as the heading", () => {
