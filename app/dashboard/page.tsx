@@ -14,7 +14,6 @@ import CalendarView from "@/components/dashboard/CalendarView";
 import AddLeaveModal from "@/components/dashboard/AddLeaveModal";
 import EditLeaveModal from "@/components/dashboard/EditLeaveModal";
 import YearAllowanceModal from "@/components/dashboard/YearAllowanceModal";
-import MiniCalendar from "@/components/dashboard/MiniCalendar";
 import MicroAnnualPlanner from "@/components/dashboard/MicroAnnualPlanner";
 import { usersController } from "@/controllers/usersController";
 import { holidaysController } from "@/controllers/holidaysController";
@@ -232,17 +231,9 @@ function DashboardContent() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
-          {/* Left column: mini-calendar, annual planner */}
+          {/* Left column: stats + annual planner */}
           <div
             className={`lg:col-span-2 space-y-4 ${mobileView === "list" ? "block" : "hidden"} lg:block`}
-          >
-            <MiniCalendar user={displayUser} bankHolidays={bankHolidays} />
-            <MicroAnnualPlanner user={displayUser} bankHolidays={bankHolidays} />
-          </div>
-
-          {/* Centre column (widest): summary card + main calendar */}
-          <div
-            className={`lg:col-span-3 space-y-4 ${mobileView === "calendar" ? "block" : "hidden"} lg:block`}
           >
             <SummaryCard
               user={displayUser}
@@ -256,6 +247,13 @@ function DashboardContent() {
                     }
               }
             />
+            <MicroAnnualPlanner user={displayUser} bankHolidays={bankHolidays} />
+          </div>
+
+          {/* Centre column (widest): main calendar */}
+          <div
+            className={`lg:col-span-3 space-y-4 ${mobileView === "calendar" ? "block" : "hidden"} lg:block`}
+          >
             <CalendarView
               user={displayUser}
               bankHolidays={bankHolidays}

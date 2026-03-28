@@ -10,11 +10,10 @@ import SharedCalendarView from "@/components/connections/SharedCalendarView";
 import AddLeaveModal from "@/components/dashboard/AddLeaveModal";
 import EditLeaveModal from "@/components/dashboard/EditLeaveModal";
 import NotificationBlob from "@/components/atoms/NotificationBlob/NotificationBlob";
+import { Settings2, X } from "lucide-react";
 import { usersController } from "@/controllers/usersController";
 import { holidaysController } from "@/controllers/holidaysController";
 import { entriesController } from "@/controllers/entriesController";
-
-type Tab = "shared-view" | "manage";
 
 export default function ConnectionsPage() {
   const { data: session, status } = useSession();
@@ -24,7 +23,7 @@ export default function ConnectionsPage() {
   const [allUsers, setAllUsers] = useState<PublicUser[]>([]);
   const [bankHolidays, setBankHolidays] = useState<BankHolidayEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<Tab>("shared-view");
+  const [showManagePanel, setShowManagePanel] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
@@ -87,54 +86,69 @@ export default function ConnectionsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <NavBar activePage="connections" pendingRequestCount={pendingCount} />
-      <main className="max-w-5xl mx-auto py-8 px-4">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">Connections</h2>
-
-        {/* Tab bar */}
-        <div className="flex gap-1 mb-6 border-b border-gray-200">
+      <main className="w-full py-6 px-6">
+        {/* Page heading with Manage Connections button */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-gray-800">Connections</h2>
           <button
-            onClick={() => setActiveTab("shared-view")}
-            className={`px-4 py-2 text-sm font-medium rounded-t-lg transition cursor-pointer ${
-              activeTab === "shared-view"
-                ? "text-indigo-700 border-b-2 border-indigo-600 bg-white"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
+            onClick={() => setShowManagePanel(true)}
+            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors cursor-pointer"
           >
-            Shared View
-          </button>
-          <button
-            onClick={() => setActiveTab("manage")}
-            className={`px-4 py-2 text-sm font-medium rounded-t-lg transition cursor-pointer flex items-center gap-1 ${
-              activeTab === "manage"
-                ? "text-indigo-700 border-b-2 border-indigo-600 bg-white"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
+            <Settings2 size={15} aria-hidden="true" />
             Manage Connections
             {pendingCount > 0 && <NotificationBlob count={pendingCount} label="pending requests" />}
           </button>
         </div>
 
-        {activeTab === "shared-view" && (
-          <SharedView
-            currentUser={currentUser}
-            allUsers={allUsers}
-            bankHolidays={bankHolidays}
-            onCurrentUserChange={setCurrentUser}
-          />
-        )}
-
-        {activeTab === "manage" && (
-          <div className="max-w-2xl mx-auto">
-            <ConnectionsPanel
-              currentUser={currentUser}
-              allUsers={allUsers}
-              onUserChange={setCurrentUser}
-              onAllUsersChange={setAllUsers}
-            />
-          </div>
-        )}
+        <SharedView
+          currentUser={currentUser}
+          allUsers={allUsers}
+          bankHolidays={bankHolidays}
+          onCurrentUserChange={setCurrentUser}
+        />
       </main>
+
+      {/* Manage Connections overlay */}
+      {showManagePanel && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-40 bg-black/40"
+            onClick={() => setShowManagePanel(false)}
+            aria-hidden="true"
+          />
+          {/* Drawer panel */}
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="manage-connections-title"
+            className="fixed top-0 right-0 bottom-0 z-50 w-full max-w-md bg-white shadow-2xl flex flex-col"
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+              <h3 id="manage-connections-title" className="text-base font-semibold text-gray-800">
+                Manage Connections
+              </h3>
+              <button
+                onClick={() => setShowManagePanel(false)}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 cursor-pointer"
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-5">
+              <ConnectionsPanel
+                currentUser={currentUser}
+                allUsers={allUsers}
+                onUserChange={(updated) => {
+                  setCurrentUser(updated);
+                }}
+                onAllUsersChange={setAllUsers}
+              />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

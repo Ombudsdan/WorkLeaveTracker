@@ -14,6 +14,7 @@ import { findClashes } from "@/utils/clashFinder";
 import { STATUS_COLORS, SICK_LEAVE_CARD_COLORS } from "@/variables/colours";
 import { X, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import MonthYearPicker from "@/components/molecules/MonthYearPicker";
+import { LeaveKey, LEAVE_KEY_ITEMS_BASE } from "@/components/atoms/LeaveKey";
 
 interface SharedCalendarViewProps {
   /** The signed-in user, always shown as the first row */
@@ -41,8 +42,8 @@ interface PopoverState {
 
 /** Tiny colour map for leave status within this component */
 const CELL_CLASS: Record<LeaveStatus, string> = {
-  [LeaveStatus.Approved]: "bg-green-400",
-  [LeaveStatus.Requested]: "bg-orange-300",
+  [LeaveStatus.Approved]: "bg-green-300",
+  [LeaveStatus.Requested]: "bg-orange-200",
   [LeaveStatus.Planned]: "bg-yellow-200",
 };
 
@@ -202,7 +203,7 @@ export default function SharedCalendarView({
       /* c8 ignore next */
       bgClass = CELL_CLASS[topEntry.status] ?? "bg-white";
     } else if (isBH) {
-      bgClass = "bg-purple-400";
+      bgClass = "bg-purple-300";
     }
 
     // Empty cells in the current user's row are clickable to add leave
@@ -343,20 +344,7 @@ export default function SharedCalendarView({
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap gap-3 mt-4 text-xs text-gray-500">
-        <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded bg-green-400" /> Approved
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded bg-orange-300" /> Requested
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded bg-yellow-200" /> Planned
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded bg-purple-400" /> Bank Holiday
-        </span>
-      </div>
+      <LeaveKey className="mt-4" items={LEAVE_KEY_ITEMS_BASE} />
 
       {/* Mobile backdrop — tap outside the sheet to dismiss */}
       {popover && isMobileSheet && (

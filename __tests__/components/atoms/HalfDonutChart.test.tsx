@@ -94,7 +94,7 @@ describe("HalfDonutChart — status colours", () => {
     );
     const paths = container.querySelectorAll("path");
     const usedPath = paths[1];
-    expect(usedPath.getAttribute("stroke")).toBe("#fdba74");
+    expect(usedPath.getAttribute("stroke")).toBe("#fed7aa");
   });
 
   it("uses the Planned colour (yellow-300) for Planned status", () => {

@@ -123,7 +123,7 @@ describe("MicroAnnualPlanner — leave coloring", () => {
     // Days 9,10,11,12,13 → 5 boxes should have green class
     const greenBoxes = within(marchRow)
       .getAllByTestId("day-box")
-      .filter((el) => el.className.includes("bg-green-400"));
+      .filter((el) => el.className.includes("bg-green-300"));
     expect(greenBoxes).toHaveLength(5);
   });
 
@@ -144,7 +144,7 @@ describe("MicroAnnualPlanner — leave coloring", () => {
     const marchRow = screen.getByTestId("month-row-Mar");
     const blueBoxes = within(marchRow)
       .getAllByTestId("day-box")
-      .filter((el) => el.className.includes("bg-orange-300"));
+      .filter((el) => el.className.includes("bg-orange-200"));
     expect(blueBoxes).toHaveLength(1);
   });
 
@@ -187,19 +187,19 @@ describe("MicroAnnualPlanner — leave coloring", () => {
     // Monday 16 March has sick leave — should NOT be colored green
     const greenBoxes = within(marchRow)
       .getAllByTestId("day-box")
-      .filter((el) => el.className.includes("bg-green-400"));
+      .filter((el) => el.className.includes("bg-green-300"));
     expect(greenBoxes).toHaveLength(0);
   });
 
-  it("marks bank holiday boxes with the bank-holiday purple colour (bg-purple-400)", () => {
+  it("marks bank holiday boxes with the bank-holiday purple colour (bg-purple-300)", () => {
     render(
       <MicroAnnualPlanner user={alice} bankHolidays={[{ date: "2026-03-16", title: "Test BH" }]} />
     );
     const marchRow = screen.getByTestId("month-row-Mar");
-    // Day 16 is a bank holiday → should use bg-purple-400
+    // Day 16 is a bank holiday → should use bg-purple-300
     const boxes = within(marchRow).getAllByTestId("day-box");
     const day16Box = boxes[15]; // 0-indexed: day 16 is index 15
-    expect(day16Box.className).toContain("bg-purple-400");
+    expect(day16Box.className).toContain("bg-purple-300");
   });
 });
 
