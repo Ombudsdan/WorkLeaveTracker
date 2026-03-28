@@ -395,9 +395,9 @@ export default function CalendarView({
 
   return (
     <div ref={calendarRef} className="bg-white rounded-2xl shadow p-5 relative">
-      {/* Header */}
+      {/* Header: spacers keep the nav+picker centered; right spacer holds headerRight */}
       <div className="flex items-center mb-4">
-        <div className="flex-1" />
+        <div className="flex-1" aria-hidden="true" />
         <div className="flex items-center gap-1">
           <button
             onClick={prevMonth}
