@@ -67,14 +67,14 @@ export default function MonthlyLeaveBar({
         <div className="absolute inset-0 flex">
           {approved > 0 && (
             <div
-              className="bg-green-400 h-full"
+              className="bg-green-300 h-full"
               style={{ width: pct(approved) }}
               title={`Approved: ${approved}d`}
             />
           )}
           {requested > 0 && (
             <div
-              className="bg-orange-300 h-full"
+              className="bg-orange-200 h-full"
               style={{ width: pct(requested) }}
               title={`Requested: ${requested}d`}
             />

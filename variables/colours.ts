@@ -23,7 +23,7 @@ export const STATUS_DOT_HEX: Record<LeaveStatus, string> = {
 /** Tailwind classes for leave entry card borders and backgrounds */
 export const STATUS_COLORS: Record<LeaveStatus, string> = {
   [LeaveStatus.Planned]: "bg-yellow-100 text-yellow-800 border-yellow-300",
-  [LeaveStatus.Requested]: "bg-orange-100 text-orange-800 border-orange-300",
+  [LeaveStatus.Requested]: "bg-orange-100 text-orange-800 border-orange-200",
   [LeaveStatus.Approved]: "bg-green-100 text-green-800 border-green-300",
 };
 
