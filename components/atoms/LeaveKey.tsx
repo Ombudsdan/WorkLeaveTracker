@@ -6,6 +6,8 @@ export type LeaveKeyItem = {
   label: string;
   /** Tailwind bg-* class for the colour swatch */
   colorClass: string;
+  /** Optional inline style applied to the swatch (e.g. for stripe patterns) */
+  style?: React.CSSProperties;
 };
 
 type Props = {
@@ -25,11 +27,12 @@ export function LeaveKey({ items, className = "" }: Props) {
       data-testid="leave-key"
       className={`flex flex-wrap gap-3 text-xs text-gray-500 ${className}`.trim()}
     >
-      {items.map(({ label, colorClass }) => (
+      {items.map(({ label, colorClass, style }) => (
         <span key={label} className="flex items-center gap-1">
           <span
             data-testid={`leave-key-swatch-${label.toLowerCase().replace(/\s+/g, "-")}`}
             className={`w-3 h-3 rounded ${colorClass}`}
+            style={style}
           />
           {label}
         </span>
@@ -66,6 +69,22 @@ export const LEAVE_KEY_NON_WORKING: LeaveKeyItem = {
 };
 
 /**
+ * Diagonal stripe background-image used to mark bank holidays that fall on
+ * non-working days.  Applied as an inline style so Tailwind purging does not
+ * remove it.
+ */
+export const NON_WORKING_BH_STRIPE_STYLE: React.CSSProperties = {
+  backgroundImage:
+    "repeating-linear-gradient(-45deg, transparent 0px, transparent 3px, rgba(156,163,175,0.7) 3px, rgba(156,163,175,0.7) 4.5px)",
+};
+
+export const LEAVE_KEY_BANK_HOLIDAY_NWD: LeaveKeyItem = {
+  label: "Bank Holiday (non-working day)",
+  colorClass: "bg-purple-300",
+  style: NON_WORKING_BH_STRIPE_STYLE,
+};
+
+/**
  * The four items shown on most calendar-like views
  * (Approved / Requested / Planned / Bank Holiday).
  */
@@ -74,4 +93,14 @@ export const LEAVE_KEY_ITEMS_BASE: LeaveKeyItem[] = [
   LEAVE_KEY_REQUESTED,
   LEAVE_KEY_PLANNED,
   LEAVE_KEY_BANK_HOLIDAY,
+];
+
+/**
+ * Extended set used by the Overview and Annual Calendar bar charts.
+ * Includes a fifth item for bank holidays that fall on non-working days
+ * (shown with diagonal stripes).
+ */
+export const LEAVE_KEY_ITEMS_OVERVIEW: LeaveKeyItem[] = [
+  ...LEAVE_KEY_ITEMS_BASE,
+  LEAVE_KEY_BANK_HOLIDAY_NWD,
 ];

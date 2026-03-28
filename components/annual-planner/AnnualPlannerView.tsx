@@ -14,7 +14,15 @@ import {
   getEntryDuration,
 } from "@/utils/dateHelpers";
 import MonthlyLeaveBar from "@/components/molecules/MonthlyLeaveBar";
-import { LeaveKey, LEAVE_KEY_ITEMS_BASE } from "@/components/atoms/LeaveKey";
+import {
+  LeaveKey,
+  LEAVE_KEY_APPROVED,
+  LEAVE_KEY_REQUESTED,
+  LEAVE_KEY_PLANNED,
+  LEAVE_KEY_BANK_HOLIDAY,
+  LEAVE_KEY_BANK_HOLIDAY_NWD,
+  type LeaveKeyItem,
+} from "@/components/atoms/LeaveKey";
 
 interface AnnualPlannerViewProps {
   user: PublicUser;
@@ -82,6 +90,22 @@ export default function AnnualPlannerView({ user, bankHolidays }: AnnualPlannerV
     [monthlyData]
   );
 
+  // Build legend key items — only include categories present in the data
+  const keyItems = useMemo<LeaveKeyItem[]>(() => {
+    const hasApproved = monthlyData.some((m) => m.approved > 0);
+    const hasRequested = monthlyData.some((m) => m.requested > 0);
+    const hasPlanned = monthlyData.some((m) => m.planned > 0);
+    const hasBankHoliday = monthlyData.some((m) => m.bankHolidays > 0);
+    const hasBankHolidayNWD = monthlyData.some((m) => m.bankHolidaysNonWorking > 0);
+    return [
+      ...(hasApproved ? [LEAVE_KEY_APPROVED] : []),
+      ...(hasRequested ? [LEAVE_KEY_REQUESTED] : []),
+      ...(hasPlanned ? [LEAVE_KEY_PLANNED] : []),
+      ...(hasBankHoliday ? [LEAVE_KEY_BANK_HOLIDAY] : []),
+      ...(hasBankHolidayNWD ? [LEAVE_KEY_BANK_HOLIDAY_NWD] : []),
+    ];
+  }, [monthlyData]);
+
   // Accordion open state: set of "year-month" keys (e.g. "2026-0")
   const [openMonths, setOpenMonths] = useState<Set<string>>(new Set());
 
@@ -121,14 +145,14 @@ export default function AnnualPlannerView({ user, bankHolidays }: AnnualPlannerV
       {/* ── Bar chart card ─────────────────────────────────────── */}
       <div className="bg-white rounded-2xl shadow p-5">
         <div className="flex items-center justify-between mb-1">
-          <h2 className="font-semibold text-gray-800 text-sm">Monthly Leave Roundup</h2>
+          <h2 className="font-semibold text-gray-800 text-sm">Annual Calendar</h2>
 
           {/* Leave-period selector: dropdown when multiple windows, plain text otherwise */}
           {visibleAllowances.length > 1 && effectiveYa ? (
             <select
               value={effectiveYa.year}
               onChange={(e) => setSelectedYear(Number(e.target.value))}
-              className="text-xs text-gray-600 border border-gray-200 rounded px-1.5 py-0.5 bg-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-indigo-300"
+              className="text-xs text-gray-600 border border-gray-200 rounded-md px-2 py-1 bg-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-indigo-300"
               aria-label="Select leave window"
             >
               {visibleAllowances.map((ya) => (
@@ -144,8 +168,8 @@ export default function AnnualPlannerView({ user, bankHolidays }: AnnualPlannerV
           )}
         </div>
 
-        {/* Legend */}
-        <LeaveKey className="mb-4 mt-2" items={LEAVE_KEY_ITEMS_BASE} />
+        {/* Legend — only shows items that are actually present in the data */}
+        <LeaveKey className="mb-4 mt-2" items={keyItems} />
 
         {/* One bar per month */}
         <div className="space-y-0.5">
@@ -157,6 +181,7 @@ export default function AnnualPlannerView({ user, bankHolidays }: AnnualPlannerV
               requested={m.requested}
               planned={m.planned}
               bankHolidays={m.bankHolidays}
+              bankHolidaysNonWorking={m.bankHolidaysNonWorking}
               maxDays={maxDays}
             />
           ))}

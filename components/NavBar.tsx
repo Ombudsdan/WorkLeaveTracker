@@ -5,7 +5,7 @@ import { Menu, X } from "lucide-react";
 import NotificationBlob from "@/components/atoms/NotificationBlob";
 
 interface NavBarProps {
-  activePage: "dashboard" | "profile" | "connections" | "annual-planner";
+  activePage: "dashboard" | "profile" | "connections";
   pendingRequestCount?: number;
 }
 
@@ -48,16 +48,6 @@ export default function NavBar({ activePage, pendingRequestCount = 0 }: NavBarPr
           {pendingRequestCount > 0 && (
             <NotificationBlob count={pendingRequestCount} label="pending requests" />
           )}
-        </a>
-        <a
-          href="/annual-planner"
-          className={
-            activePage === "annual-planner"
-              ? "text-indigo-700 font-semibold"
-              : "text-gray-600 hover:text-indigo-700"
-          }
-        >
-          Annual Planner
         </a>
         <a
           href="/profile"
@@ -121,17 +111,6 @@ export default function NavBar({ activePage, pendingRequestCount = 0 }: NavBarPr
               {pendingRequestCount > 0 && (
                 <NotificationBlob count={pendingRequestCount} label="pending requests" />
               )}
-            </a>
-            <a
-              href="/annual-planner"
-              onClick={closeMenu}
-              className={
-                activePage === "annual-planner"
-                  ? "text-indigo-700 font-semibold"
-                  : "text-gray-600 hover:text-indigo-700"
-              }
-            >
-              Annual Planner
             </a>
             <a
               href="/profile"

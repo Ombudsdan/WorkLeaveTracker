@@ -195,6 +195,64 @@ describe("MonthlyLeaveBar — segments", () => {
     expect(container.querySelector(".bg-purple-300")).not.toBeInTheDocument();
   });
 
+  it("renders a NWD bank holiday segment with diagonal stripe style when bankHolidaysNonWorking > 0", () => {
+    const { container } = render(
+      <MonthlyLeaveBar
+        monthName="December"
+        approved={0}
+        requested={0}
+        planned={0}
+        bankHolidays={0}
+        bankHolidaysNonWorking={1}
+        maxDays={5}
+      />
+    );
+    // The NWD BH segment uses bg-purple-300 just like a working-day BH
+    const purpleEl = container.querySelector(".bg-purple-300") as HTMLElement;
+    expect(purpleEl).toBeInTheDocument();
+    // And it must carry the diagonal stripe backgroundImage
+    expect(purpleEl.style.backgroundImage).toContain("repeating-linear-gradient");
+  });
+
+  it("does not apply the stripe style to a working-day bank holiday segment", () => {
+    const { container } = render(
+      <MonthlyLeaveBar
+        monthName="May"
+        approved={0}
+        requested={0}
+        planned={0}
+        bankHolidays={1}
+        bankHolidaysNonWorking={0}
+        maxDays={5}
+      />
+    );
+    const purpleEl = container.querySelector(".bg-purple-300") as HTMLElement;
+    expect(purpleEl).toBeInTheDocument();
+    // Working-day BH must NOT have the stripe
+    expect(purpleEl.style.backgroundImage).toBe("");
+  });
+
+  it("renders both working-day and NWD BH segments when both counts are > 0", () => {
+    const { container } = render(
+      <MonthlyLeaveBar
+        monthName="August"
+        approved={0}
+        requested={0}
+        planned={0}
+        bankHolidays={1}
+        bankHolidaysNonWorking={1}
+        maxDays={5}
+      />
+    );
+    const purpleEls = container.querySelectorAll(".bg-purple-300");
+    // One for working-day BH, one for NWD BH
+    expect(purpleEls.length).toBe(2);
+    const striped = Array.from(purpleEls).filter((el) =>
+      (el as HTMLElement).style.backgroundImage.includes("repeating-linear-gradient")
+    );
+    expect(striped.length).toBe(1); // only the NWD BH has the stripe
+  });
+
   it("renders all four segments when all values are > 0", () => {
     const { container } = render(
       <MonthlyLeaveBar

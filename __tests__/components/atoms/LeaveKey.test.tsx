@@ -113,7 +113,8 @@ import MiniCalendar from "@/components/dashboard/MiniCalendar";
 import MicroAnnualPlanner from "@/components/dashboard/MicroAnnualPlanner";
 import SharedCalendarView from "@/components/connections/SharedCalendarView";
 import AnnualPlannerView from "@/components/annual-planner/AnnualPlannerView";
-import type { PublicUser } from "@/types";
+import { LeaveStatus, LeaveType } from "@/types";
+import type { PublicUser, BankHolidayEntry } from "@/types";
 
 // Fix today so tests are deterministic
 beforeEach(() => {
@@ -137,6 +138,40 @@ const baseUser: PublicUser = {
   ],
   entries: [],
 };
+
+/**
+ * User with leave entries in the current month (March 2026) — used by
+ * dynamic-key tests so that Approved/Requested/Planned swatches appear.
+ */
+const richUser: PublicUser = {
+  ...baseUser,
+  entries: [
+    {
+      id: "e1",
+      startDate: "2026-03-09",
+      endDate: "2026-03-09",
+      status: LeaveStatus.Approved,
+      type: LeaveType.Holiday,
+    },
+    {
+      id: "e2",
+      startDate: "2026-03-10",
+      endDate: "2026-03-10",
+      status: LeaveStatus.Requested,
+      type: LeaveType.Holiday,
+    },
+    {
+      id: "e3",
+      startDate: "2026-03-11",
+      endDate: "2026-03-11",
+      status: LeaveStatus.Planned,
+      type: LeaveType.Holiday,
+    },
+  ],
+};
+
+/** Bank holiday on a working day in March 2026 (Tuesday 17 Mar) */
+const marchBH: BankHolidayEntry[] = [{ date: "2026-03-17", title: "Working Day BH" }];
 
 function getSwatches(container: HTMLElement) {
   return container.querySelectorAll("[data-testid^='leave-key-swatch']");
@@ -182,9 +217,10 @@ describe("Cross-component key consistency", () => {
     });
   });
 
-  it("SharedCalendarView renders a leave-key with w-3 h-3 rounded swatches", () => {
+  it("SharedCalendarView renders a leave-key with w-3 h-3 rounded swatches (with leave data)", () => {
+    // SharedCalendarView uses a dynamic key — need data in current month to get swatches
     const { container } = render(
-      <SharedCalendarView currentUser={baseUser} pinnedUsers={[]} bankHolidays={[]} />
+      <SharedCalendarView currentUser={richUser} pinnedUsers={[]} bankHolidays={marchBH} />
     );
     const key = container.querySelector("[data-testid='leave-key']");
     expect(key).toBeInTheDocument();
@@ -197,8 +233,9 @@ describe("Cross-component key consistency", () => {
     });
   });
 
-  it("AnnualPlannerView renders a leave-key with w-3 h-3 rounded swatches", () => {
-    const { container } = render(<AnnualPlannerView user={baseUser} bankHolidays={[]} />);
+  it("AnnualPlannerView renders a leave-key with w-3 h-3 rounded swatches (with leave data)", () => {
+    // AnnualPlannerView uses a dynamic key — need data to get swatches
+    const { container } = render(<AnnualPlannerView user={richUser} bankHolidays={marchBH} />);
     const key = container.querySelector("[data-testid='leave-key']");
     expect(key).toBeInTheDocument();
     const swatches = getSwatches(container);
@@ -210,14 +247,16 @@ describe("Cross-component key consistency", () => {
     });
   });
 
-  it("all five views render the same swatch classes for Approved/Requested/Planned/Bank Holiday", () => {
+  it("all five views render the same swatch classes for Approved/Requested/Planned/Bank Holiday when data is present", () => {
+    // CalendarView, MiniCalendar, MicroAnnualPlanner use static keys → always show all 4.
+    // SharedCalendarView and AnnualPlannerView use dynamic keys → need data for all items.
     const views = [
       render(<CalendarView user={baseUser} bankHolidays={[]} />).container,
       render(<MiniCalendar user={baseUser} bankHolidays={[]} />).container,
       render(<MicroAnnualPlanner user={baseUser} bankHolidays={[]} />).container,
-      render(<SharedCalendarView currentUser={baseUser} pinnedUsers={[]} bankHolidays={[]} />)
+      render(<SharedCalendarView currentUser={richUser} pinnedUsers={[]} bankHolidays={marchBH} />)
         .container,
-      render(<AnnualPlannerView user={baseUser} bankHolidays={[]} />).container,
+      render(<AnnualPlannerView user={richUser} bankHolidays={marchBH} />).container,
     ];
 
     const baseClasses = ["bg-green-300", "bg-orange-200", "bg-yellow-200", "bg-purple-300"];
@@ -229,7 +268,8 @@ describe("Cross-component key consistency", () => {
   });
 
   it("AnnualPlannerView shows Bank Holiday (singular) with bg-purple-300, not bg-gray-400", () => {
-    const { container } = render(<AnnualPlannerView user={baseUser} bankHolidays={[]} />);
+    // Need a working-day bank holiday to trigger the swatch
+    const { container } = render(<AnnualPlannerView user={baseUser} bankHolidays={marchBH} />);
     expect(screen.getAllByText("Bank Holiday").length).toBeGreaterThan(0);
     expect(container.querySelector(".bg-purple-300")).toBeInTheDocument();
     expect(container.querySelector(".bg-gray-400")).not.toBeInTheDocument();
