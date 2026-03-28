@@ -11,7 +11,16 @@ import {
   countEntryDays,
 } from "@/utils/dateHelpers";
 import { X } from "lucide-react";
-import { LeaveKey, LEAVE_KEY_ITEMS_OVERVIEW, NON_WORKING_BH_STRIPE_STYLE } from "@/components/atoms/LeaveKey";
+import {
+  LeaveKey,
+  LEAVE_KEY_APPROVED,
+  LEAVE_KEY_REQUESTED,
+  LEAVE_KEY_PLANNED,
+  LEAVE_KEY_BANK_HOLIDAY,
+  LEAVE_KEY_BANK_HOLIDAY_NWD,
+  NON_WORKING_BH_STRIPE_STYLE,
+  type LeaveKeyItem,
+} from "@/components/atoms/LeaveKey";
 
 export interface MonthlyLeaveRoundupProps {
   user: PublicUser;
@@ -248,6 +257,16 @@ export default function MonthlyLeaveRoundup({ user, bankHolidays }: MonthlyLeave
 
   const hasMultipleYears = availableYas.length > 1;
 
+  // Build legend key items — only include categories present in the data
+  const allSegs = months.flatMap((m) => m.segments);
+  const keyItems: LeaveKeyItem[] = [
+    ...(allSegs.some((s) => s.status === LeaveStatus.Approved) ? [LEAVE_KEY_APPROVED] : []),
+    ...(allSegs.some((s) => s.status === LeaveStatus.Requested) ? [LEAVE_KEY_REQUESTED] : []),
+    ...(allSegs.some((s) => s.status === LeaveStatus.Planned) ? [LEAVE_KEY_PLANNED] : []),
+    ...(allSegs.some((s) => s.isBankHoliday && !s.isNonWorkingDay) ? [LEAVE_KEY_BANK_HOLIDAY] : []),
+    ...(allSegs.some((s) => s.isBankHoliday && s.isNonWorkingDay) ? [LEAVE_KEY_BANK_HOLIDAY_NWD] : []),
+  ];
+
   return (
     <div
       ref={containerRef}
@@ -295,8 +314,8 @@ export default function MonthlyLeaveRoundup({ user, bankHolidays }: MonthlyLeave
                 <div className="absolute inset-0 flex">
                   {monthData.segments.flatMap((seg, idx) => {
                     const prevSeg = idx > 0 ? monthData.segments[idx - 1] : null;
-                    // Always insert a 1px separator between adjacent segments for
-                    // clear visual separation of all leave types and bank holidays.
+                    // Insert a 1px separator between every pair of consecutive segments
+                    // for clear visual separation of all leave types and bank holidays.
                     const needsSeparator = prevSeg !== null;
 
                     const segColorClass = seg.isBankHoliday
@@ -342,7 +361,7 @@ export default function MonthlyLeaveRoundup({ user, bankHolidays }: MonthlyLeave
         })}
       </div>
 
-      <LeaveKey className="mt-3" items={LEAVE_KEY_ITEMS_OVERVIEW} />
+      <LeaveKey className="mt-3" items={keyItems} />
 
       {popover && (
         <div

@@ -71,10 +71,38 @@ describe("AnnualPlannerView — bar chart", () => {
     expect(screen.queryByRole("combobox", { name: /select leave window/i })).toBeNull();
   });
 
-  it("renders the colour legend with all five categories (including non-working day BH)", () => {
-    render(<AnnualPlannerView user={baseUser} bankHolidays={[]} />);
-    // Use getAllByText because "Approved", "Requested", "Planned" also appear in the
-    // Year Summary section added for calcLeaveSummary consistency.
+  it("renders the colour legend only for items present in the data", () => {
+    // Need all five types: approved, requested, planned, working BH, NWD BH
+    const userWithAllTypes: PublicUser = {
+      ...baseUser,
+      entries: [
+        {
+          id: "e1",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+        {
+          id: "e2",
+          startDate: "2026-03-10",
+          endDate: "2026-03-10",
+          status: LeaveStatus.Requested,
+          type: LeaveType.Holiday,
+        },
+        {
+          id: "e3",
+          startDate: "2026-03-11",
+          endDate: "2026-03-11",
+          status: LeaveStatus.Planned,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    // 2026-03-17 is Tuesday (working day), 2026-03-15 is Sunday (NWD for baseUser)
+    const bhList = [bh("2026-03-17", "Working Day BH"), bh("2026-03-15", "Sunday BH")];
+    render(<AnnualPlannerView user={userWithAllTypes} bankHolidays={bhList} />);
+    // Approved/Requested/Planned also appear in the Year Summary section — use getAllByText
     expect(screen.getAllByText("Approved").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Requested").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Planned").length).toBeGreaterThanOrEqual(1);
@@ -82,8 +110,18 @@ describe("AnnualPlannerView — bar chart", () => {
     expect(screen.getByText("Bank Holiday (non-working day)")).toBeInTheDocument();
   });
 
-  it("uses purple (bg-purple-300) for the Bank Holiday legend swatch", () => {
-    const { container } = render(<AnnualPlannerView user={baseUser} bankHolidays={[]} />);
+  it("does not show key items that are absent from the data", () => {
+    // baseUser has no entries and no bank holidays → empty key
+    render(<AnnualPlannerView user={baseUser} bankHolidays={[]} />);
+    expect(screen.queryByText("Bank Holiday")).not.toBeInTheDocument();
+    expect(screen.queryByText("Bank Holiday (non-working day)")).not.toBeInTheDocument();
+  });
+
+  it("uses purple (bg-purple-300) for the Bank Holiday legend swatch when a working-day BH exists", () => {
+    // 2026-03-17 is a Tuesday (working day for baseUser whose NWD = [0, 6])
+    const { container } = render(
+      <AnnualPlannerView user={baseUser} bankHolidays={[bh("2026-03-17", "Working Day BH")]} />
+    );
     // The legend swatch for Bank Holiday should use bg-purple-300, matching all other views
     expect(container.querySelector(".bg-purple-300")).toBeInTheDocument();
     expect(container.querySelector(".bg-gray-400")).not.toBeInTheDocument();

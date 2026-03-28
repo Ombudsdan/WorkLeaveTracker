@@ -64,7 +64,7 @@ export default function MonthlyLeaveBar({
 
       {/* Segmented bar with per-day grid overlay */}
       <div
-        className="flex-1 relative h-6 rounded-sm overflow-hidden bg-gray-100"
+        className="flex-1 relative h-5 rounded-sm overflow-hidden bg-gray-100"
         role="img"
         aria-label={`${monthName}: ${approved} approved, ${requested} requested, ${planned} planned, ${bankHolidays} bank holidays, ${bankHolidaysNonWorking} bank holidays on non-working days`}
       >

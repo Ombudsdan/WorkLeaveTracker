@@ -66,11 +66,44 @@ describe("MonthlyLeaveRoundup — basic rendering", () => {
     expect(screen.getByTestId("monthly-leave-roundup").textContent).toMatch(/2026/);
   });
 
-  it("renders the leave key legend", () => {
-    render(<MonthlyLeaveRoundup user={alice} bankHolidays={[]} />);
+  it("renders the leave key legend items when leave data is present", () => {
+    const userWithAllLeave: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e1",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+        },
+        {
+          id: "e2",
+          startDate: "2026-03-10",
+          endDate: "2026-03-10",
+          status: LeaveStatus.Requested,
+          type: LeaveType.Holiday,
+        },
+        {
+          id: "e3",
+          startDate: "2026-03-11",
+          endDate: "2026-03-11",
+          status: LeaveStatus.Planned,
+          type: LeaveType.Holiday,
+        },
+      ],
+    };
+    render(<MonthlyLeaveRoundup user={userWithAllLeave} bankHolidays={[]} />);
     expect(screen.getByText("Approved")).toBeInTheDocument();
     expect(screen.getByText("Requested")).toBeInTheDocument();
     expect(screen.getByText("Planned")).toBeInTheDocument();
+  });
+
+  it("shows an empty key when there is no leave data", () => {
+    render(<MonthlyLeaveRoundup user={alice} bankHolidays={[]} />);
+    expect(screen.queryByText("Approved")).not.toBeInTheDocument();
+    expect(screen.queryByText("Requested")).not.toBeInTheDocument();
+    expect(screen.queryByText("Planned")).not.toBeInTheDocument();
   });
 
   it("returns null when user has no year allowances", () => {
@@ -906,8 +939,19 @@ describe("MonthlyLeaveRoundup — bank holidays on non-working days", () => {
     expect(segEl.style.backgroundImage).toBe("");
   });
 
-  it("shows 'Bank Holiday (non-working day)' in the legend key", () => {
-    render(<MonthlyLeaveRoundup user={alice} bankHolidays={[]} />);
+  it("shows 'Bank Holiday (non-working day)' in the legend key when NWD bank holiday exists", () => {
+    // alice NWD = [0, 6]; 2026-03-01 is a Sunday (NWD)
+    render(
+      <MonthlyLeaveRoundup
+        user={alice}
+        bankHolidays={[{ date: "2026-03-01", title: "Sunday BH" }]}
+      />
+    );
     expect(screen.getByText("Bank Holiday (non-working day)")).toBeInTheDocument();
+  });
+
+  it("does not show 'Bank Holiday (non-working day)' key item when no NWD bank holidays exist", () => {
+    render(<MonthlyLeaveRoundup user={alice} bankHolidays={[]} />);
+    expect(screen.queryByText("Bank Holiday (non-working day)")).not.toBeInTheDocument();
   });
 });

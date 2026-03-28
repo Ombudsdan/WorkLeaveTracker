@@ -14,7 +14,15 @@ import {
   getEntryDuration,
 } from "@/utils/dateHelpers";
 import MonthlyLeaveBar from "@/components/molecules/MonthlyLeaveBar";
-import { LeaveKey, LEAVE_KEY_ITEMS_OVERVIEW } from "@/components/atoms/LeaveKey";
+import {
+  LeaveKey,
+  LEAVE_KEY_APPROVED,
+  LEAVE_KEY_REQUESTED,
+  LEAVE_KEY_PLANNED,
+  LEAVE_KEY_BANK_HOLIDAY,
+  LEAVE_KEY_BANK_HOLIDAY_NWD,
+  type LeaveKeyItem,
+} from "@/components/atoms/LeaveKey";
 
 interface AnnualPlannerViewProps {
   user: PublicUser;
@@ -82,6 +90,22 @@ export default function AnnualPlannerView({ user, bankHolidays }: AnnualPlannerV
     [monthlyData]
   );
 
+  // Build legend key items — only include categories present in the data
+  const keyItems = useMemo<LeaveKeyItem[]>(() => {
+    const hasApproved = monthlyData.some((m) => m.approved > 0);
+    const hasRequested = monthlyData.some((m) => m.requested > 0);
+    const hasPlanned = monthlyData.some((m) => m.planned > 0);
+    const hasBankHoliday = monthlyData.some((m) => m.bankHolidays > 0);
+    const hasBankHolidayNWD = monthlyData.some((m) => m.bankHolidaysNonWorking > 0);
+    return [
+      ...(hasApproved ? [LEAVE_KEY_APPROVED] : []),
+      ...(hasRequested ? [LEAVE_KEY_REQUESTED] : []),
+      ...(hasPlanned ? [LEAVE_KEY_PLANNED] : []),
+      ...(hasBankHoliday ? [LEAVE_KEY_BANK_HOLIDAY] : []),
+      ...(hasBankHolidayNWD ? [LEAVE_KEY_BANK_HOLIDAY_NWD] : []),
+    ];
+  }, [monthlyData]);
+
   // Accordion open state: set of "year-month" keys (e.g. "2026-0")
   const [openMonths, setOpenMonths] = useState<Set<string>>(new Set());
 
@@ -144,8 +168,8 @@ export default function AnnualPlannerView({ user, bankHolidays }: AnnualPlannerV
           )}
         </div>
 
-        {/* Legend */}
-        <LeaveKey className="mb-4 mt-2" items={LEAVE_KEY_ITEMS_OVERVIEW} />
+        {/* Legend — only shows items that are actually present in the data */}
+        <LeaveKey className="mb-4 mt-2" items={keyItems} />
 
         {/* One bar per month */}
         <div className="space-y-0.5">
