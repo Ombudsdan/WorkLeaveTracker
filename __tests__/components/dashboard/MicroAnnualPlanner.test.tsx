@@ -603,3 +603,110 @@ describe("MicroAnnualPlanner — popover toggle and close", () => {
     expect(tooltip.textContent).toMatch(/13 Mar/);
   });
 });
+
+describe("MicroAnnualPlanner — popover label fallback branches", () => {
+  it("shows 'No description' in the popover for a full-day entry without notes", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    const aliceNoNotes: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e1",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          // no notes property → getEntryLabel returns "No description"
+        },
+      ],
+    };
+    render(<MicroAnnualPlanner user={aliceNoNotes} bankHolidays={[]} />);
+    const marchRow = screen.getByTestId("month-row-Mar");
+    const boxes = within(marchRow).getAllByTestId("day-box");
+    await user.click(boxes[8]);
+    expect(screen.getByRole("tooltip").textContent).toContain("No description");
+  });
+
+  it("shows '(AM)' in the popover for a half-morning entry without notes", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    const aliceHalfAM: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e1",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfMorning,
+          // no notes → getEntryLabel returns "(AM)"
+        },
+      ],
+    };
+    render(<MicroAnnualPlanner user={aliceHalfAM} bankHolidays={[]} />);
+    const marchRow = screen.getByTestId("month-row-Mar");
+    const boxes = within(marchRow).getAllByTestId("day-box");
+    await user.click(boxes[8]);
+    expect(screen.getByRole("tooltip").textContent).toContain("(AM)");
+  });
+
+  it("shows '(PM)' in the popover for a half-afternoon entry without notes", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    const aliceHalfPM: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e1",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfAfternoon,
+          // no notes → getEntryLabel returns "(PM)"
+        },
+      ],
+    };
+    render(<MicroAnnualPlanner user={aliceHalfPM} bankHolidays={[]} />);
+    const marchRow = screen.getByTestId("month-row-Mar");
+    const boxes = within(marchRow).getAllByTestId("day-box");
+    await user.click(boxes[8]);
+    expect(screen.getByRole("tooltip").textContent).toContain("(PM)");
+  });
+
+  it("renders a separator between multiple leave entries in the popover", async () => {
+    // Need two different leave entries on the same day — use one approved AM, one approved PM
+    // so neither are filtered out
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    const aliceMultiEntry: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e1",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfMorning,
+          notes: "Morning off",
+        },
+        {
+          id: "e2",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Requested,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfAfternoon,
+          notes: "Afternoon request",
+        },
+      ],
+    };
+    render(<MicroAnnualPlanner user={aliceMultiEntry} bankHolidays={[]} />);
+    const marchRow = screen.getByTestId("month-row-Mar");
+    const boxes = within(marchRow).getAllByTestId("day-box");
+    await user.click(boxes[8]);
+    const tooltip = screen.getByRole("tooltip");
+    // Both entries' note text should appear
+    expect(tooltip.textContent).toContain("Morning off");
+    expect(tooltip.textContent).toContain("Afternoon request");
+  });
+});

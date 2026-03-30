@@ -786,6 +786,30 @@ describe("MonthlyLeaveRoundup — popover for half-day entries", () => {
     const popover = screen.getByTestId("roundup-popover");
     expect(popover.textContent).toContain("Doctor (AM)");
   });
+
+  it("appends (PM) to notes for HalfAfternoon entries with notes", async () => {
+    const userPMNotes: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e_pm3",
+          startDate: "2026-03-09",
+          endDate: "2026-03-09",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfAfternoon,
+          notes: "Dentist",
+        },
+      ],
+    };
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    render(<MonthlyLeaveRoundup user={userPMNotes} bankHolidays={[]} />);
+    const container = screen.getByTestId("monthly-leave-roundup");
+    const segment = container.querySelector(".bg-green-300.cursor-pointer") as HTMLElement;
+    await user.click(segment);
+    const popover = screen.getByTestId("roundup-popover");
+    expect(popover.textContent).toContain("Dentist (PM)");
+  });
 });
 
 // ─── Popover — toggle & close ─────────────────────────────────────────────────

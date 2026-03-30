@@ -163,7 +163,7 @@ export default function AnnualPlannerView({ user, bankHolidays }: AnnualPlannerV
             </select>
           ) : (
             <span className="text-xs text-gray-400">
-              {effectiveYa ? formatYearWindow(effectiveYa) : "–"}
+              {effectiveYa ? formatYearWindow(effectiveYa) : /* c8 ignore next -- effectiveYa is always defined when header renders */ "–"}
             </span>
           )}
         </div>

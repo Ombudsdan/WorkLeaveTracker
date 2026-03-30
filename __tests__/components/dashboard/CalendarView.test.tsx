@@ -147,6 +147,16 @@ describe("CalendarView — header and navigation", () => {
       screen.getByRole("button", { name: /December 2025.*open month-year picker/i })
     ).toBeInTheDocument();
   });
+
+  it("wraps from December to January of the next year via chevron", async () => {
+    jest.setSystemTime(new Date("2026-12-15"));
+    const user = setup();
+    render(<CalendarView user={aliceWithFuture} bankHolidays={[]} />);
+    await user.click(screen.getByRole("button", { name: "Next month" }));
+    expect(
+      screen.getByRole("button", { name: /January 2027.*open month-year picker/i })
+    ).toBeInTheDocument();
+  });
 });
 
 describe("CalendarView — day headers", () => {

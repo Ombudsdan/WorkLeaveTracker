@@ -256,6 +256,16 @@ describe("MiniCalendar — month navigation", () => {
     await user.click(screen.getByRole("button", { name: /March 2026.*open month-year picker/i }));
     expect(screen.getByRole("dialog", { name: "Month-year picker" })).toBeInTheDocument();
   });
+
+  it("selecting a month via MonthYearPicker updates the displayed month", async () => {
+    const user = setup();
+    render(<MiniCalendar user={alice} bankHolidays={[]} />);
+    await user.click(screen.getByRole("button", { name: /March 2026.*open month-year picker/i }));
+    await user.click(screen.getByRole("button", { name: "April 2026" }));
+    expect(
+      screen.getByRole("button", { name: /April 2026.*open month-year picker/i })
+    ).toBeInTheDocument();
+  });
 });
 
 describe("MiniCalendar — bank holidays", () => {
@@ -596,5 +606,227 @@ describe("MiniCalendar — month navigation (wrap cases)", () => {
     expect(
       screen.getByRole("button", { name: /January 2027.*open month-year picker/i })
     ).toBeInTheDocument();
+  });
+});
+
+describe("MiniCalendar — click on plain day (no leave/BH)", () => {
+  it("clicking a day with no leave and no bank holiday does nothing (no popover)", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    render(<MiniCalendar user={alice} bankHolidays={[]} />);
+    // March 2, 2026 is a Monday — no leave, no BH
+    const spans = document.querySelectorAll("[data-testid='mini-calendar'] span");
+    const day2 = Array.from(spans).find((el) => el.textContent === "2");
+    expect(day2).toBeTruthy();
+    await user.click(day2!.parentElement!);
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+});
+
+describe("MiniCalendar — popover switches when a different cell is clicked", () => {
+  it("clicking a different leave cell while a popover is open replaces the popover", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    const aliceTwoDays: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e-day16",
+          startDate: "2026-03-16",
+          endDate: "2026-03-16",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          notes: "Day 16 leave",
+        },
+        {
+          id: "e-day17",
+          startDate: "2026-03-17",
+          endDate: "2026-03-17",
+          status: LeaveStatus.Requested,
+          type: LeaveType.Holiday,
+          notes: "Day 17 leave",
+        },
+      ],
+    };
+    render(<MiniCalendar user={aliceTwoDays} bankHolidays={[]} />);
+    const dots = screen.getAllByTestId("leave-dot");
+    // Click first dot (day 16)
+    await user.click(dots[0]);
+    expect(screen.getByRole("tooltip").textContent).toContain("Day 16 leave");
+    // Click second dot (day 17) → popover switches to day 17
+    await user.click(dots[1]);
+    expect(screen.getByRole("tooltip").textContent).toContain("Day 17 leave");
+    expect(screen.getByRole("tooltip").textContent).not.toContain("Day 16 leave");
+  });
+});
+
+
+
+describe("MiniCalendar — popover label fallbacks (no notes)", () => {
+  it("shows 'No description' for a full-day entry with no notes", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    const aliceNoNotes: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e-full-nonotes",
+          startDate: "2026-03-16",
+          endDate: "2026-03-16",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          // no notes field
+        },
+      ],
+    };
+    render(<MiniCalendar user={aliceNoNotes} bankHolidays={[]} />);
+    await user.click(screen.getAllByTestId("leave-dot")[0]);
+    expect(screen.getByRole("tooltip").textContent).toContain("No description");
+  });
+
+  it("shows '(AM)' for a half-morning entry with no notes", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    const aliceAMNoNotes: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e-am-nonotes",
+          startDate: "2026-03-16",
+          endDate: "2026-03-16",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfMorning,
+          // no notes field
+        },
+      ],
+    };
+    render(<MiniCalendar user={aliceAMNoNotes} bankHolidays={[]} />);
+    await user.click(screen.getAllByTestId("leave-dot")[0]);
+    const tooltip = screen.getByRole("tooltip");
+    expect(tooltip.textContent).toContain("(AM)");
+    expect(tooltip.textContent).toContain("Half day (AM)");
+  });
+
+  it("shows '(PM)' for a half-afternoon entry with no notes", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    const alicePMNoNotes: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e-pm-nonotes",
+          startDate: "2026-03-16",
+          endDate: "2026-03-16",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfAfternoon,
+          // no notes field
+        },
+      ],
+    };
+    render(<MiniCalendar user={alicePMNoNotes} bankHolidays={[]} />);
+    await user.click(screen.getAllByTestId("leave-dot")[0]);
+    const tooltip = screen.getByRole("tooltip");
+    expect(tooltip.textContent).toContain("(PM)");
+    expect(tooltip.textContent).toContain("Half day (PM)");
+  });
+});
+
+describe("MiniCalendar — split AM/PM entry display in popover", () => {
+  it("shows both AM and PM entries separately when they differ on the same day", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    const aliceSplit: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e-am-split",
+          startDate: "2026-03-16",
+          endDate: "2026-03-16",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfMorning,
+          notes: "Morning off",
+        },
+        {
+          id: "e-pm-split",
+          startDate: "2026-03-16",
+          endDate: "2026-03-16",
+          status: LeaveStatus.Requested,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfAfternoon,
+          notes: "Afternoon request",
+        },
+      ],
+    };
+    render(<MiniCalendar user={aliceSplit} bankHolidays={[]} />);
+    await user.click(screen.getAllByTestId("leave-dot")[0]);
+    const tooltip = screen.getByRole("tooltip");
+    // Both entries should appear
+    expect(tooltip.textContent).toContain("Morning off");
+    expect(tooltip.textContent).toContain("Afternoon request");
+    // Both duration labels should appear
+    expect(tooltip.textContent).toContain("Half day (AM)");
+    expect(tooltip.textContent).toContain("Half day (PM)");
+  });
+
+  it("priorities reduce callback runs when two AM entries exist on same day", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    const aliceTwoAM: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e-am-planned",
+          startDate: "2026-03-16",
+          endDate: "2026-03-16",
+          status: LeaveStatus.Planned,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfMorning,
+          notes: "Planned AM",
+        },
+        {
+          id: "e-am-approved",
+          startDate: "2026-03-16",
+          endDate: "2026-03-16",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfMorning,
+          notes: "Approved AM",
+        },
+      ],
+    };
+    render(<MiniCalendar user={aliceTwoAM} bankHolidays={[]} />);
+    await user.click(screen.getAllByTestId("leave-dot")[0]);
+    const tooltip = screen.getByRole("tooltip");
+    // Approved takes priority — only Approved AM shown as top entry
+    expect(tooltip.textContent).toContain("Approved AM");
+    expect(tooltip.textContent).not.toContain("Planned AM");
+  });
+
+  it("higher-priority entry wins when approved entry is first in the array (reduce true branch)", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
+    const aliceApprovedFirst: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e-am-approved-first",
+          startDate: "2026-03-16",
+          endDate: "2026-03-16",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfMorning,
+          notes: "Approved First",
+        },
+        {
+          id: "e-am-planned-second",
+          startDate: "2026-03-16",
+          endDate: "2026-03-16",
+          status: LeaveStatus.Planned,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfMorning,
+          notes: "Planned Second",
+        },
+      ],
+    };
+    render(<MiniCalendar user={aliceApprovedFirst} bankHolidays={[]} />);
+    await user.click(screen.getAllByTestId("leave-dot")[0]);
+    const tooltip = screen.getByRole("tooltip");
+    expect(tooltip.textContent).toContain("Approved First");
+    expect(tooltip.textContent).not.toContain("Planned Second");
   });
 });

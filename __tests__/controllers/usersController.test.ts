@@ -313,3 +313,31 @@ describe("usersController.disconnect", () => {
     expect(result).toEqual({ ok: false, error: "Failed to disconnect" });
   });
 });
+
+describe("usersController.cancelPinRequest", () => {
+  it("calls DELETE /api/users/pin-request and returns ok:true on success", async () => {
+    mockFetch({}, true);
+    const result = await usersController.cancelPinRequest("u2");
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/users/pin-request",
+      expect.objectContaining({
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetUserId: "u2" }),
+      })
+    );
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("returns ok:false with error message when the API rejects", async () => {
+    mockFetch({ error: "Request not found" }, false, 404);
+    const result = await usersController.cancelPinRequest("u2");
+    expect(result).toEqual({ ok: false, error: "Request not found" });
+  });
+
+  it("returns fallback error when API returns no error field", async () => {
+    mockFetch({}, false, 500);
+    const result = await usersController.cancelPinRequest("u2");
+    expect(result).toEqual({ ok: false, error: "Failed to cancel request" });
+  });
+});

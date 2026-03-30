@@ -864,4 +864,220 @@ describe("SharedCalendarView — desktop mode popover", () => {
       value: 0,
     });
   });
+
+  it("renders popover with mobile sheet styling when window.innerWidth < 640", async () => {
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: 375,
+    });
+    window.dispatchEvent(new Event("resize"));
+
+    const user = setup();
+    render(
+      <SharedCalendarView
+        currentUser={aliceWithLeave}
+        pinnedUsers={[]}
+        bankHolidays={[]}
+        onEdit={jest.fn()}
+        onDelete={jest.fn()}
+      />
+    );
+    const leaveCell = screen
+      .getAllByRole("cell")
+      .find((el) => el.title === "approved: 2026-03-20 – 2026-03-20");
+    await user.click(leaveCell!);
+    const tooltip = screen.getByRole("tooltip");
+    // Mobile sheet mode uses fixed bottom positioning
+    expect(tooltip.className).toContain("fixed");
+    expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument();
+
+    // Restore to default
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: 0,
+    });
+  });
+});
+
+describe("SharedCalendarView — half-day popover label fallbacks (no notes)", () => {
+  it("shows '(AM)' and 'Half day (AM)' in popover for half-morning entry with no notes", async () => {
+    const user = setup();
+    const aliceAM: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e-am",
+          startDate: "2026-03-16",
+          endDate: "2026-03-16",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfMorning,
+        },
+      ],
+    };
+    Object.defineProperty(window, "innerWidth", { writable: true, configurable: true, value: 1024 });
+    window.dispatchEvent(new Event("resize"));
+    render(
+      <SharedCalendarView
+        currentUser={aliceAM}
+        pinnedUsers={[]}
+        bankHolidays={[]}
+      />
+    );
+    const leaveCell = screen
+      .getAllByRole("cell")
+      .find((el) => el.title === "approved: 2026-03-16 – 2026-03-16");
+    await user.click(leaveCell!);
+    const tooltip = screen.getByRole("tooltip");
+    expect(tooltip.textContent).toContain("(AM)");
+    expect(tooltip.textContent).toContain("Half day (AM)");
+    Object.defineProperty(window, "innerWidth", { writable: true, configurable: true, value: 0 });
+  });
+
+  it("shows '(PM)' and 'Half day (PM)' in popover for half-afternoon entry with no notes", async () => {
+    const user = setup();
+    const alicePM: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e-pm",
+          startDate: "2026-03-16",
+          endDate: "2026-03-16",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfAfternoon,
+        },
+      ],
+    };
+    Object.defineProperty(window, "innerWidth", { writable: true, configurable: true, value: 1024 });
+    window.dispatchEvent(new Event("resize"));
+    render(
+      <SharedCalendarView
+        currentUser={alicePM}
+        pinnedUsers={[]}
+        bankHolidays={[]}
+      />
+    );
+    const leaveCell = screen
+      .getAllByRole("cell")
+      .find((el) => el.title === "approved: 2026-03-16 – 2026-03-16");
+    await user.click(leaveCell!);
+    const tooltip = screen.getByRole("tooltip");
+    expect(tooltip.textContent).toContain("(PM)");
+    expect(tooltip.textContent).toContain("Half day (PM)");
+    Object.defineProperty(window, "innerWidth", { writable: true, configurable: true, value: 0 });
+  });
+});
+
+describe("SharedCalendarView — half-day popover label with notes", () => {
+  it("shows 'Note (AM)' in popover for half-morning entry with notes", async () => {
+    const user = setup();
+    const aliceAM: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e-am-notes",
+          startDate: "2026-03-16",
+          endDate: "2026-03-16",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfMorning,
+          notes: "Doctor appt",
+        },
+      ],
+    };
+    Object.defineProperty(window, "innerWidth", { writable: true, configurable: true, value: 1024 });
+    window.dispatchEvent(new Event("resize"));
+    render(
+      <SharedCalendarView
+        currentUser={aliceAM}
+        pinnedUsers={[]}
+        bankHolidays={[]}
+      />
+    );
+    const leaveCell = screen
+      .getAllByRole("cell")
+      .find((el) => el.title === "approved: 2026-03-16 – 2026-03-16");
+    await user.click(leaveCell!);
+    const tooltip = screen.getByRole("tooltip");
+    expect(tooltip.textContent).toContain("Doctor appt (AM)");
+    Object.defineProperty(window, "innerWidth", { writable: true, configurable: true, value: 0 });
+  });
+
+  it("shows 'Note (PM)' in popover for half-afternoon entry with notes", async () => {
+    const user = setup();
+    const alicePM: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e-pm-notes",
+          startDate: "2026-03-16",
+          endDate: "2026-03-16",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.HalfAfternoon,
+          notes: "School run",
+        },
+      ],
+    };
+    Object.defineProperty(window, "innerWidth", { writable: true, configurable: true, value: 1024 });
+    window.dispatchEvent(new Event("resize"));
+    render(
+      <SharedCalendarView
+        currentUser={alicePM}
+        pinnedUsers={[]}
+        bankHolidays={[]}
+      />
+    );
+    const leaveCell = screen
+      .getAllByRole("cell")
+      .find((el) => el.title === "approved: 2026-03-16 – 2026-03-16");
+    await user.click(leaveCell!);
+    const tooltip = screen.getByRole("tooltip");
+    expect(tooltip.textContent).toContain("School run (PM)");
+    Object.defineProperty(window, "innerWidth", { writable: true, configurable: true, value: 0 });
+  });
+});
+
+describe("SharedCalendarView — mobile backdrop dismissal", () => {
+  it("clicking the mobile backdrop dismisses the popover", async () => {
+    const user = setup();
+    const aliceMobile: PublicUser = {
+      ...alice,
+      entries: [
+        {
+          id: "e-mob",
+          startDate: "2026-03-16",
+          endDate: "2026-03-16",
+          status: LeaveStatus.Approved,
+          type: LeaveType.Holiday,
+          duration: LeaveDuration.FullDay,
+        },
+      ],
+    };
+    // Set mobile viewport width so isMobileSheet is true
+    Object.defineProperty(window, "innerWidth", { writable: true, configurable: true, value: 375 });
+    window.dispatchEvent(new Event("resize"));
+    render(
+      <SharedCalendarView
+        currentUser={aliceMobile}
+        pinnedUsers={[]}
+        bankHolidays={[]}
+      />
+    );
+    const leaveCell = screen
+      .getAllByRole("cell")
+      .find((el) => el.title === "approved: 2026-03-16 – 2026-03-16");
+    await user.click(leaveCell!);
+    // Backdrop should be visible
+    const backdrop = screen.getByTestId("mobile-backdrop");
+    expect(backdrop).toBeInTheDocument();
+    // Click backdrop to dismiss
+    await user.click(backdrop);
+    expect(screen.queryByTestId("mobile-backdrop")).not.toBeInTheDocument();
+    Object.defineProperty(window, "innerWidth", { writable: true, configurable: true, value: 0 });
+  });
 });

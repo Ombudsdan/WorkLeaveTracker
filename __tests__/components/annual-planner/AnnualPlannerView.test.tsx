@@ -2,7 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
 import AnnualPlannerView from "@/components/annual-planner/AnnualPlannerView";
-import { LeaveStatus, LeaveType, LeaveDuration } from "@/types";
+import { LeaveStatus, LeaveType, LeaveDuration, BankHolidayHandling } from "@/types";
 import type { PublicUser, BankHolidayEntry } from "@/types";
 
 // Fix the date so getActiveYearAllowance is deterministic
@@ -658,5 +658,28 @@ describe("AnnualPlannerView — year summary section", () => {
     // 2 - 5 = -3 remaining — should have red text
     const remaining = within(summary).getByText(/-3 days/);
     expect(remaining.className).toContain("text-red-600");
+  });
+
+  it("shows deducted bank holiday row when bankHolidayHandling is Deduct", () => {
+    // 2026-05-04 is a Monday (working day for Alice)
+    const userWithDeduct: PublicUser = {
+      ...baseUser,
+      yearAllowances: [
+        {
+          year: 2026,
+          company: "Acme",
+          holidayStartMonth: 1,
+          core: 25,
+          bought: 0,
+          carried: 0,
+          bankHolidayHandling: BankHolidayHandling.Deduct,
+        },
+      ],
+    };
+    render(<AnnualPlannerView user={userWithDeduct} bankHolidays={[bh("2026-05-04")]} />);
+    const summary = screen.getByTestId("year-summary");
+    // With Deduct mode, the bank holiday row should show "−1"
+    expect(within(summary).getByText(/bank holidays on working days/i)).toBeInTheDocument();
+    expect(within(summary).getByText("−1")).toBeInTheDocument();
   });
 });

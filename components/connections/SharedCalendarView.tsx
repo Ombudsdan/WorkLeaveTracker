@@ -168,6 +168,7 @@ export default function SharedCalendarView({
     }
     const rect = cellEl.getBoundingClientRect();
     const containerRect = containerRef.current?.getBoundingClientRect();
+    /* c8 ignore next -- containerRef is always mounted when user can click */
     if (!containerRect) return;
     const top = rect.bottom - containerRect.top + 6;
     // 220 ≈ popover card width (w-52 = 208px) + a small margin — keep the card within bounds
@@ -446,9 +447,11 @@ export default function SharedCalendarView({
           {/* Status / type badge */}
           {(() => {
             const isSick = popover.entry.type === LeaveType.Sick;
+            /* c8 ignore next 3 -- isSick is always false (sick entries filtered before popover) */
             const badgeClass = isSick
               ? SICK_LEAVE_CARD_COLORS
               : STATUS_COLORS[popover.entry.status];
+            /* c8 ignore next 3 -- isSick is always false (sick entries filtered before popover) */
             const badgeLabel = isSick
               ? "Sick Leave"
               : popover.entry.status.charAt(0).toUpperCase() + popover.entry.status.slice(1);

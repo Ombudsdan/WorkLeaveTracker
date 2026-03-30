@@ -715,3 +715,18 @@ describe("SummaryCard — Add Leave button", () => {
     expect(handler).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("SummaryCard \u2014 breakdown with no year allowance", () => {
+  it("shows +0 for core, bought and carried when user has no year allowance", async () => {
+    const user = setup();
+    const noAllowanceUser: PublicUser = {
+      ...alice,
+      yearAllowances: [],
+    };
+    render(<SummaryCard user={noAllowanceUser} bankHolidays={[]} />);
+    await user.click(screen.getByRole("button", { name: /view breakdown/i }));
+    // With effectiveYa = undefined, all three fields fall back to 0
+    const coreDaysRows = screen.getAllByText("+0");
+    expect(coreDaysRows.length).toBeGreaterThanOrEqual(3);
+  });
+});

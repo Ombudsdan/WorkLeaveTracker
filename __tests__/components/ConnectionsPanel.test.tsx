@@ -349,6 +349,26 @@ describe("ConnectionsPanel — interactions", () => {
     expect(screen.getByText("Failed to disconnect")).toBeInTheDocument();
   });
 
+  it("shows default error when Remove fails with no error string", async () => {
+    const user = setup();
+    (usersController.disconnect as jest.Mock).mockResolvedValue({ ok: false });
+
+    const aliceWithBob: PublicUser = {
+      ...alice,
+      profile: { ...alice.profile, pinnedUserIds: ["u2"] },
+    };
+    render(
+      <ConnectionsPanel
+        currentUser={aliceWithBob}
+        allUsers={[aliceWithBob, bob]}
+        onUserChange={jest.fn()}
+        onAllUsersChange={jest.fn()}
+      />
+    );
+    await user.click(screen.getByRole("button", { name: /remove/i }));
+    expect(screen.getByText("Failed to remove connection.")).toBeInTheDocument();
+  });
+
   it("calls revokeConnection when Revoke is clicked", async () => {
     const user = setup();
     (usersController.revokeConnection as jest.Mock).mockResolvedValue({ ok: true });

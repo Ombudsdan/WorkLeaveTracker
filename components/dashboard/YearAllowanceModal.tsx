@@ -56,6 +56,7 @@ function YearAllowanceModalInner({
   const toInitialHours = (days: number) => parseFloat((days * initialCoreHoursPerDay).toFixed(4));
 
   const [core, setCore] = useState(() => {
+    /* c8 ignore next -- initialUseHours is always false when existing is absent */
     if (!existing) return initialUseHours ? 25 * initialCoreHoursPerDay : 25;
     return initialUseHours ? toInitialHours(existing.core) : existing.core;
   });
