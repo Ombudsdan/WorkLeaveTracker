@@ -45,3 +45,5 @@ export type { AlertProps, AlertVariant } from "./Alert";
 
 export { default as FormLabelledInput } from "./FormLabelledInput";
 export type { FormLabelledInputProps, FormLabelledInputType } from "./FormLabelledInput";
+
+export { default as LoadingSpinner } from "./LoadingSpinner";

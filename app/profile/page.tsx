@@ -1,22 +1,22 @@
-"use client";
+﻿"use client";
 import { useState, useEffect, useRef, useMemo, type FormEvent } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import type { PublicUser, YearAllowance, UkCountry, LeaveEntry } from "@/types";
 import { CheckCircle, Check, Circle } from "lucide-react";
 import { LeaveType, LeaveDuration } from "@/types";
-import NavBar from "@/components/NavBar";
-import LoadingSpinner from "@/components/LoadingSpinner";
-import SessionExpiredScreen from "@/components/SessionExpiredScreen";
-import FormField from "@/components/FormField";
-import FormErrorOutlet from "@/components/FormErrorOutlet";
-import Button from "@/components/Button";
+import NavBar from "@/components/organisms/NavBar";
+import LoadingSpinner from "@/components/atoms/LoadingSpinner";
+import SessionExpiredScreen from "@/components/organisms/SessionExpiredScreen";
+import FormField from "@/components/molecules/FormField";
+import FormErrorOutlet from "@/components/molecules/FormErrorOutlet";
+import Button from "@/components/atoms/Button";
 import { useFormValidation } from "@/contexts/FormValidationContext";
 import { DAY_NAMES_SHORT } from "@/variables/calendar";
 import { countEntryDays, getActiveYearAllowance } from "@/utils/dateHelpers";
 
 import { usersController } from "@/controllers/usersController";
-import YearAllowanceModal from "@/components/dashboard/YearAllowanceModal";
+import YearAllowanceModal from "@/components/organisms/YearAllowanceModal";
 
 const UK_COUNTRIES: { value: UkCountry; label: string }[] = [
   { value: "england-and-wales", label: "England & Wales" },

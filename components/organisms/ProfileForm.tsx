@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 import { CheckCircle } from "lucide-react";
 import type { YearAllowance, UkCountry } from "@/types";
-import FormField from "@/components/FormField";
-import Button from "@/components/Button";
+import FormField from "@/components/molecules/FormField";
+import Button from "@/components/atoms/Button";
 import WorkingDaysPicker from "@/components/molecules/WorkingDaysPicker";
 import AllowanceListItem from "@/components/molecules/AllowanceListItem";
 

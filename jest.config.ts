@@ -22,7 +22,7 @@ const config: Config = {
     "contexts/**/*.tsx",
     "components/**/*.tsx",
     "types/index.ts",
-    "!components/Providers.tsx",
+    "!components/organisms/Providers.tsx",
     "!components/**/*.test.tsx",
     "!components/**/*.test.ts",
   ],
