@@ -27,3 +27,21 @@ export type { NotificationBlobProps } from "./NotificationBlob";
 
 export { default as StatusBadge } from "./StatusBadge";
 export type { StatusBadgeProps } from "./StatusBadge";
+
+export { default as AvatarInitials } from "./AvatarInitials";
+export type { AvatarInitialsProps, AvatarSize } from "./AvatarInitials";
+
+export { default as Pill } from "./Pill";
+export type { PillProps, PillVariant } from "./Pill";
+
+export { default as SmallSelect } from "./SmallSelect";
+export type { SmallSelectProps, SmallSelectOption } from "./SmallSelect";
+
+export { default as IconButton } from "./IconButton";
+export type { IconButtonProps, IconButtonVariant } from "./IconButton";
+
+export { default as Alert } from "./Alert";
+export type { AlertProps, AlertVariant } from "./Alert";
+
+export { default as FormLabelledInput } from "./FormLabelledInput";
+export type { FormLabelledInputProps, FormLabelledInputType } from "./FormLabelledInput";
