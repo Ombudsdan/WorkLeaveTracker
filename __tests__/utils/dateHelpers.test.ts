@@ -14,6 +14,7 @@ import {
 } from "@/utils/dateHelpers";
 import { LeaveStatus, LeaveType } from "@/types";
 import type { LeaveEntry, YearAllowance } from "@/types";
+import { getActiveYearAllowance } from "@/utils/dateHelpers";
 
 // ---------------------------------------------------------------------------
 // countWorkingDays
@@ -297,9 +298,6 @@ describe("toIsoDate", () => {
 // ---------------------------------------------------------------------------
 // getActiveYearAllowance
 // ---------------------------------------------------------------------------
-import { getActiveYearAllowance } from "@/utils/dateHelpers";
-import type { YearAllowance } from "@/types";
-
 // Fix "today" so tests are deterministic
 const MARCH_2026 = new Date("2026-03-15");
 

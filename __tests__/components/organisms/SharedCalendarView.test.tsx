@@ -1054,7 +1054,7 @@ describe("SharedCalendarView — mobile backdrop dismissal", () => {
           endDate: "2026-03-16",
           status: LeaveStatus.Approved,
           type: LeaveType.Holiday,
-          duration: LeaveDuration.FullDay,
+          duration: LeaveDuration.Full,
         },
       ],
     };
