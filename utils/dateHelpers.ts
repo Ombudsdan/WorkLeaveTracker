@@ -96,8 +96,8 @@ export function yearAllowanceDates(
   year: number,
   holidayStartMonth: number
 ): { startDate: string; endDate: string } {
-  const start = new Date(year, holidayStartMonth - 1, 1);
-  const end = new Date(year + 1, holidayStartMonth - 1, 0); // last day of the month before
+  const start = new Date(Date.UTC(year, holidayStartMonth - 1, 1));
+  const end = new Date(Date.UTC(year + 1, holidayStartMonth - 1, 0)); // last day of the month before
   return { startDate: toIsoDate(start), endDate: toIsoDate(end) };
 }
 
@@ -117,10 +117,8 @@ export function yearAllowancesOverlap(
 export function getHolidayYearBounds(holidayStartMonth: number): { start: Date; end: Date } {
   const now = new Date();
   const year = now.getMonth() + 1 >= holidayStartMonth ? now.getFullYear() : now.getFullYear() - 1;
-  const start = new Date(year, holidayStartMonth - 1, 1);
-  const end = new Date(start);
-  end.setFullYear(end.getFullYear() + 1);
-  end.setDate(end.getDate() - 1);
+  const start = new Date(Date.UTC(year, holidayStartMonth - 1, 1));
+  const end = new Date(Date.UTC(year + 1, holidayStartMonth - 1, 0)); // day 0 = last day of prior month
   return { start, end };
 }
 
