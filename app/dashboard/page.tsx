@@ -36,7 +36,7 @@ function DashboardContent() {
 
   const [currentUser, setCurrentUser] = useState<PublicUser | null>(null);
   const [allUsers, setAllUsers] = useState<PublicUser[]>([]);
-  const [activeProfileUser, setActiveProfileUser] = useState<PublicUser | null>(null);
+  const [, setActiveProfileUser] = useState<PublicUser | null>(null);
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [viewedUser, setViewedUser] = useState<PublicUser | null>(null);
   const [bankHolidays, setBankHolidays] = useState<BankHolidayEntry[]>([]);

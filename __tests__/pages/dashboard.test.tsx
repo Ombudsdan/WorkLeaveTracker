@@ -48,8 +48,8 @@ jest.mock("@/controllers/entriesController", () => ({
 }));
 
 // ─── Stub heavy child components so these tests stay fast and focused ─────────
-jest.mock("@/components/organisms/NavBar", () => () => <nav data-testid="navbar" />);
-jest.mock("@/components/atoms/LoadingSpinner", () => () => <div data-testid="loading-spinner" />);
+jest.mock("@/components/organisms/NavBar", () => function NavBar() { return <nav data-testid="navbar" />; });
+jest.mock("@/components/atoms/LoadingSpinner", () => function LoadingSpinner() { return <div data-testid="loading-spinner" />; });
 jest.mock("@/components/organisms/MiniCalendar", () => () => null);
 jest.mock("@/components/organisms/MicroAnnualPlanner", () => () => null);
 jest.mock("@/components/organisms/SummaryCard", () => () => null);

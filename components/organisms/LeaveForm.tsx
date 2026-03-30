@@ -183,7 +183,7 @@ export default function LeaveForm({
     const todayStr = toIsoDate(new Date());
     // activeYa is always defined here — calcLeaveSummary only yields negative remaining
     // when it finds an active allowance, so getActiveYearAllowance returns a value.
-    const activeYa = getActiveYearAllowance(user.yearAllowances)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    const activeYa = getActiveYearAllowance(user.yearAllowances)!;
     /* c8 ignore next -- holidayStartMonth is required in YearAllowance; fallback is unreachable */
     const sm = activeYa.holidayStartMonth ?? 1;
     const yrStart = new Date(activeYa.year, sm - 1, 1);

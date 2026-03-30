@@ -554,7 +554,7 @@ describe("AddLeaveModal — allowance limit validation", () => {
   it("does not show the warning when type is not Holiday", async () => {
     // Without SICK_LEAVE_ENABLED, type is always auto-set to Holiday.
     // The warning should not appear when no dates/status are set (null limitCheck).
-    const user = setup();
+    setup();
     renderModal(
       <AddLeaveModal
         onClose={jest.fn()}

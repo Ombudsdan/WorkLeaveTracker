@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import type { PublicUser, BankHolidayEntry, YearAllowance } from "@/types";
 import { LeaveType, LeaveDuration } from "@/types";
 import { ChevronDown, ChevronUp } from "lucide-react";
@@ -108,17 +108,21 @@ export default function AnnualPlannerView({ user, bankHolidays }: AnnualPlannerV
 
   // Accordion open state: set of "year-month" keys (e.g. "2026-0")
   const [openMonths, setOpenMonths] = useState<Set<string>>(new Set());
+  const [openMonthsYear, setOpenMonthsYear] = useState<number | undefined>(effectiveYa?.year);
 
   // Close all open accordion rows when the displayed year changes
-  useEffect(() => {
+  if (openMonthsYear !== effectiveYa?.year) {
+    setOpenMonthsYear(effectiveYa?.year);
     setOpenMonths(new Set());
-  }, [effectiveYa?.year]);
+  }
 
   // Reset the selected window whenever the viewed user changes
-  /* c8 ignore next 3 */
-  useEffect(() => {
+  /* c8 ignore next 5 */
+  const [selectedYearForUser, setSelectedYearForUser] = useState(user.id);
+  if (selectedYearForUser !== user.id) {
+    setSelectedYearForUser(user.id);
     setSelectedYear(null);
-  }, [user.id]);
+  }
 
   function toggleMonth(key: string) {
     setOpenMonths((prev) => {

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { LeaveStatus, LeaveType, BankHolidayHandling } from "@/types";
 import type { PublicUser, BankHolidayEntry } from "@/types";
 import { STATUS_DOT, STATUS_HEX_COLORS } from "@/variables/colours";
@@ -21,10 +21,12 @@ export default function SummaryCard({ user, bankHolidays, onAddLeave }: SummaryC
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [activeTab, setActiveTab] = useState<"holiday" | "sick">("holiday");
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [selectedYearForUser, setSelectedYearForUser] = useState(user.id);
 
-  useEffect(() => {
+  if (selectedYearForUser !== user.id) {
+    setSelectedYearForUser(user.id);
     setSelectedYear(null);
-  }, [user.id]);
+  }
 
   const bankHolidayDates = bankHolidays.map((bh) => bh.date);
   const activeYa = getActiveYearAllowance(user.yearAllowances);

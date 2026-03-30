@@ -21,7 +21,7 @@ describe("ConnectionsHeader — rendering", () => {
   });
 
   it("renders the Users icon inside the Manage link", () => {
-    const { container } = render(<ConnectionsHeader manageHref="/connections" />);
+    render(<ConnectionsHeader manageHref="/connections" />);
     const link = screen.getByRole("link", { name: /manage/i });
     expect(link.querySelector("svg")).toBeInTheDocument();
   });
