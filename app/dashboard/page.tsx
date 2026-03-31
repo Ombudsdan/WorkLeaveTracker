@@ -16,6 +16,7 @@ import EditLeaveModal from "@/components/organisms/EditLeaveModal";
 import YearAllowanceModal from "@/components/organisms/YearAllowanceModal";
 import MicroAnnualPlanner from "@/components/organisms/MicroAnnualPlanner";
 import MonthlyLeaveRoundup from "@/components/organisms/MonthlyLeaveRoundup";
+import DashboardColumns from "@/components/organisms/DashboardColumns";
 import { usersController } from "@/controllers/usersController";
 import { holidaysController } from "@/controllers/holidaysController";
 import { entriesController } from "@/controllers/entriesController";
@@ -206,57 +207,28 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* Mobile-only toggle between Upcoming Leave list and Calendar */}
-        <div className="flex lg:hidden mb-4 bg-white rounded-xl shadow border border-gray-100 overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setMobileView("list")}
-            className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer ${
-              mobileView === "list"
-                ? "border-indigo-500 text-indigo-700"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            Upcoming Leave
-          </button>
-          <button
-            type="button"
-            onClick={() => setMobileView("calendar")}
-            className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer ${
-              mobileView === "calendar"
-                ? "border-indigo-500 text-indigo-700"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            Calendar
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
-          {/* Left column: stats + annual planner */}
-          <div
-            className={`lg:col-span-2 space-y-4 ${mobileView === "list" ? "block" : "hidden"} lg:block`}
-          >
-            <SummaryCard
-              user={displayUser}
-              bankHolidays={bankHolidays}
-              onAddLeave={
-                isReadOnly
-                  ? undefined
-                  : () => {
-                      setAddModalInitialDate(undefined);
-                      setShowAddModal(true);
-                    }
-              }
-            />
-            <MonthlyLeaveRoundup user={displayUser} bankHolidays={bankHolidays} />
-          </div>
-
-          {/* Centre column (widest): main calendar / annual overview toggle */}
-          <div
-            className={`lg:col-span-3 space-y-4 ${mobileView === "calendar" ? "block" : "hidden"} lg:block`}
-          >
-            {calendarMode === "month" ? (
+        <DashboardColumns
+          mobileView={mobileView}
+          onMobileViewChange={setMobileView}
+          left={
+            <>
+              <SummaryCard
+                user={displayUser}
+                bankHolidays={bankHolidays}
+                onAddLeave={
+                  isReadOnly
+                    ? undefined
+                    : () => {
+                        setAddModalInitialDate(undefined);
+                        setShowAddModal(true);
+                      }
+                }
+              />
+              <MonthlyLeaveRoundup user={displayUser} bankHolidays={bankHolidays} />
+            </>
+          }
+          center={
+            calendarMode === "month" ? (
               <CalendarView
                 user={displayUser}
                 bankHolidays={bankHolidays}
@@ -298,71 +270,69 @@ function DashboardContent() {
                 </div>
                 <MicroAnnualPlanner user={displayUser} bankHolidays={bankHolidays} />
               </div>
-            )}
-          </div>
-
-          {/* Right column: connections widget (top) + upcoming leave list */}
-          <div
-            className={`lg:col-span-2 space-y-4 ${mobileView === "list" ? "block" : "hidden"} lg:block`}
-          >
-            {!isReadOnly && (
-              <div className="bg-white rounded-xl shadow border border-gray-100 p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-sm font-semibold text-gray-700">Connections</h2>
-                  <div className="flex items-center gap-2">
-                    {pendingConnectionRequests > 0 && (
-                      <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">
-                        {pendingConnectionRequests} pending
-                      </span>
-                    )}
-                    <Link
-                      href="/connections"
-                      className="inline-flex items-center gap-1 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition-colors"
-                    >
-                      <Users size={14} aria-hidden="true" />
-                      Manage
-                    </Link>
-                  </div>
-                </div>
-                {pinnedUsers.length === 0 ? (
-                  <p className="text-xs text-gray-400">No connections yet.</p>
-                ) : (
-                  <ul className="space-y-1.5">
-                    {pinnedUsers.map((u) => (
-                      <li
-                        key={u.id}
-                        className="flex items-center justify-between gap-2 text-xs text-gray-700"
-                      >
-                        <span className="flex items-center gap-2 min-w-0">
-                          <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-[9px] font-bold flex items-center justify-center shrink-0">
-                            {u.profile.firstName.charAt(0)}
-                            {u.profile.lastName.charAt(0)}
-                          </span>
-                          <span className="truncate">
-                            {u.profile.firstName} {u.profile.lastName}
-                          </span>
+            )
+          }
+          right={
+            <>
+              {!isReadOnly && (
+                <div className="bg-white rounded-xl shadow border border-gray-100 p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-sm font-semibold text-gray-700">Connections</h2>
+                    <div className="flex items-center gap-2">
+                      {pendingConnectionRequests > 0 && (
+                        <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">
+                          {pendingConnectionRequests} pending
                         </span>
-                        <Link
-                          href={`/dashboard?userId=${u.id}`}
-                          className="shrink-0 text-[10px] font-medium text-indigo-600 hover:text-indigo-800 hover:underline"
+                      )}
+                      <Link
+                        href="/connections"
+                        className="inline-flex items-center gap-1 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition-colors"
+                      >
+                        <Users size={14} aria-hidden="true" />
+                        Manage
+                      </Link>
+                    </div>
+                  </div>
+                  {pinnedUsers.length === 0 ? (
+                    <p className="text-xs text-gray-400">No connections yet.</p>
+                  ) : (
+                    <ul className="space-y-1.5">
+                      {pinnedUsers.map((u) => (
+                        <li
+                          key={u.id}
+                          className="flex items-center justify-between gap-2 text-xs text-gray-700"
                         >
-                          View Dashboard
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
-            <LeaveList
-              user={displayUser}
-              bankHolidays={bankHolidays}
-              isOwnProfile={!isReadOnly}
-              onEdit={isReadOnly ? undefined : setEditingEntry}
-              onDelete={isReadOnly ? undefined : handleDeleteEntry}
-            />
-          </div>
-        </div>
+                          <span className="flex items-center gap-2 min-w-0">
+                            <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-[9px] font-bold flex items-center justify-center shrink-0">
+                              {u.profile.firstName.charAt(0)}
+                              {u.profile.lastName.charAt(0)}
+                            </span>
+                            <span className="truncate">
+                              {u.profile.firstName} {u.profile.lastName}
+                            </span>
+                          </span>
+                          <Link
+                            href={`/dashboard?userId=${u.id}`}
+                            className="shrink-0 text-[10px] font-medium text-indigo-600 hover:text-indigo-800 hover:underline"
+                          >
+                            View Dashboard
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+              <LeaveList
+                user={displayUser}
+                bankHolidays={bankHolidays}
+                isOwnProfile={!isReadOnly}
+                onEdit={isReadOnly ? undefined : setEditingEntry}
+                onDelete={isReadOnly ? undefined : handleDeleteEntry}
+              />
+            </>
+          }
+        />
       </main>
 
       {showAddModal && (
