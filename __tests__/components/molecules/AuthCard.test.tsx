@@ -4,7 +4,11 @@ import AuthCard from "@/components/molecules/AuthCard";
 
 describe("AuthCard — rendering", () => {
   it("renders the title", () => {
-    render(<AuthCard title="Work Leave Tracker"><p>form</p></AuthCard>);
+    render(
+      <AuthCard title="Work Leave Tracker">
+        <p>form</p>
+      </AuthCard>
+    );
     expect(screen.getByRole("heading", { name: "Work Leave Tracker" })).toBeInTheDocument();
   });
 
@@ -19,7 +23,9 @@ describe("AuthCard — rendering", () => {
 
   it("renders the gradient background container", () => {
     const { container } = render(
-      <AuthCard title="Test"><p>content</p></AuthCard>
+      <AuthCard title="Test">
+        <p>content</p>
+      </AuthCard>
     );
     const outerDiv = container.firstChild as HTMLElement;
     expect(outerDiv).toHaveClass("min-h-screen", "bg-gradient-to-br");
@@ -27,7 +33,9 @@ describe("AuthCard — rendering", () => {
 
   it("renders the white card panel", () => {
     const { container } = render(
-      <AuthCard title="Test"><p>content</p></AuthCard>
+      <AuthCard title="Test">
+        <p>content</p>
+      </AuthCard>
     );
     const card = container.querySelector(".bg-white.rounded-2xl");
     expect(card).toBeInTheDocument();
@@ -46,7 +54,9 @@ describe("AuthCard — subtitle", () => {
 
   it("does not render a subtitle element when omitted", () => {
     const { container } = render(
-      <AuthCard title="Sign In"><p>form</p></AuthCard>
+      <AuthCard title="Sign In">
+        <p>form</p>
+      </AuthCard>
     );
     // No <p> subtitle below heading
     expect(container.querySelector(".text-gray-500.mb-6")).not.toBeInTheDocument();
@@ -65,7 +75,9 @@ describe("AuthCard — footer", () => {
 
   it("does not render footer wrapper when omitted", () => {
     const { container } = render(
-      <AuthCard title="Sign In"><p>form</p></AuthCard>
+      <AuthCard title="Sign In">
+        <p>form</p>
+      </AuthCard>
     );
     // No footer div
     expect(container.querySelector(".text-sm.text-center.mt-4")).not.toBeInTheDocument();

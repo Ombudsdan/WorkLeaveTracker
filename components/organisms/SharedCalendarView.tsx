@@ -444,7 +444,8 @@ export default function SharedCalendarView({
           {/* Status / type badge */}
           {(() => {
             const badgeClass = STATUS_COLORS[popover.entry.status];
-            const badgeLabel = popover.entry.status.charAt(0).toUpperCase() + popover.entry.status.slice(1);
+            const badgeLabel =
+              popover.entry.status.charAt(0).toUpperCase() + popover.entry.status.slice(1);
             return (
               <div
                 className={`inline-flex items-center px-1.5 py-0.5 rounded font-semibold mb-2 border ${badgeClass} ${isMobileSheet ? "text-xs" : "text-[10px]"}`}

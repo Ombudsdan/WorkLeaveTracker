@@ -918,15 +918,13 @@ describe("SharedCalendarView — half-day popover label fallbacks (no notes)", (
         },
       ],
     };
-    Object.defineProperty(window, "innerWidth", { writable: true, configurable: true, value: 1024 });
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: 1024,
+    });
     window.dispatchEvent(new Event("resize"));
-    render(
-      <SharedCalendarView
-        currentUser={aliceAM}
-        pinnedUsers={[]}
-        bankHolidays={[]}
-      />
-    );
+    render(<SharedCalendarView currentUser={aliceAM} pinnedUsers={[]} bankHolidays={[]} />);
     const leaveCell = screen
       .getAllByRole("cell")
       .find((el) => el.title === "approved: 2026-03-16 – 2026-03-16");
@@ -952,15 +950,13 @@ describe("SharedCalendarView — half-day popover label fallbacks (no notes)", (
         },
       ],
     };
-    Object.defineProperty(window, "innerWidth", { writable: true, configurable: true, value: 1024 });
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: 1024,
+    });
     window.dispatchEvent(new Event("resize"));
-    render(
-      <SharedCalendarView
-        currentUser={alicePM}
-        pinnedUsers={[]}
-        bankHolidays={[]}
-      />
-    );
+    render(<SharedCalendarView currentUser={alicePM} pinnedUsers={[]} bankHolidays={[]} />);
     const leaveCell = screen
       .getAllByRole("cell")
       .find((el) => el.title === "approved: 2026-03-16 – 2026-03-16");
@@ -989,15 +985,13 @@ describe("SharedCalendarView — half-day popover label with notes", () => {
         },
       ],
     };
-    Object.defineProperty(window, "innerWidth", { writable: true, configurable: true, value: 1024 });
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: 1024,
+    });
     window.dispatchEvent(new Event("resize"));
-    render(
-      <SharedCalendarView
-        currentUser={aliceAM}
-        pinnedUsers={[]}
-        bankHolidays={[]}
-      />
-    );
+    render(<SharedCalendarView currentUser={aliceAM} pinnedUsers={[]} bankHolidays={[]} />);
     const leaveCell = screen
       .getAllByRole("cell")
       .find((el) => el.title === "approved: 2026-03-16 – 2026-03-16");
@@ -1023,15 +1017,13 @@ describe("SharedCalendarView — half-day popover label with notes", () => {
         },
       ],
     };
-    Object.defineProperty(window, "innerWidth", { writable: true, configurable: true, value: 1024 });
+    Object.defineProperty(window, "innerWidth", {
+      writable: true,
+      configurable: true,
+      value: 1024,
+    });
     window.dispatchEvent(new Event("resize"));
-    render(
-      <SharedCalendarView
-        currentUser={alicePM}
-        pinnedUsers={[]}
-        bankHolidays={[]}
-      />
-    );
+    render(<SharedCalendarView currentUser={alicePM} pinnedUsers={[]} bankHolidays={[]} />);
     const leaveCell = screen
       .getAllByRole("cell")
       .find((el) => el.title === "approved: 2026-03-16 – 2026-03-16");
@@ -1061,13 +1053,7 @@ describe("SharedCalendarView — mobile backdrop dismissal", () => {
     // Set mobile viewport width so isMobileSheet is true
     Object.defineProperty(window, "innerWidth", { writable: true, configurable: true, value: 375 });
     window.dispatchEvent(new Event("resize"));
-    render(
-      <SharedCalendarView
-        currentUser={aliceMobile}
-        pinnedUsers={[]}
-        bankHolidays={[]}
-      />
-    );
+    render(<SharedCalendarView currentUser={aliceMobile} pinnedUsers={[]} bankHolidays={[]} />);
     const leaveCell = screen
       .getAllByRole("cell")
       .find((el) => el.title === "approved: 2026-03-16 – 2026-03-16");

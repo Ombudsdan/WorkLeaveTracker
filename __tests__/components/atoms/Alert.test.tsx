@@ -56,9 +56,7 @@ describe("Alert — variant colour classes", () => {
 
 describe("Alert — optional icon slot", () => {
   it("renders the icon element when provided", () => {
-    render(
-      <Alert icon={<Eye size={16} data-testid="eye-icon" />}>Read-only view</Alert>
-    );
+    render(<Alert icon={<Eye size={16} data-testid="eye-icon" />}>Read-only view</Alert>);
     expect(screen.getByRole("alert").querySelector("svg")).toBeInTheDocument();
   });
 
@@ -73,9 +71,7 @@ describe("Alert — optional icon slot", () => {
 
 describe("Alert — optional action slot", () => {
   it("renders an action node when provided", () => {
-    render(
-      <Alert action={<button>Configure now</button>}>Your allowance needs attention</Alert>
-    );
+    render(<Alert action={<button>Configure now</button>}>Your allowance needs attention</Alert>);
     expect(screen.getByRole("button", { name: "Configure now" })).toBeInTheDocument();
   });
 

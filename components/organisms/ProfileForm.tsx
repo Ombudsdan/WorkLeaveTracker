@@ -86,13 +86,7 @@ export default function ProfileForm({
             onChange={onLastNameChange}
             required
           />
-          <FormField
-            id="profile-email"
-            label="Email"
-            type="email"
-            value={email}
-            readOnly
-          />
+          <FormField id="profile-email" label="Email" type="email" value={email} readOnly />
         </div>
       </section>
 
@@ -164,8 +158,8 @@ export default function ProfileForm({
           </div>
         )}
         <p className="text-xs text-gray-400 mt-2">
-          If you change companies, add a new allowance for the same year with your new company.
-          Your previous allowance will be marked as ended.
+          If you change companies, add a new allowance for the same year with your new company. Your
+          previous allowance will be marked as ended.
         </p>
       </section>
 

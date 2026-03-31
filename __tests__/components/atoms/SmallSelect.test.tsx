@@ -106,14 +106,7 @@ describe("SmallSelect — interaction", () => {
 
 describe("SmallSelect — styling", () => {
   it("applies compact text-xs class", () => {
-    render(
-      <SmallSelect
-        value="month"
-        onChange={jest.fn()}
-        options={OPTIONS}
-        ariaLabel="Label"
-      />
-    );
+    render(<SmallSelect value="month" onChange={jest.fn()} options={OPTIONS} ariaLabel="Label" />);
     expect(screen.getByRole("combobox")).toHaveClass("text-xs");
   });
 

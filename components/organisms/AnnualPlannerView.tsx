@@ -163,9 +163,7 @@ export default function AnnualPlannerView({ user, bankHolidays }: AnnualPlannerV
               ))}
             </select>
           ) : (
-            <span className="text-xs text-gray-400">
-              {formatYearWindow(effectiveYa!)}
-            </span>
+            <span className="text-xs text-gray-400">{formatYearWindow(effectiveYa!)}</span>
           )}
         </div>
 

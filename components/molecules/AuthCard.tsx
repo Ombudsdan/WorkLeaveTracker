@@ -22,9 +22,7 @@ export default function AuthCard({ title, subtitle, children, footer }: AuthCard
         <h1 className="text-2xl font-bold text-indigo-700 mb-2">{title}</h1>
         {subtitle && <p className="text-gray-500 mb-6 text-sm">{subtitle}</p>}
         {children}
-        {footer && (
-          <div className="text-sm text-center mt-4 text-gray-500">{footer}</div>
-        )}
+        {footer && <div className="text-sm text-center mt-4 text-gray-500">{footer}</div>}
       </div>
     </div>
   );

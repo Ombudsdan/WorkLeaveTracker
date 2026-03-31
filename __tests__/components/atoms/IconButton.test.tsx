@@ -11,7 +11,9 @@ describe("IconButton — rendering", () => {
   });
 
   it("renders the provided icon as children", () => {
-    const { container } = render(<IconButton icon={<X size={18} data-testid="x-icon" />} ariaLabel="Close" />);
+    const { container } = render(
+      <IconButton icon={<X size={18} data-testid="x-icon" />} ariaLabel="Close" />
+    );
     expect(container.querySelector("svg")).toBeInTheDocument();
   });
 });
@@ -43,9 +45,7 @@ describe("IconButton — interaction", () => {
 
   it("does not call onClick when disabled", async () => {
     const handleClick = jest.fn();
-    render(
-      <IconButton icon={<X size={18} />} ariaLabel="Close" onClick={handleClick} disabled />
-    );
+    render(<IconButton icon={<X size={18} />} ariaLabel="Close" onClick={handleClick} disabled />);
     await userEvent.click(screen.getByRole("button"));
     expect(handleClick).not.toHaveBeenCalled();
   });

@@ -66,9 +66,7 @@ describe("PastLeaveExplorer — no periods", () => {
         bankHolidays={[]}
       />
     );
-    expect(
-      screen.getByText("No past leave allowance periods found.")
-    ).toBeInTheDocument();
+    expect(screen.getByText("No past leave allowance periods found.")).toBeInTheDocument();
   });
 
   it("does not render the explorer wrapper when pastPeriods is empty", () => {

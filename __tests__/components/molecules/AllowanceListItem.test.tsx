@@ -57,9 +57,7 @@ describe("AllowanceListItem — rendering", () => {
 
   it("does not render a company label when company is empty string", () => {
     const noCompany: YearAllowance = { ...activeAllowance, company: "" };
-    const { getByTestId } = render(
-      <AllowanceListItem allowance={noCompany} currentYear={2026} />
-    );
+    const { getByTestId } = render(<AllowanceListItem allowance={noCompany} currentYear={2026} />);
     // Company span should not exist
     const item = getByTestId("allowance-list-item");
     expect(item.querySelector("span.opacity-70")).not.toBeInTheDocument();
@@ -92,7 +90,11 @@ describe("AllowanceListItem — past year (non-active, non-inactive)", () => {
     const { getByTestId } = render(
       <AllowanceListItem allowance={pastAllowance} currentYear={2026} />
     );
-    expect(getByTestId("allowance-list-item")).toHaveClass("bg-gray-50", "border-gray-200", "text-gray-600");
+    expect(getByTestId("allowance-list-item")).toHaveClass(
+      "bg-gray-50",
+      "border-gray-200",
+      "text-gray-600"
+    );
   });
 
   it("renders a Circle icon (not CheckCircle) for a non-current year", () => {
@@ -121,11 +123,7 @@ describe("AllowanceListItem — inactive (ended)", () => {
 
   it("does not render an Edit button for inactive allowances", () => {
     render(
-      <AllowanceListItem
-        allowance={inactiveAllowance}
-        currentYear={2026}
-        onEdit={jest.fn()}
-      />
+      <AllowanceListItem allowance={inactiveAllowance} currentYear={2026} onEdit={jest.fn()} />
     );
     expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
   });
@@ -133,9 +131,7 @@ describe("AllowanceListItem — inactive (ended)", () => {
 
 describe("AllowanceListItem — Edit button", () => {
   it("renders an Edit button for active allowances when onEdit is provided", () => {
-    render(
-      <AllowanceListItem allowance={activeAllowance} currentYear={2026} onEdit={jest.fn()} />
-    );
+    render(<AllowanceListItem allowance={activeAllowance} currentYear={2026} onEdit={jest.fn()} />);
     expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
   });
 
@@ -147,17 +143,13 @@ describe("AllowanceListItem — Edit button", () => {
   it("calls onEdit with the allowance when Edit is clicked", async () => {
     const user = setup();
     const onEdit = jest.fn();
-    render(
-      <AllowanceListItem allowance={activeAllowance} currentYear={2026} onEdit={onEdit} />
-    );
+    render(<AllowanceListItem allowance={activeAllowance} currentYear={2026} onEdit={onEdit} />);
     await user.click(screen.getByRole("button", { name: "Edit" }));
     expect(onEdit).toHaveBeenCalledWith(activeAllowance);
   });
 
   it("renders Edit button for a past non-inactive allowance when onEdit is provided", () => {
-    render(
-      <AllowanceListItem allowance={pastAllowance} currentYear={2026} onEdit={jest.fn()} />
-    );
+    render(<AllowanceListItem allowance={pastAllowance} currentYear={2026} onEdit={jest.fn()} />);
     expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
   });
 });

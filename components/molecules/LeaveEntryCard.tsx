@@ -45,10 +45,7 @@ export default function LeaveEntryCard({
   const noteText = isHalf && entry.notes ? `${entry.notes} (${periodLabel})` : baseNote;
 
   return (
-    <div
-      data-testid="leave-entry-card"
-      className={`border rounded-lg p-2 text-xs ${cardClass}`}
-    >
+    <div data-testid="leave-entry-card" className={`border rounded-lg p-2 text-xs ${cardClass}`}>
       <div className="flex items-center justify-between">
         <span className="font-medium truncate mr-2">{noteText}</span>
         <span className="shrink-0">{statusLabel}</span>

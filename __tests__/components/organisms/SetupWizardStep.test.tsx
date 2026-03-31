@@ -128,10 +128,7 @@ describe("SetupWizardStep — interactions", () => {
     const user = setup();
     const onBankHolidayHandlingChange = jest.fn();
     renderStep({ ...defaultProps, onBankHolidayHandlingChange });
-    await user.selectOptions(
-      screen.getByLabelText("Bank Holidays"),
-      BankHolidayHandling.Deduct
-    );
+    await user.selectOptions(screen.getByLabelText("Bank Holidays"), BankHolidayHandling.Deduct);
     expect(onBankHolidayHandlingChange).toHaveBeenCalledWith(BankHolidayHandling.Deduct);
   });
 

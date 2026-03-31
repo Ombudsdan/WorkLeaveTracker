@@ -658,8 +658,6 @@ describe("MiniCalendar — popover switches when a different cell is clicked", (
   });
 });
 
-
-
 describe("MiniCalendar — popover label fallbacks (no notes)", () => {
   it("shows 'No description' for a full-day entry with no notes", async () => {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });

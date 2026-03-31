@@ -51,9 +51,7 @@ export default function PastLeaveExplorer({
   bankHolidays,
 }: PastLeaveExplorerProps) {
   if (pastPeriods.length === 0) {
-    return (
-      <p className="text-sm text-gray-400">No past leave allowance periods found.</p>
-    );
+    return <p className="text-sm text-gray-400">No past leave allowance periods found.</p>;
   }
 
   const hasPeriodSelected = pastPeriods.some((ya) => periodKey(ya) === selectedPastPeriod);

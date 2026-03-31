@@ -16,16 +16,12 @@ describe("WorkingDaysPicker — rendering", () => {
   });
 
   it("renders the picker container with data-testid", () => {
-    const { getByTestId } = render(
-      <WorkingDaysPicker value={[]} onChange={jest.fn()} />
-    );
+    const { getByTestId } = render(<WorkingDaysPicker value={[]} onChange={jest.fn()} />);
     expect(getByTestId("working-days-picker")).toBeInTheDocument();
   });
 
   it("renders the hint text when provided", () => {
-    render(
-      <WorkingDaysPicker value={[1]} onChange={jest.fn()} hint="Select the days you work" />
-    );
+    render(<WorkingDaysPicker value={[1]} onChange={jest.fn()} hint="Select the days you work" />);
     expect(screen.getByText("Select the days you work")).toBeInTheDocument();
   });
 
@@ -39,8 +35,8 @@ describe("WorkingDaysPicker — selected state", () => {
   it("marks selected days with aria-pressed=true", () => {
     render(<WorkingDaysPicker value={[1, 3]} onChange={jest.fn()} />);
     const buttons = screen.getAllByRole("button");
-    expect(buttons[1]).toHaveAttribute("aria-pressed", "true");  // Mon
-    expect(buttons[3]).toHaveAttribute("aria-pressed", "true");  // Wed
+    expect(buttons[1]).toHaveAttribute("aria-pressed", "true"); // Mon
+    expect(buttons[3]).toHaveAttribute("aria-pressed", "true"); // Wed
   });
 
   it("marks unselected days with aria-pressed=false", () => {

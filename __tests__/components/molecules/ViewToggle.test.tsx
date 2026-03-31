@@ -5,10 +5,11 @@ import ViewToggle from "@/components/molecules/ViewToggle";
 
 type MobileView = "list" | "calendar";
 
-const defaultOptions: [{ value: MobileView; label: string }, { value: MobileView; label: string }] = [
-  { value: "list", label: "Upcoming Leave" },
-  { value: "calendar", label: "Calendar" },
-];
+const defaultOptions: [{ value: MobileView; label: string }, { value: MobileView; label: string }] =
+  [
+    { value: "list", label: "Upcoming Leave" },
+    { value: "calendar", label: "Calendar" },
+  ];
 
 function setup() {
   return userEvent.setup();
@@ -16,9 +17,7 @@ function setup() {
 
 describe("ViewToggle — rendering", () => {
   it("renders both option buttons", () => {
-    render(
-      <ViewToggle options={defaultOptions} value="list" onChange={jest.fn()} />
-    );
+    render(<ViewToggle options={defaultOptions} value="list" onChange={jest.fn()} />);
     expect(screen.getByRole("button", { name: "Upcoming Leave" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Calendar" })).toBeInTheDocument();
   });
@@ -31,9 +30,7 @@ describe("ViewToggle — rendering", () => {
   });
 
   it("renders a group with aria-label 'View toggle'", () => {
-    render(
-      <ViewToggle options={defaultOptions} value="list" onChange={jest.fn()} />
-    );
+    render(<ViewToggle options={defaultOptions} value="list" onChange={jest.fn()} />);
     expect(screen.getByRole("group", { name: "View toggle" })).toBeInTheDocument();
   });
 
@@ -52,9 +49,7 @@ describe("ViewToggle — rendering", () => {
 
 describe("ViewToggle — active state", () => {
   it("marks the active option with aria-pressed=true", () => {
-    render(
-      <ViewToggle options={defaultOptions} value="list" onChange={jest.fn()} />
-    );
+    render(<ViewToggle options={defaultOptions} value="list" onChange={jest.fn()} />);
     expect(screen.getByRole("button", { name: "Upcoming Leave" })).toHaveAttribute(
       "aria-pressed",
       "true"
@@ -62,9 +57,7 @@ describe("ViewToggle — active state", () => {
   });
 
   it("marks the inactive option with aria-pressed=false", () => {
-    render(
-      <ViewToggle options={defaultOptions} value="list" onChange={jest.fn()} />
-    );
+    render(<ViewToggle options={defaultOptions} value="list" onChange={jest.fn()} />);
     expect(screen.getByRole("button", { name: "Calendar" })).toHaveAttribute(
       "aria-pressed",
       "false"
@@ -72,17 +65,13 @@ describe("ViewToggle — active state", () => {
   });
 
   it("applies indigo border to the active option", () => {
-    render(
-      <ViewToggle options={defaultOptions} value="calendar" onChange={jest.fn()} />
-    );
+    render(<ViewToggle options={defaultOptions} value="calendar" onChange={jest.fn()} />);
     const calendarBtn = screen.getByRole("button", { name: "Calendar" });
     expect(calendarBtn).toHaveClass("border-indigo-500", "text-indigo-700");
   });
 
   it("applies transparent border to inactive options", () => {
-    render(
-      <ViewToggle options={defaultOptions} value="calendar" onChange={jest.fn()} />
-    );
+    render(<ViewToggle options={defaultOptions} value="calendar" onChange={jest.fn()} />);
     const listBtn = screen.getByRole("button", { name: "Upcoming Leave" });
     expect(listBtn).toHaveClass("border-transparent", "text-gray-500");
   });
@@ -92,9 +81,7 @@ describe("ViewToggle — interaction", () => {
   it("calls onChange with the clicked option's value", async () => {
     const user = setup();
     const onChange = jest.fn();
-    render(
-      <ViewToggle options={defaultOptions} value="list" onChange={onChange} />
-    );
+    render(<ViewToggle options={defaultOptions} value="list" onChange={onChange} />);
     await user.click(screen.getByRole("button", { name: "Calendar" }));
     expect(onChange).toHaveBeenCalledWith("calendar");
   });
@@ -102,9 +89,7 @@ describe("ViewToggle — interaction", () => {
   it("calls onChange when the already-active option is clicked", async () => {
     const user = setup();
     const onChange = jest.fn();
-    render(
-      <ViewToggle options={defaultOptions} value="list" onChange={onChange} />
-    );
+    render(<ViewToggle options={defaultOptions} value="list" onChange={onChange} />);
     await user.click(screen.getByRole("button", { name: "Upcoming Leave" }));
     expect(onChange).toHaveBeenCalledWith("list");
   });

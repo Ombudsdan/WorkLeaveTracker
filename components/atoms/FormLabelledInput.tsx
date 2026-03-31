@@ -3,8 +3,10 @@ import type { InputHTMLAttributes } from "react";
 
 export type FormLabelledInputType = "text" | "email" | "password" | "number" | "tel" | "url";
 
-export interface FormLabelledInputProps
-  extends Omit<InputHTMLAttributes<HTMLInputElement>, "id" | "type" | "value" | "onChange"> {
+export interface FormLabelledInputProps extends Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  "id" | "type" | "value" | "onChange"
+> {
   id: string;
   label: string;
   type?: FormLabelledInputType;

@@ -83,13 +83,7 @@ describe("PasswordField — validation", () => {
 
   it("does not show an error when a value is provided", async () => {
     renderInProvider(
-      <ControlledPasswordField
-        id="password"
-        label="Password"
-        initialValue=""
-        value=""
-        required
-      />
+      <ControlledPasswordField id="password" label="Password" initialValue="" value="" required />
     );
     await userEvent.type(screen.getByLabelText("Password"), "mysecret");
     expect(screen.queryByText("Password is required")).toBeNull();

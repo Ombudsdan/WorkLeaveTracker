@@ -45,9 +45,7 @@ export default function AllowanceListItem({
         {allowance.company ? (
           <span className="ml-1 font-normal text-xs opacity-70">— {allowance.company}</span>
         ) : null}
-        {isInactive && (
-          <span className="ml-2 text-xs text-gray-400">(ended)</span>
-        )}
+        {isInactive && <span className="ml-2 text-xs text-gray-400">(ended)</span>}
       </span>
 
       {!isInactive && onEdit && (

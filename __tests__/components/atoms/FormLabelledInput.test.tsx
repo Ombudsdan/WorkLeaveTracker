@@ -44,7 +44,13 @@ describe("FormLabelledInput — rendering", () => {
 describe("FormLabelledInput — controlled value", () => {
   it("shows the provided value in the input", () => {
     render(
-      <FormLabelledInput id="em" label="Email" type="email" value="you@example.com" onChange={jest.fn()} />
+      <FormLabelledInput
+        id="em"
+        label="Email"
+        type="email"
+        value="you@example.com"
+        onChange={jest.fn()}
+      />
     );
     expect(screen.getByLabelText("Email")).toHaveValue("you@example.com");
   });
@@ -54,7 +60,13 @@ describe("FormLabelledInput — controlled value", () => {
       <FormLabelledInput id="em" label="Email" type="email" value="a@b.com" onChange={jest.fn()} />
     );
     rerender(
-      <FormLabelledInput id="em" label="Email" type="email" value="new@b.com" onChange={jest.fn()} />
+      <FormLabelledInput
+        id="em"
+        label="Email"
+        type="email"
+        value="new@b.com"
+        onChange={jest.fn()}
+      />
     );
     expect(screen.getByLabelText("Email")).toHaveValue("new@b.com");
   });
@@ -155,9 +167,7 @@ describe("FormLabelledInput — native HTML attribute passthrough", () => {
   });
 
   it("forwards required to the input", () => {
-    render(
-      <FormLabelledInput id="em" label="Email" value="" onChange={jest.fn()} required />
-    );
+    render(<FormLabelledInput id="em" label="Email" value="" onChange={jest.fn()} required />);
     expect(screen.getByLabelText("Email")).toBeRequired();
   });
 

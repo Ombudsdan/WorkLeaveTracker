@@ -46,10 +46,7 @@ export default function ManageConnectionsDrawer({
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-          <h3
-            id="manage-drawer-title"
-            className="text-base font-semibold text-gray-800"
-          >
+          <h3 id="manage-drawer-title" className="text-base font-semibold text-gray-800">
             {title}
           </h3>
           <button

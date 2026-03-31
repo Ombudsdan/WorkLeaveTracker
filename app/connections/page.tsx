@@ -110,10 +110,7 @@ export default function ConnectionsPage() {
       </main>
 
       {/* Manage Connections overlay */}
-      <ManageConnectionsDrawer
-        isOpen={showManagePanel}
-        onClose={() => setShowManagePanel(false)}
-      >
+      <ManageConnectionsDrawer isOpen={showManagePanel} onClose={() => setShowManagePanel(false)}>
         <ConnectionsPanel
           currentUser={currentUser}
           allUsers={allUsers}
