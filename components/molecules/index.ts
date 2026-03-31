@@ -40,6 +40,9 @@ export { default as DateRangePicker } from "./DateRangePicker";
 
 export { default as EmailField } from "./EmailField";
 
+export { default as PasswordField, StandalonePasswordField } from "./PasswordField";
+export type { PasswordFieldProps } from "./PasswordField";
+
 export { default as FormErrorOutlet } from "./FormErrorOutlet";
 
 export { default as FormField } from "./FormField";
