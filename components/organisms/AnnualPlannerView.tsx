@@ -66,9 +66,7 @@ export default function AnnualPlannerView({ user, bankHolidays }: AnnualPlannerV
   /** The year allowance whose window is currently displayed */
   const effectiveYa = useMemo((): YearAllowance | null | undefined => {
     if (selectedYear === null) return activeYa;
-    return (
-      visibleAllowances.find((ya) => ya.year === selectedYear) ?? /* c8 ignore next */ activeYa
-    );
+    return visibleAllowances.find((ya) => ya.year === selectedYear) ?? activeYa;
   }, [selectedYear, visibleAllowances, activeYa]);
 
   const monthlyData = useMemo(
@@ -117,7 +115,6 @@ export default function AnnualPlannerView({ user, bankHolidays }: AnnualPlannerV
   }
 
   // Reset the selected window whenever the viewed user changes
-  /* c8 ignore next 5 */
   const [selectedYearForUser, setSelectedYearForUser] = useState(user.id);
   if (selectedYearForUser !== user.id) {
     setSelectedYearForUser(user.id);
@@ -167,7 +164,7 @@ export default function AnnualPlannerView({ user, bankHolidays }: AnnualPlannerV
             </select>
           ) : (
             <span className="text-xs text-gray-400">
-              {effectiveYa ? formatYearWindow(effectiveYa) : /* c8 ignore next -- effectiveYa is always defined when header renders */ "–"}
+              {formatYearWindow(effectiveYa!)}
             </span>
           )}
         </div>

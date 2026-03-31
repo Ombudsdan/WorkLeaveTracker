@@ -11,7 +11,7 @@ import {
   getLeaveDataBounds,
 } from "@/utils/dateHelpers";
 import { findClashes } from "@/utils/clashFinder";
-import { STATUS_COLORS, SICK_LEAVE_CARD_COLORS } from "@/variables/colours";
+import { STATUS_COLORS } from "@/variables/colours";
 import { X, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import MonthYearPicker from "@/components/molecules/MonthYearPicker";
 import {
@@ -167,9 +167,7 @@ export default function SharedCalendarView({
       return;
     }
     const rect = cellEl.getBoundingClientRect();
-    const containerRect = containerRef.current?.getBoundingClientRect();
-    /* c8 ignore next -- containerRef is always mounted when user can click */
-    if (!containerRect) return;
+    const containerRect = containerRef.current!.getBoundingClientRect();
     const top = rect.bottom - containerRect.top + 6;
     // 220 ≈ popover card width (w-52 = 208px) + a small margin — keep the card within bounds
     const left = Math.min(rect.left - containerRect.left, containerRect.width - 220);
@@ -254,8 +252,7 @@ export default function SharedCalendarView({
     let bgClass = "bg-white";
     let cellStyle: React.CSSProperties | undefined;
     if (topEntry) {
-      /* c8 ignore next */
-      bgClass = CELL_CLASS[topEntry.status] ?? "bg-white";
+      bgClass = CELL_CLASS[topEntry.status];
     } else if (isBH) {
       bgClass = "bg-purple-300";
       if (isNWD) {
@@ -446,15 +443,8 @@ export default function SharedCalendarView({
 
           {/* Status / type badge */}
           {(() => {
-            const isSick = popover.entry.type === LeaveType.Sick;
-            /* c8 ignore next 3 -- isSick is always false (sick entries filtered before popover) */
-            const badgeClass = isSick
-              ? SICK_LEAVE_CARD_COLORS
-              : STATUS_COLORS[popover.entry.status];
-            /* c8 ignore next 3 -- isSick is always false (sick entries filtered before popover) */
-            const badgeLabel = isSick
-              ? "Sick Leave"
-              : popover.entry.status.charAt(0).toUpperCase() + popover.entry.status.slice(1);
+            const badgeClass = STATUS_COLORS[popover.entry.status];
+            const badgeLabel = popover.entry.status.charAt(0).toUpperCase() + popover.entry.status.slice(1);
             return (
               <div
                 className={`inline-flex items-center px-1.5 py-0.5 rounded font-semibold mb-2 border ${badgeClass} ${isMobileSheet ? "text-xs" : "text-[10px]"}`}

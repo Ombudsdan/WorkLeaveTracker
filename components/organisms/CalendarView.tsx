@@ -57,8 +57,7 @@ const STATUS_PRIORITY: Record<LeaveStatus, number> = {
 };
 
 function statusPriority(entry: LeaveEntry): number {
-  /* c8 ignore next -- STATUS_PRIORITY is a complete record covering all LeaveStatus values */
-  return STATUS_PRIORITY[entry.status] ?? 99;
+  return STATUS_PRIORITY[entry.status];
 }
 
 function getNoteLabel(entry: LeaveEntry): string {
@@ -196,9 +195,7 @@ export default function CalendarView({
       return;
     }
     const rect = cellEl.getBoundingClientRect();
-    const calRect = calendarRef.current?.getBoundingClientRect();
-    /* c8 ignore next -- calendarRef is always mounted when user can click */
-    if (!calRect) return;
+    const calRect = calendarRef.current!.getBoundingClientRect();
     const top = rect.bottom - calRect.top + 6;
     const left = Math.min(rect.left - calRect.left, calRect.width - 220);
     setPopover({ entry, top, left });
@@ -395,7 +392,6 @@ export default function CalendarView({
     );
   }
 
-  /* c8 ignore next -- SICK_LEAVE_ENABLED is false in tests; the sick key only renders in production with flag */
   const sickKeys = SICK_LEAVE_ENABLED ? [LEAVE_KEY_SICK] : [];
 
   return (

@@ -683,3 +683,40 @@ describe("AnnualPlannerView — year summary section", () => {
     expect(within(summary).getByText("−1")).toBeInTheDocument();
   });
 });
+
+describe("AnnualPlannerView — user prop change resets selected year", () => {
+  const multiUser: PublicUser = {
+    ...baseUser,
+    yearAllowances: [
+      { year: 2025, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+      { year: 2026, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+    ],
+  };
+
+  const otherUser: PublicUser = {
+    id: "u2",
+    profile: {
+      firstName: "Bob",
+      lastName: "Jones",
+      email: "bob@example.com",
+      nonWorkingDays: [0, 6],
+    },
+    yearAllowances: [
+      { year: 2026, company: "Acme", holidayStartMonth: 1, core: 20, bought: 0, carried: 0 },
+    ],
+    entries: [],
+  };
+
+  it("resets the selected year when the user prop changes", async () => {
+    const ue = setup();
+    const { rerender } = render(<AnnualPlannerView user={multiUser} bankHolidays={[]} />);
+    // Switch to 2025
+    const select = screen.getByRole("combobox", { name: /select leave window/i });
+    await ue.selectOptions(select, "2025");
+    expect((select as HTMLSelectElement).value).toBe("2025");
+    // Rerender with a different user — selected year should be reset
+    rerender(<AnnualPlannerView user={otherUser} bankHolidays={[]} />);
+    // otherUser has only one allowance, so no selector is shown — confirms reset occurred
+    expect(screen.queryByRole("combobox", { name: /select leave window/i })).toBeNull();
+  });
+});

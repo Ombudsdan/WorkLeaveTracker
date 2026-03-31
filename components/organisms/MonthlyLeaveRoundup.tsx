@@ -115,8 +115,7 @@ export default function MonthlyLeaveRoundup({ user, bankHolidays }: MonthlyLeave
 
   const defaultYa = getActiveYearAllowance(user.yearAllowances);
   const [selectedYear, setSelectedYear] = useState<number>(
-    /* c8 ignore next -- defaultYa always found for valid users with year allowances */
-    defaultYa?.year ?? availableYas[0]?.year ?? new Date().getFullYear()
+    defaultYa?.year ?? new Date().getFullYear()
   );
 
   const selectedYa = useMemo(
@@ -129,8 +128,7 @@ export default function MonthlyLeaveRoundup({ user, bankHolidays }: MonthlyLeave
   const { months, chartScale } = useMemo<{ months: MonthData[]; chartScale: number }>(() => {
     if (!selectedYa) return { months: [], chartScale: 5 };
 
-    /* c8 ignore next -- holidayStartMonth is required in YearAllowance type */
-    const sm = selectedYa.holidayStartMonth ?? 1;
+    const sm = selectedYa.holidayStartMonth;
     const smPadded = String(sm).padStart(2, "0");
     const yearStartStr = `${selectedYa.year}-${smPadded}-01`;
     const yearEndStr = `${selectedYa.year + 1}-${smPadded}-01`;
@@ -165,8 +163,7 @@ export default function MonthlyLeaveRoundup({ user, bankHolidays }: MonthlyLeave
       );
       for (const bhDate of monthBankHolidays) {
         const isNonWorkingDay = user.profile.nonWorkingDays.includes(new Date(bhDate).getDay());
-        /* c8 ignore next -- bhDate is sourced from bhMap so get() is always defined */
-        const bhTitle = bhMap.get(bhDate) ?? "Bank Holiday";
+        const bhTitle = bhMap.get(bhDate)!;
         segments.push({
           id: `bh-${bhDate}`,
           startDate: bhDate,
@@ -248,9 +245,7 @@ export default function MonthlyLeaveRoundup({ user, bankHolidays }: MonthlyLeave
       return;
     }
     const rect = el.getBoundingClientRect();
-    const containerRect = containerRef.current?.getBoundingClientRect();
-    /* c8 ignore next -- containerRef is always mounted when user can click */
-    if (!containerRect) return;
+    const containerRect = containerRef.current!.getBoundingClientRect();
     const top = rect.bottom - containerRect.top + 4;
     const left = Math.min(rect.left - containerRect.left, containerRect.width - POPOVER_WIDTH);
     setPopover({ segmentId: segment.id, segment, top, left });
@@ -325,9 +320,7 @@ export default function MonthlyLeaveRoundup({ user, bankHolidays }: MonthlyLeave
 
                     const segColorClass = seg.isBankHoliday
                       ? "bg-purple-300"
-                      : seg.status
-                        ? STATUS_BAR_COLORS[seg.status]
-                        : /* c8 ignore next -- non-BH segments always carry a status */ "bg-gray-200";
+                      : STATUS_BAR_COLORS[seg.status!];
 
                     const segStyle: React.CSSProperties = {
                       width: pct(seg.days),
@@ -351,9 +344,7 @@ export default function MonthlyLeaveRoundup({ user, bankHolidays }: MonthlyLeave
                         title={
                           seg.isBankHoliday
                             ? seg.bankHolidayTitle
-                            : seg.entry
-                              ? `${seg.status}: ${seg.entry.startDate} – ${seg.entry.endDate}`
-                              : /* c8 ignore next -- non-BH segments always have an entry */ undefined
+                            : `${seg.status}: ${seg.entry!.startDate} – ${seg.entry!.endDate}`
                         }
                       />
                     );

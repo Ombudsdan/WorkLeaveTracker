@@ -38,9 +38,7 @@ export default function SummaryCard({ user, bankHolidays, onAddLeave }: SummaryC
 
   const effectiveYa = useMemo(() => {
     if (selectedYear === null) return activeYa;
-    return (
-      visibleAllowances.find((ya) => ya.year === selectedYear) ?? /* c8 ignore next */ activeYa
-    );
+    return visibleAllowances.find((ya) => ya.year === selectedYear) ?? activeYa;
   }, [selectedYear, visibleAllowances, activeYa]);
 
   const summary = calcLeaveSummary(user, bankHolidayDates, effectiveYa ?? undefined);

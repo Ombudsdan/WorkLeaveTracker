@@ -93,8 +93,6 @@ function getCircleStyle(
   const topHex = topEntry ? STATUS_DOT_HEX[topEntry.status] : null;
   const bottomHex = bottomEntry ? STATUS_DOT_HEX[bottomEntry.status] : null;
 
-  /* c8 ignore next -- called only when hasLeave is true (topEntry or bottomEntry is non-null) */
-  if (!topHex && !bottomHex) return {};
   if (topHex === bottomHex && topHex) return { backgroundColor: topHex };
 
   const t = topHex ?? "#ffffff";
@@ -183,7 +181,7 @@ export default function MiniCalendar({ user, bankHolidays }: MiniCalendarProps) 
       const dow = new Date(calYear, calMonth, d).getDay();
       const isNonWorking = user.profile.nonWorkingDays.includes(dow);
       const isBankHoliday = bhMap.has(dateStr);
-      const bankHolidayTitle = bhMap.get(dateStr) ?? null;
+      const bankHolidayTitle = isBankHoliday ? bhMap.get(dateStr)! : null;
 
       const dayEntries = getEntriesForDate(dateStr, relevantEntries);
       const { topEntry, bottomEntry } = computeTopBottom(dayEntries);
@@ -233,16 +231,12 @@ export default function MiniCalendar({ user, bankHolidays }: MiniCalendarProps) 
   }
 
   function handleCellClick(cell: CalendarCell, cellEl: HTMLElement) {
-    /* c8 ignore next -- handleCellClick only attached to cells with leave/BH, so this guard never triggers */
-    if (!cell.topEntry && !cell.bottomEntry && !cell.isBankHoliday) return;
     if (popover?.dateStr === cell.dateStr) {
       setPopover(null);
       return;
     }
     const rect = cellEl.getBoundingClientRect();
-    const containerRect = containerRef.current?.getBoundingClientRect();
-    /* c8 ignore next -- containerRef is always mounted when user can click */
-    if (!containerRect) return;
+    const containerRect = containerRef.current!.getBoundingClientRect();
     const top = rect.bottom - containerRect.top + 4;
     const left = Math.min(rect.left - containerRect.left, containerRect.width - 200);
     setPopover({
@@ -355,11 +349,9 @@ export default function MiniCalendar({ user, bankHolidays }: MiniCalendarProps) 
               >
                 <span
                   className={`w-5 h-5 rounded-full inline-flex items-center justify-center text-[10px] select-none bg-purple-300 text-purple-900 cursor-pointer font-medium ${todayRing}`}
-                  /* c8 ignore next -- bankHolidayTitle is always set when isBankHoliday is true */
-                  title={cell.bankHolidayTitle ?? cell.dateStr ?? undefined}
+                  title={cell.bankHolidayTitle!}
                   data-testid="bank-holiday-dot"
-                  /* c8 ignore next -- bankHolidayTitle is always set when isBankHoliday is true */
-                  aria-label={cell.bankHolidayTitle ?? `Bank holiday on ${cell.dateStr}`}
+                  aria-label={cell.bankHolidayTitle!}
                 >
                   {cell.day}
                 </span>

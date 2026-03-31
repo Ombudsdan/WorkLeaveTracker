@@ -678,8 +678,12 @@ describe("SummaryCard — leave window selector", () => {
     expect(coreRow?.textContent).toContain("20");
   });
 
-  it("resets to the active window when the user changes", () => {
+  it("resets to the active window when the user changes", async () => {
+    const ue = setup();
     const { rerender } = render(<SummaryCard user={multiWindowUser} bankHolidays={[]} />);
+    // First switch to 2025 so selectedYear is non-null
+    const select = screen.getByRole("combobox", { name: /select leave window/i });
+    await ue.selectOptions(select, "2025");
     // Re-render with a different user (single allowance) — selectedYear resets
     const differentUser: PublicUser = {
       ...alice,

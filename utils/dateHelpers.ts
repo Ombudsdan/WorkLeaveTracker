@@ -217,7 +217,7 @@ export function getLeaveDataBounds(
       }
     }
     for (const ya of user.yearAllowances) {
-      const sm = ya.holidayStartMonth ?? /* c8 ignore next -- holidayStartMonth is required in YearAllowance */ 1;
+      const sm = ya.holidayStartMonth;
       const { endDate } = yearAllowanceDates(ya.year, sm);
       if (!maxEndDateStr || endDate > maxEndDateStr) {
         maxEndDateStr = endDate;

@@ -184,8 +184,7 @@ export default function LeaveForm({
     // activeYa is always defined here — calcLeaveSummary only yields negative remaining
     // when it finds an active allowance, so getActiveYearAllowance returns a value.
     const activeYa = getActiveYearAllowance(user.yearAllowances)!;
-    /* c8 ignore next -- holidayStartMonth is required in YearAllowance; fallback is unreachable */
-    const sm = activeYa.holidayStartMonth ?? 1;
+    const sm = activeYa.holidayStartMonth;
     const yrStart = new Date(activeYa.year, sm - 1, 1);
     const yrEnd = new Date(activeYa.year + 1, sm - 1, 1);
 
@@ -238,11 +237,6 @@ export default function LeaveForm({
       setShowTopError(true);
       return;
     }
-    /* c8 ignore start -- defensive guard; Save button is already disabled when limit exceeded */
-    if (isLimitExceeded) {
-      return;
-    }
-    /* c8 ignore stop */
     setShowTopError(false);
     const resolvedStatus = isSick ? LeaveStatus.Approved : (status as LeaveStatus);
     onSave({

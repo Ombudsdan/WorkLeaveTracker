@@ -128,8 +128,7 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
   const rows = useMemo<MonthRow[]>(() => {
     if (!activeYa) return [];
 
-    /* c8 ignore next -- holidayStartMonth is required in YearAllowance type */
-    const sm = activeYa.holidayStartMonth ?? 1;
+    const sm = activeYa.holidayStartMonth;
     const bhMap = new Map(bankHolidays.map((bh) => [bh.date, bh.title]));
 
     return Array.from({ length: 12 }, (_, i) => {
@@ -217,16 +216,12 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
   }, [popover]);
 
   function handleDayClick(day: DayBox, boxEl: HTMLElement) {
-    /* c8 ignore next -- handleDayClick only attached to clickable cells (with entries/BH) */
-    if (!day.allLeaveEntries.length && !day.isBankHoliday) return;
     if (popover?.dateStr === day.dateStr) {
       setPopover(null);
       return;
     }
     const rect = boxEl.getBoundingClientRect();
-    const containerRect = containerRef.current?.getBoundingClientRect();
-    /* c8 ignore next -- containerRef is always mounted when user can click */
-    if (!containerRect) return;
+    const containerRect = containerRef.current!.getBoundingClientRect();
     const top = rect.bottom - containerRect.top + 4;
     const left = Math.min(rect.left - containerRect.left, containerRect.width - POPOVER_WIDTH);
     setPopover({
@@ -293,9 +288,6 @@ export default function MicroAnnualPlanner({ user, bankHolidays }: MicroAnnualPl
                   const pmColor = BOX_HEX_COLORS[day.pmEntry.status];
                   boxClassName += " cursor-pointer";
                   boxStyle = { background: halfDayGradient(GRAY_100_HEX, pmColor) };
-                /* c8 ignore next 2 -- status is only set for full/half-day entries which are handled above */
-                } else if (day.status !== null) {
-                  boxClassName += ` ${BOX_COLORS[day.status]} cursor-pointer`;
                 } else {
                   boxClassName += " bg-gray-100";
                 }
