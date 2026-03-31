@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+﻿import { render, screen } from "@testing-library/react";
 import React from "react";
 import {
   LeaveKey,
@@ -108,11 +108,11 @@ describe("LeaveKey — className", () => {
 // These tests import each component and assert the leave-key container is
 // present and uses the same swatch dimensions.
 
-import CalendarView from "@/components/dashboard/CalendarView";
-import MiniCalendar from "@/components/dashboard/MiniCalendar";
-import MicroAnnualPlanner from "@/components/dashboard/MicroAnnualPlanner";
-import SharedCalendarView from "@/components/connections/SharedCalendarView";
-import AnnualPlannerView from "@/components/annual-planner/AnnualPlannerView";
+import CalendarView from "@/components/organisms/CalendarView";
+import MiniCalendar from "@/components/organisms/MiniCalendar";
+import MicroAnnualPlanner from "@/components/organisms/MicroAnnualPlanner";
+import SharedCalendarView from "@/components/organisms/SharedCalendarView";
+import AnnualPlannerView from "@/components/organisms/AnnualPlannerView";
 import { LeaveStatus, LeaveType } from "@/types";
 import type { PublicUser, BankHolidayEntry } from "@/types";
 

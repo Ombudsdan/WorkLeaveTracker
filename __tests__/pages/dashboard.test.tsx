@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Integration-style tests for the DashboardPage component focusing on the
  * read-only navigation behaviour:
  *
@@ -48,13 +48,25 @@ jest.mock("@/controllers/entriesController", () => ({
 }));
 
 // ─── Stub heavy child components so these tests stay fast and focused ─────────
-jest.mock("@/components/NavBar", () => () => <nav data-testid="navbar" />);
-jest.mock("@/components/LoadingSpinner", () => () => <div data-testid="loading-spinner" />);
-jest.mock("@/components/dashboard/MiniCalendar", () => () => null);
-jest.mock("@/components/dashboard/MicroAnnualPlanner", () => () => null);
-jest.mock("@/components/dashboard/SummaryCard", () => () => null);
-jest.mock("@/components/dashboard/CalendarView", () => () => null);
-jest.mock("@/components/dashboard/LeaveList", () => () => null);
+jest.mock(
+  "@/components/organisms/NavBar",
+  () =>
+    function NavBar() {
+      return <nav data-testid="navbar" />;
+    }
+);
+jest.mock(
+  "@/components/atoms/LoadingSpinner",
+  () =>
+    function LoadingSpinner() {
+      return <div data-testid="loading-spinner" />;
+    }
+);
+jest.mock("@/components/organisms/MiniCalendar", () => () => null);
+jest.mock("@/components/organisms/MicroAnnualPlanner", () => () => null);
+jest.mock("@/components/organisms/SummaryCard", () => () => null);
+jest.mock("@/components/organisms/CalendarView", () => () => null);
+jest.mock("@/components/organisms/LeaveList", () => () => null);
 
 // ─── Import mocks so we can configure them per-test ──────────────────────────
 import { useSession } from "next-auth/react";

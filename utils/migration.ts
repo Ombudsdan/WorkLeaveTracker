@@ -7,7 +7,6 @@ import { yearAllowanceDates } from "@/utils/dateHelpers";
  * Format: `ya-<year>-<m>-<company-slug>`
  */
 function deriveAllowanceId(ya: YearAllowance): string {
-  /* c8 ignore next */
   const slug = (ya.company ?? "").trim().toLowerCase().replace(/\s+/g, "-") || "unknown";
   return `ya-${ya.year}-${ya.holidayStartMonth ?? 1}-${slug}`;
 }
@@ -63,11 +62,11 @@ export function migrateConnectionsBidirectional<T extends { id: string; profile:
 ): T[] {
   // Build a mutable map of pinnedUserIds per user so we can patch in bulk
   const pinnedMap = new Map<string, string[]>(
-    users.map((u) => [u.id, [...(u.profile.pinnedUserIds ?? /* c8 ignore next */ [])]])
+    users.map((u) => [u.id, [...(u.profile.pinnedUserIds ?? [])]])
   );
 
   for (const user of users) {
-    for (const targetId of user.profile.pinnedUserIds ?? /* c8 ignore next */ []) {
+    for (const targetId of user.profile.pinnedUserIds ?? []) {
       const targetPinned = pinnedMap.get(targetId);
       if (targetPinned === undefined) continue; // target not in the users list
       if (!targetPinned.includes(user.id) && targetPinned.length < 3) {
@@ -77,8 +76,8 @@ export function migrateConnectionsBidirectional<T extends { id: string; profile:
   }
 
   return users.map((user) => {
-    const original = user.profile.pinnedUserIds ?? /* c8 ignore next */ [];
-    const updated = pinnedMap.get(user.id) ?? /* c8 ignore next */ original;
+    const original = user.profile.pinnedUserIds ?? [];
+    const updated = pinnedMap.get(user.id)!;
     if (updated.length === original.length && updated.every((id, i) => id === original[i])) {
       return user;
     }

@@ -14,6 +14,7 @@ import {
 } from "@/utils/dateHelpers";
 import { LeaveStatus, LeaveType } from "@/types";
 import type { LeaveEntry, YearAllowance } from "@/types";
+import { getActiveYearAllowance } from "@/utils/dateHelpers";
 
 // ---------------------------------------------------------------------------
 // countWorkingDays
@@ -297,9 +298,6 @@ describe("toIsoDate", () => {
 // ---------------------------------------------------------------------------
 // getActiveYearAllowance
 // ---------------------------------------------------------------------------
-import { getActiveYearAllowance } from "@/utils/dateHelpers";
-import type { YearAllowance } from "@/types";
-
 // Fix "today" so tests are deterministic
 const MARCH_2026 = new Date("2026-03-15");
 
@@ -705,5 +703,30 @@ describe("getLeaveDataBounds", () => {
     ];
     const result = getLeaveDataBounds([{ entries: [], yearAllowances: allowances }]);
     expect(result.min).toEqual({ year: 2026, month: 2 }); // March 2026 (today)
+  });
+
+  it("clamps max to min when the latest allowance ends before the earliest entry starts", () => {
+    // allowance for 2020 → endDate "2020-12-31" → max = { year: 2020, month: 11 }
+    // entry starting 2030 → min = { year: 2030, month: 4 }
+    // max < min → max should be clamped to min
+    const result = getLeaveDataBounds([
+      {
+        entries: [
+          {
+            id: "e1",
+            startDate: "2030-05-01",
+            endDate: "2030-05-05",
+            status: LeaveStatus.Approved,
+            type: LeaveType.Holiday,
+          },
+        ],
+        yearAllowances: [
+          { year: 2020, company: "Acme", holidayStartMonth: 1, core: 25, bought: 0, carried: 0 },
+        ],
+      },
+    ]);
+    // max was before min, so max should be clamped to min
+    expect(result.max).toEqual(result.min);
+    expect(result.min).toEqual({ year: 2030, month: 4 }); // May 2030
   });
 });

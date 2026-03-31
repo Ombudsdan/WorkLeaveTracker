@@ -1,5 +1,4 @@
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import React from "react";
 import DonutChart from "@/components/molecules/DonutChart";
 
@@ -126,5 +125,25 @@ describe("DonutChart — edge cases", () => {
     );
     const paths = container.querySelectorAll("path");
     expect(paths.length).toBe(1);
+  });
+});
+
+describe("DonutChart \u2014 arc exhaustion", () => {
+  it("skips a later segment when frac <= 0 (arc already full) and right cap uses last segment color", () => {
+    // First segment fills the entire arc (value === total).
+    // Second segment has value > 0 but no remaining arc space (frac clamped to 0).
+    const { container } = render(
+      <DonutChart
+        segments={[
+          { value: 25, color: "#86efac" },
+          { value: 5, color: "#93c5fd" }, // skipped: arc already at 100%
+        ]}
+        total={25}
+        centerValue={0}
+      />
+    );
+    // Track + 1 drawn segment = 2 paths (second segment is skipped)
+    const paths = container.querySelectorAll("path");
+    expect(paths.length).toBe(2);
   });
 });

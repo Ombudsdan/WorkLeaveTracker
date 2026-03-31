@@ -46,6 +46,18 @@ describe("migrateYearAllowance", () => {
     expect(result.id).toBe("ya-2026-1-unknown");
   });
 
+  it("uses 'unknown' company slug when company is undefined", () => {
+    const ya = {
+      year: 2026,
+      holidayStartMonth: 1,
+      core: 25,
+      bought: 0,
+      carried: 0,
+    } as YearAllowance;
+    const result = migrateYearAllowance(ya);
+    expect(result.id).toBe("ya-2026-1-unknown");
+  });
+
   it("defaults holidayStartMonth to 1 when missing", () => {
     const ya = {
       year: 2026,
@@ -292,6 +304,24 @@ describe("migrateConnectionsBidirectional", () => {
   it("handles users with no pinnedUserIds", () => {
     const a = makeConnUser("a");
     const result = migrateConnectionsBidirectional([a]);
+    expect(result[0]).toBe(a);
+  });
+
+  it("handles users whose pinnedUserIds is undefined", () => {
+    const a = {
+      id: "a",
+      profile: {
+        firstName: "a",
+        lastName: "Test",
+        email: "a@example.com",
+        nonWorkingDays: [],
+        // pinnedUserIds intentionally absent
+      } as UserProfile,
+      yearAllowances: [],
+      entries: [],
+    };
+    const result = migrateConnectionsBidirectional([a]);
+    // a has no pinnedUserIds and no peers — returned unchanged
     expect(result[0]).toBe(a);
   });
 });

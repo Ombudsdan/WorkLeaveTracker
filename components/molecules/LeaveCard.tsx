@@ -1,5 +1,5 @@
 "use client";
-import type { LeaveEntry, BankHolidayEntry, YearAllowance } from "@/types";
+import type { LeaveEntry, BankHolidayEntry } from "@/types";
 import { LeaveType, LeaveDuration } from "@/types";
 import { STATUS_COLORS, SICK_LEAVE_CARD_COLORS } from "@/variables/colours";
 import { countEntryDays, getEntryDuration } from "@/utils/dateHelpers";

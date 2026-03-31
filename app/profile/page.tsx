@@ -1,41 +1,25 @@
-"use client";
-import { useState, useEffect, useRef, useMemo, type FormEvent } from "react";
+﻿"use client";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import type { PublicUser, YearAllowance, UkCountry, LeaveEntry } from "@/types";
-import { CheckCircle, Check, Circle } from "lucide-react";
-import { LeaveType, LeaveDuration } from "@/types";
-import NavBar from "@/components/NavBar";
-import LoadingSpinner from "@/components/LoadingSpinner";
-import SessionExpiredScreen from "@/components/SessionExpiredScreen";
-import FormField from "@/components/FormField";
-import FormErrorOutlet from "@/components/FormErrorOutlet";
-import Button from "@/components/Button";
+import NavBar from "@/components/organisms/NavBar";
+import LoadingSpinner from "@/components/atoms/LoadingSpinner";
+import SessionExpiredScreen from "@/components/organisms/SessionExpiredScreen";
+import Button from "@/components/atoms/Button";
+import FormErrorOutlet from "@/components/molecules/FormErrorOutlet";
 import { useFormValidation } from "@/contexts/FormValidationContext";
-import { DAY_NAMES_SHORT } from "@/variables/calendar";
-import { countEntryDays, getActiveYearAllowance } from "@/utils/dateHelpers";
+import { getActiveYearAllowance } from "@/utils/dateHelpers";
+import ProfileForm from "@/components/organisms/ProfileForm";
+import PastLeaveExplorer from "@/components/organisms/PastLeaveExplorer";
 
 import { usersController } from "@/controllers/usersController";
-import YearAllowanceModal from "@/components/dashboard/YearAllowanceModal";
-
-const UK_COUNTRIES: { value: UkCountry; label: string }[] = [
-  { value: "england-and-wales", label: "England & Wales" },
-  { value: "scotland", label: "Scotland" },
-  { value: "northern-ireland", label: "Northern Ireland" },
-];
+import YearAllowanceModal from "@/components/organisms/YearAllowanceModal";
 
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
 const PROFILE_RETRY_DELAY_MS = 400;
 
 type ProfileTab = "profile" | "past-leave";
-
-function formatDateRange(startDate: string, endDate: string): string {
-  const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" };
-  const start = new Date(startDate).toLocaleDateString("en-GB", opts);
-  if (startDate === endDate) return start;
-  const end = new Date(endDate).toLocaleDateString("en-GB", opts);
-  return `${start} \u2013 ${end}`;
-}
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
@@ -253,254 +237,46 @@ export default function ProfilePage() {
 
         {/* Profile form tab */}
         {activeTab === "profile" && (
-          <form
-            onSubmit={handleSubmit}
-            noValidate
-            className="bg-white rounded-2xl shadow p-6 space-y-6"
-          >
+          <div className="bg-white rounded-2xl shadow p-6 space-y-6">
             <FormErrorOutlet />
-
-            <section>
-              <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">
-                Personal Details
-              </h3>
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  id="firstName"
-                  label="First Name"
-                  value={firstName}
-                  onChange={(v) => setFirstName(v)}
-                  required
-                />
-                <FormField
-                  id="lastName"
-                  label="Last Name"
-                  value={lastName}
-                  onChange={(v) => setLastName(v)}
-                  required
-                />
-                <FormField id="email" label="Email" type="email" value={email} readOnly />
-              </div>
-            </section>
-
-            <section>
-              <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">
-                Bank Holidays Region
-              </h3>
-              <div className="flex gap-2 flex-wrap">
-                {UK_COUNTRIES.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setCountry(country === opt.value ? "" : opt.value)}
-                    aria-pressed={country === opt.value}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition cursor-pointer ${
-                      country === opt.value
-                        ? "bg-indigo-600 text-white border-indigo-600"
-                        : "bg-white text-gray-700 border-gray-300 hover:border-indigo-400 hover:text-indigo-600"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs text-gray-400 mt-1">
-                Select your region to show the correct UK bank holidays
-              </p>
-            </section>
-
-            <section>
-              <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">
-                Working Days
-              </h3>
-              <div id="workingDays" className="flex gap-2 flex-wrap">
-                {DAY_NAMES_SHORT.map((day, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => toggleWorkingDay(index)}
-                    className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium border transition ${
-                      workingDays.includes(index)
-                        ? "bg-green-100 border-green-300 text-green-700"
-                        : "bg-gray-100 border-gray-300 text-gray-400"
-                    }`}
-                    aria-pressed={workingDays.includes(index)}
-                  >
-                    {workingDays.includes(index) && <Check size={12} strokeWidth={3} />}
-                    {day}
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs text-gray-400 mt-1">Select the days you work</p>
-            </section>
-
-            <section>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">
-                  Leave Allowances
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingAllowance(undefined);
-                    setShowAllowanceModal(true);
-                  }}
-                  className="bg-indigo-600 text-white text-xs px-3 py-1 rounded-lg hover:bg-indigo-700 transition"
-                >
-                  + Add Year
-                </button>
-              </div>
-              {yearAllowances.length === 0 ? (
-                <p className="text-sm text-gray-400">No allowances configured yet.</p>
-              ) : (
-                <div className="space-y-2">
-                  {[...yearAllowances]
-                    .sort((a, b) => b.year - a.year || (a.active === false ? 1 : -1))
-                    .map((ya, idx) => {
-                      const isInactive = ya.active === false;
-                      return (
-                        <div
-                          key={`${ya.year}-${ya.company}-${idx}`}
-                          className={`flex items-center gap-3 text-sm rounded-lg px-3 py-2 border ${
-                            isInactive
-                              ? "bg-gray-50 border-gray-200 text-gray-400 opacity-60"
-                              : ya.year === currentHolidayYear
-                                ? "bg-indigo-50 border-indigo-200 text-indigo-800"
-                                : "bg-gray-50 border-gray-200 text-gray-600"
-                          }`}
-                        >
-                          {ya.year === currentHolidayYear && !isInactive ? (
-                            <CheckCircle size={16} className="shrink-0 text-indigo-600" />
-                          ) : (
-                            <Circle size={16} className="shrink-0 text-gray-300" />
-                          )}
-                          <span className="font-medium flex-1">
-                            {ya.year}
-                            {ya.company ? (
-                              <span className="ml-1 font-normal text-xs opacity-70">
-                                — {ya.company}
-                              </span>
-                            ) : null}
-                            {isInactive && (
-                              <span className="ml-2 text-xs text-gray-400">(ended)</span>
-                            )}
-                          </span>
-                          {!isInactive && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingAllowance(ya);
-                                setShowAllowanceModal(true);
-                              }}
-                              className="underline text-xs text-indigo-600"
-                            >
-                              Edit
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
-                </div>
-              )}
-              <p className="text-xs text-gray-400 mt-2">
-                If you change companies, add a new allowance for the same year with your new
-                company. Your previous allowance will be marked as ended.
-              </p>
-            </section>
-
-            {submitError && <p className="text-red-500 text-sm">{submitError}</p>}
-            {saved && (
-              <p className="flex items-center gap-1.5 text-green-600 text-sm">
-                <CheckCircle size={16} />
-                Saved successfully
-              </p>
-            )}
-
-            <Button type="submit" variant="primary">
-              Save Profile
-            </Button>
-          </form>
+            <ProfileForm
+              firstName={firstName}
+              onFirstNameChange={setFirstName}
+              lastName={lastName}
+              onLastNameChange={setLastName}
+              email={email}
+              workingDays={workingDays}
+              onWorkingDaysChange={setWorkingDays}
+              country={country}
+              onCountryChange={setCountry}
+              yearAllowances={yearAllowances}
+              currentYear={currentHolidayYear}
+              onAddYear={() => {
+                setEditingAllowance(undefined);
+                setShowAllowanceModal(true);
+              }}
+              onEditYear={(ya) => {
+                setEditingAllowance(ya);
+                setShowAllowanceModal(true);
+              }}
+              onSave={handleSaveProfile}
+              saved={saved}
+              submitError={submitError}
+            />
+          </div>
         )}
 
         {/* Past Leave tab */}
         {activeTab === "past-leave" && (
           <div className="bg-white rounded-2xl shadow p-6 space-y-5">
-            <p className="text-sm text-gray-500">
-              Select a leave allowance period to view the leave you took during that time.
-            </p>
-            {pastPeriods.length === 0 ? (
-              <p className="text-sm text-gray-400">No past leave allowance periods found.</p>
-            ) : (
-              <>
-                <div className="flex gap-2 flex-wrap">
-                  {pastPeriods.map((ya) => {
-                    const key = `${ya.year}-${ya.company}`;
-                    const sm = ya.holidayStartMonth ?? 1;
-                    const startDate = new Date(ya.year, sm - 1, 1);
-                    const endDate = new Date(ya.year + 1, sm - 1, 1);
-                    endDate.setDate(endDate.getDate() - 1);
-                    const label =
-                      sm === 1
-                        ? `${ya.year}${ya.company ? ` \u2014 ${ya.company}` : ""}`
-                        : `${startDate.toLocaleDateString("en-GB", { month: "short", year: "numeric" })} \u2013 ${endDate.toLocaleDateString("en-GB", { month: "short", year: "numeric" })}${ya.company ? ` \u2014 ${ya.company}` : ""}`;
-                    return (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => setSelectedPastPeriod(key)}
-                        aria-pressed={selectedPastPeriod === key}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition cursor-pointer ${
-                          selectedPastPeriod === key
-                            ? "bg-indigo-600 text-white border-indigo-600"
-                            : "bg-white text-gray-700 border-gray-300 hover:border-indigo-400 hover:text-indigo-600"
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {selectedPeriodYa && (
-                  <div className="space-y-2 mt-4">
-                    {pastLeaveEntries.length === 0 ? (
-                      <p className="text-sm text-gray-400">No leave entries for this period.</p>
-                    ) : (
-                      [...pastLeaveEntries]
-                        .sort((a, b) => a.startDate.localeCompare(b.startDate))
-                        .map((entry) => {
-                          const isSick = entry.type === LeaveType.Sick;
-                          const isHalf =
-                            entry.duration != null && entry.duration !== LeaveDuration.Full;
-                          const days = countEntryDays(entry, nonWorkingDays, []);
-                          const statusLabel = isSick
-                            ? "Sick"
-                            : entry.status.charAt(0).toUpperCase() + entry.status.slice(1);
-                          return (
-                            <div
-                              key={entry.id}
-                              className="border rounded-lg p-2 text-xs bg-gray-50 border-gray-200 text-gray-700"
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className="font-medium truncate mr-2">
-                                  {entry.notes ?? "\u2013"}
-                                </span>
-                                <span>{statusLabel}</span>
-                              </div>
-                              <div className="mt-1 text-gray-500">
-                                {formatDateRange(entry.startDate, entry.endDate)}{" "}
-                                <span className="opacity-70">
-                                  ({isHalf ? "Half Day" : `${days}d`})
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })
-                    )}
-                  </div>
-                )}
-              </>
-            )}
+            <PastLeaveExplorer
+              pastPeriods={pastPeriods}
+              selectedPastPeriod={selectedPastPeriod}
+              onSelectPeriod={setSelectedPastPeriod}
+              pastLeaveEntries={pastLeaveEntries}
+              nonWorkingDays={nonWorkingDays}
+              bankHolidays={[]}
+            />
           </div>
         )}
       </main>
@@ -539,8 +315,7 @@ export default function ProfilePage() {
     </div>
   );
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
+  async function handleSaveProfile() {
     clearAllErrors();
 
     const fieldsValid = triggerAllValidations();
@@ -612,10 +387,6 @@ export default function ProfilePage() {
       (sessionId ? users.find((u) => u.id === sessionId) : undefined) ??
       users.find((u) => u.profile.email === session?.user?.email);
     if (me) applyUserProfile(me);
-  }
-
-  function toggleWorkingDay(day: number) {
-    setWorkingDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
   }
 
   function applyUserProfile(me: PublicUser) {

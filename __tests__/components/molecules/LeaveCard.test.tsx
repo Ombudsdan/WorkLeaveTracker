@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import React from "react";
 import LeaveCard from "@/components/molecules/LeaveCard";
 import { LeaveStatus, LeaveType } from "@/types";
-import type { LeaveEntry, BankHolidayEntry } from "@/types";
+import type { LeaveEntry } from "@/types";
 
 beforeEach(() => {
   jest.useFakeTimers();
@@ -16,10 +16,6 @@ afterEach(() => {
 
 function setup() {
   return userEvent.setup({ advanceTimers: jest.advanceTimersByTime.bind(jest) });
-}
-
-function bh(date: string): BankHolidayEntry {
-  return { date, title: "Bank Holiday" };
 }
 
 const nonWorkingDays = [0, 6]; // Sat/Sun

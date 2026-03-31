@@ -12,7 +12,8 @@
     "test": "jest",
     "test:ci": "jest --ci",
     "e2e": "playwright test",
-    "e2e:ui": "playwright test --ui"
+    "e2e:ui": "playwright test --ui",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@vercel/kv": "^3.0.0",

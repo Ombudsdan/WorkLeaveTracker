@@ -67,7 +67,9 @@ export function findClashes(
       result.push({ date: dateStr, users: onDate });
     }
 
-    cur.setDate(cur.getDate() + 1);
+    // Use UTC day arithmetic to avoid DST transitions causing days to be skipped
+    // or revisited when local-time setDate/getDate is used across a DST boundary.
+    cur.setUTCDate(cur.getUTCDate() + 1);
   }
 
   return result;

@@ -135,7 +135,7 @@ export default function DonutChart({ segments, total, centerValue }: DonutChartP
       // Left cap: first segment's colour if any segment is present, else track
       leftCapColor: firstColor ?? TRACK_COLOR,
       // Right cap: last segment's colour only when segments fill the full arc
-      rightCapColor: cumFrac >= 1 ? (lastColor ?? TRACK_COLOR) : TRACK_COLOR,
+      rightCapColor: cumFrac >= 1 ? lastColor! : TRACK_COLOR,
     };
   }, [segments, total]);
 

@@ -62,15 +62,12 @@ export function getBankHolidaysForUser(user: AppUser, bankHolidayDates: string[]
 export function getHolidayYearStart(holidayStartMonth: number): Date {
   const now = new Date();
   const year = now.getMonth() + 1 >= holidayStartMonth ? now.getFullYear() : now.getFullYear() - 1;
-  return new Date(year, holidayStartMonth - 1, 1);
+  return new Date(Date.UTC(year, holidayStartMonth - 1, 1));
 }
 
 export function getHolidayYearEnd(holidayStartMonth: number): Date {
   const start = getHolidayYearStart(holidayStartMonth);
-  const end = new Date(start);
-  end.setFullYear(end.getFullYear() + 1);
-  end.setDate(end.getDate() - 1);
-  return end;
+  return new Date(Date.UTC(start.getUTCFullYear() + 1, start.getUTCMonth(), 0));
 }
 
 export function calculateLeaveSummary(user: AppUser, bankHolidayDates: string[]): LeaveSummary {

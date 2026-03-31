@@ -3,6 +3,9 @@ import { useState, FormEvent } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import AuthFormLayout from "@/components/organisms/AuthFormLayout";
+import Button from "@/components/atoms/Button";
+import FormLabelledInput from "@/components/atoms/FormLabelledInput";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -11,7 +14,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setError("");
@@ -29,49 +32,41 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
-        <h1 className="text-2xl font-bold text-indigo-700 mb-2">Work Leave Tracker</h1>
-        <p className="text-gray-500 mb-6 text-sm">Sign in to manage your leave</p>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-              placeholder="you@example.com"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-              placeholder="••••••••"
-            />
-          </div>
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-indigo-600 text-white rounded-lg py-2 font-semibold hover:bg-indigo-700 transition disabled:opacity-50"
-          >
-            {loading ? "Signing in…" : "Sign In"}
-          </button>
-        </form>
-        <p className="text-sm text-center mt-4 text-gray-500">
+    <AuthFormLayout
+      title="Work Leave Tracker"
+      subtitle="Sign in to manage your leave"
+      onSubmit={handleSubmit}
+      error={error}
+      footer={
+        <>
           Don&apos;t have an account?{" "}
           <Link href="/register" className="text-indigo-600 hover:underline font-medium">
             Register
           </Link>
-        </p>
-      </div>
-    </div>
+        </>
+      }
+    >
+      <FormLabelledInput
+        id="email"
+        label="Email"
+        type="email"
+        value={email}
+        onChange={setEmail}
+        placeholder="you@example.com"
+        required
+      />
+      <FormLabelledInput
+        id="password"
+        label="Password"
+        type="password"
+        value={password}
+        onChange={setPassword}
+        placeholder="••••••••"
+        required
+      />
+      <Button type="submit" variant="primary" fullWidth disabled={loading}>
+        {loading ? "Signing in…" : "Sign In"}
+      </Button>
+    </AuthFormLayout>
   );
 }

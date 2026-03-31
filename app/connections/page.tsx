@@ -1,16 +1,17 @@
-"use client";
+﻿"use client";
 import { useState, useEffect, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import type { PublicUser, BankHolidayEntry, LeaveEntry } from "@/types";
-import NavBar from "@/components/NavBar";
-import LoadingSpinner from "@/components/LoadingSpinner";
-import ConnectionsPanel from "@/components/ConnectionsPanel";
-import SharedCalendarView from "@/components/connections/SharedCalendarView";
-import AddLeaveModal from "@/components/dashboard/AddLeaveModal";
-import EditLeaveModal from "@/components/dashboard/EditLeaveModal";
-import NotificationBlob from "@/components/atoms/NotificationBlob/NotificationBlob";
-import { Settings2, X } from "lucide-react";
+import NavBar from "@/components/organisms/NavBar";
+import LoadingSpinner from "@/components/atoms/LoadingSpinner";
+import ConnectionsPanel from "@/components/organisms/ConnectionsPanel";
+import SharedCalendarView from "@/components/organisms/SharedCalendarView";
+import AddLeaveModal from "@/components/organisms/AddLeaveModal";
+import EditLeaveModal from "@/components/organisms/EditLeaveModal";
+import ManageConnectionsDrawer from "@/components/organisms/ManageConnectionsDrawer";
+import NotificationBlob from "@/components/atoms/NotificationBlob";
+import { Settings2 } from "lucide-react";
 import { usersController } from "@/controllers/usersController";
 import { holidaysController } from "@/controllers/holidaysController";
 import { entriesController } from "@/controllers/entriesController";
@@ -109,46 +110,16 @@ export default function ConnectionsPage() {
       </main>
 
       {/* Manage Connections overlay */}
-      {showManagePanel && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-40 bg-black/40"
-            onClick={() => setShowManagePanel(false)}
-            aria-hidden="true"
-          />
-          {/* Drawer panel */}
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="manage-connections-title"
-            className="fixed top-0 right-0 bottom-0 z-50 w-full max-w-md bg-white shadow-2xl flex flex-col"
-          >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-              <h3 id="manage-connections-title" className="text-base font-semibold text-gray-800">
-                Manage Connections
-              </h3>
-              <button
-                onClick={() => setShowManagePanel(false)}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 cursor-pointer"
-                aria-label="Close"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-5">
-              <ConnectionsPanel
-                currentUser={currentUser}
-                allUsers={allUsers}
-                onUserChange={(updated) => {
-                  setCurrentUser(updated);
-                }}
-                onAllUsersChange={setAllUsers}
-              />
-            </div>
-          </div>
-        </>
-      )}
+      <ManageConnectionsDrawer isOpen={showManagePanel} onClose={() => setShowManagePanel(false)}>
+        <ConnectionsPanel
+          currentUser={currentUser}
+          allUsers={allUsers}
+          onUserChange={(updated) => {
+            setCurrentUser(updated);
+          }}
+          onAllUsersChange={setAllUsers}
+        />
+      </ManageConnectionsDrawer>
     </div>
   );
 }

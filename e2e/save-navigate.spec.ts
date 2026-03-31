@@ -21,7 +21,7 @@
  * All tests reset the database to the example seed state before each run.
  */
 import { test, expect } from "@playwright/test";
-import { resetDb, ALICE, BOB } from "./helpers/db";
+import { resetDb, ALICE } from "./helpers/db";
 import { loginAs } from "./helpers/auth";
 import { addLeave, getTestDates } from "./helpers/leave";
 
