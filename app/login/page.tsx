@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AuthFormLayout from "@/components/organisms/AuthFormLayout";
 import Button from "@/components/atoms/Button";
+import FormLabelledInput from "@/components/atoms/FormLabelledInput";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -45,28 +46,24 @@ export default function LoginPage() {
         </>
       }
     >
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-        <input
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          placeholder="you@example.com"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-        <input
-          type="password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          placeholder="••••••••"
-        />
-      </div>
+      <FormLabelledInput
+        id="email"
+        label="Email"
+        type="email"
+        value={email}
+        onChange={setEmail}
+        placeholder="you@example.com"
+        required
+      />
+      <FormLabelledInput
+        id="password"
+        label="Password"
+        type="password"
+        value={password}
+        onChange={setPassword}
+        placeholder="••••••••"
+        required
+      />
       <Button type="submit" variant="primary" fullWidth disabled={loading}>
         {loading ? "Signing in…" : "Sign In"}
       </Button>

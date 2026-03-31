@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usersController } from "@/controllers/usersController";
 import AuthFormLayout from "@/components/organisms/AuthFormLayout";
 import Button from "@/components/atoms/Button";
+import FormLabelledInput from "@/components/atoms/FormLabelledInput";
 
 export default function RegisterPage() {
   const [firstName, setFirstName] = useState("");
@@ -62,62 +63,50 @@ export default function RegisterPage() {
       }
     >
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-          <input
-            type="text"
-            required
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-            placeholder="Jane"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-          <input
-            type="text"
-            required
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-            placeholder="Doe"
-          />
-        </div>
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-        <input
-          type="email"
+        <FormLabelledInput
+          id="firstName"
+          label="First Name"
+          value={firstName}
+          onChange={setFirstName}
+          placeholder="Jane"
           required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          placeholder="you@example.com"
+        />
+        <FormLabelledInput
+          id="lastName"
+          label="Last Name"
+          value={lastName}
+          onChange={setLastName}
+          placeholder="Doe"
+          required
         />
       </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-        <input
-          type="password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          placeholder="Min. 8 characters"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
-        <input
-          type="password"
-          required
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          placeholder="••••••••"
-        />
-      </div>
+      <FormLabelledInput
+        id="email"
+        label="Email"
+        type="email"
+        value={email}
+        onChange={setEmail}
+        placeholder="you@example.com"
+        required
+      />
+      <FormLabelledInput
+        id="password"
+        label="Password"
+        type="password"
+        value={password}
+        onChange={setPassword}
+        placeholder="Min. 8 characters"
+        required
+      />
+      <FormLabelledInput
+        id="confirmPassword"
+        label="Confirm Password"
+        type="password"
+        value={confirmPassword}
+        onChange={setConfirmPassword}
+        placeholder="••••••••"
+        required
+      />
       <Button type="submit" variant="primary" fullWidth disabled={loading}>
         {loading ? "Creating account…" : "Create Account"}
       </Button>
